@@ -10,6 +10,8 @@ export const ZONES = Object.freeze([
   {name:'미끌미끌 실험실', concept:'마찰', intro:'같은 힘으로 밀어도 바닥에 따라 멈추는 거리가 달라져!', theme:'#dceff7'},
   {name:'무게의 비밀', concept:'질량과 충격', intro:'무거운 물건과 가벼운 물건이 부딪힐 때 어떤 일이 생길까?', theme:'#ffedce'},
   {name:'통통 반사 공장', concept:'충돌과 반사', intro:'한 번 튕긴 뒤 어디로 갈까? 벽과 범퍼를 잘 이용해 봐.', theme:'#f4e1f4'},
+  {name:'와르르 연쇄 연구실', concept:'연쇄 반응', intro:'첫 도미노를 맞히면 다음 도미노는 어디로 쓰러질까? 문을 여는 장치를 찾아 봐.', theme:'#f5e7d8'},
+  {name:'움직이는 공장', concept:'운동과 힘의 전달', intro:'컨베이어 벨트가 물건을 움직여! 압력판에 올리고 문을 열어 봐.', theme:'#e1e9fa'},
 ]);
 export const ITEMS = Object.freeze({
   tennis:{name:'테니스공', mass:0.65, radius:14, restitution:0.82, color:'#f6db4a', outline:'#8d762e'},
@@ -50,7 +52,33 @@ export const STAGES = Object.freeze(Array.from({length:24},(_,i)=>{
       ['범퍼는 물체의 방향을 바꾸어.','튕기는 방향을 예상해 보자.','범퍼 두 개를 연달아 이용할 수 있어.','장애물을 돌아가도록 해 보자.','다른 방향으로 먼저 던져 봐.','튕겨 나오는 각도를 살펴봐.'],
     ][zone][number]};
 }));
-export const getStage=id=>STAGES[clamp(Math.floor(Number(id)||1),1,STAGES.length)-1];
+// Original 24 missions remain in place: existing completion records stay valid.
+// The new machine missions use authored layouts instead of repeating generic targets.
+const machineMissions=Array.from({length:12},(_,i)=>{
+  const chain=i<6, k=i%6, id=i+25;
+  const lane=[280,320,245,360,285,325][k];
+  const dominoCount=[4,5,6,6,7,8][k];
+  const dominos=chain?Array.from({length:dominoCount},(_,n)=>({x:346+n*46,y:lane})):[];
+  const pad=chain?null:{x:k%3===2?335:410+(k%2)*45,y:lane,requiredMass:k>=3?2:1.4,r:25};
+  const belts=chain?[]:[{x:285,y:lane-49,w:520,h:98,vx:k%3===2?-95:125+(k%3)*35,vy:0}];
+  // The gate separates the launcher from the objective without cutting off the
+  // rest of the arena: learners may creatively go around it too.
+  const gates=[{x:665,y:155,w:28,h:302,key:chain?'chain':'pad',open:false}];
+  const goals=[{x:800,y:lane,threshold:chain?7:10}];
+  if(k>=4)goals.push({x:825,y:lane+(lane<300?115:-115),threshold:10});
+  const titles=chain?['첫 번째 도미노','톡톡 이어지는 길','길어진 도미노 줄','빈틈을 찾아서','두 곳을 밝혀라','연쇄 반응의 달인']:
+    ['움직이는 바닥','눌러서 문 열기','반대 방향 벨트','무거운 물건의 힘','두 목표를 지켜라','공장 완전 가동'];
+  return {id,zone:chain?4:5,number:k,chapter:`${chain?5:6}구역`,title:titles[k],concept:ZONES[chain?4:5].concept,
+    goals,surfaces:chain?[]:[{x:280,y:lane-49,w:530,h:98,type:k%2?'normal':'ice'}],
+    bumpers:chain&&k>=3?[{x:577,y:lane+(k%2?85:-85),r:20}]:[],barriers:[],
+    dominos,belts,pads:pad?[pad]:[],gates,
+    itemTypes:chain?['ball','wood','tennis']:['wood','ball','metal'],
+    tip:chain?'도미노 첫 조각을 건드리면 다음 조각으로 움직임이 이어져. 맨 끝까지 전달되면 문이 열려!':
+      (k%3===2?`벨트가 반대로 움직여. 질량 ${pad.requiredMass} 이상인 물건으로 압력판을 누른 다음, 바깥길로 돌아 목표를 노려 봐.`:
+      `압력판은 질량 ${pad.requiredMass} 이상인 물건으로 눌러야 해. 벨트의 방향도 살펴봐.`)};
+});
+export const ALL_STAGES=Object.freeze([...STAGES,...machineMissions]);
+export const getStage=id=>ALL_STAGES[clamp(Math.floor(Number(id)||1),1,ALL_STAGES.length)-1];
 const makeItem=(kind,id,x,y)=>({id,type:kind,x,y,vx:0,vy:0,r:ITEMS[kind].radius,m:ITEMS[kind].mass,bounce:ITEMS[kind].restitution,held:false,active:true,rest:0});
 const gameBounds={l:36,r:924,t:60,b:562};
 function resetObjects(world){
@@ -59,10 +87,15 @@ function resetObjects(world){
   world.goals=stage.goals.map((g,k)=>({...g,id:k,active:false,pulse:0}));
   world.bumpers=stage.bumpers.map(b=>({...b}));
   world.barriers=stage.barriers.map(b=>({...b}));
+  world.dominos=(stage.dominos||[]).map((d,k)=>({...d,id:k,r:13,fallen:false,timer:0}));
+  world.belts=(stage.belts||[]).map(b=>({...b}));
+  world.pads=(stage.pads||[]).map(p=>({...p,active:false}));
+  world.gates=(stage.gates||[]).map(g=>({...g,open:false}));
+  world.chainStarted=false;world.chainComplete=false;
 }
 export function createWorld(stageId=1,mode='campaign'){
   const stage=getStage(stageId);
-  const world={mode,stage,player:{x:137,y:300,r:20,speed:245,held:null,invulnerable:0},items:[],goals:[],bumpers:[],barriers:[],bots:[],
+  const world={mode,stage,player:{x:137,y:300,r:20,speed:245,held:null,invulnerable:0},items:[],goals:[],bumpers:[],barriers:[],dominos:[],belts:[],pads:[],gates:[],bots:[],
     time:0,score:0,shots:0,hits:0,experiments:[],combo:0,maxCombo:0,comboTimer:0,particles:[],messages:[],status:'playing',hearts:3,
     spawnTimer:4,spawnCount:0,nextId:1000,events:[],clock:0};
   resetObjects(world);
@@ -175,6 +208,42 @@ function botsStep(world,dt){
       world.items.push(makeItem(ty,world.nextId++,205,285));world.events.push({type:'restock'});}
   }else world.clock=0;
 }
+// A lightweight one-shot chain reaction. Each falling domino relays an impulse
+// to its nearest standing neighbor within a fixed radius; the chain completes
+// only if the last domino actually falls, not merely after a fixed timer.
+function toppleDomino(world, domino){
+  if(domino.fallen)return;
+  domino.fallen=true;domino.timer=0.12;
+  world.chainStarted=true;
+  world.events.push({type:'domino',id:domino.id});
+  hit(world,domino.x,domino.y,'#f8cf77',5);
+}
+function stepMachines(world,dt){
+  for(const pad of world.pads){
+    if(pad.active)continue;
+    const loaded=world.items.some(item=>!item.held&&item.active&&item.m>=pad.requiredMass && Math.hypot(item.x-pad.x,item.y-pad.y)<=item.r+pad.r-8);
+    if(loaded){pad.active=true;world.events.push({type:'pad',mass:pad.requiredMass});}
+  }
+  for(const domino of world.dominos){
+    if(!domino.fallen){for(const item of world.items){
+      if(item.held||!item.active)continue;
+      const dist=Math.hypot(item.x-domino.x,item.y-domino.y);
+      if(dist<=item.r+domino.r&&Math.hypot(item.vx,item.vy)*item.m>75){toppleDomino(world,domino);break;}
+    }}
+    if(domino.fallen&&domino.timer>0){domino.timer-=dt;if(domino.timer<=0){
+      const next=world.dominos.find(d=>!d.fallen&&Math.hypot(d.x-domino.x,d.y-domino.y)<53);
+      if(next)toppleDomino(world,next);
+    }}
+  }
+  if(world.dominos.length && world.dominos.every(d=>d.fallen))world.chainComplete=true;
+  for(const gate of world.gates){
+    if(gate.open)continue;
+    if((gate.key==='chain'&&world.chainComplete)||(gate.key==='pad'&&world.pads.length&&world.pads.every(p=>p.active))){
+      gate.open=true;hit(world,gate.x+gate.w/2,gate.y+gate.h/2,'#9edcbd',12);
+      world.events.push({type:'gate'});
+    }
+  }
+}
 export function stepWorld(world,input={},dt=FIXED_DT){
   if(world.status!=='playing')return world;
   dt=clamp(Number(dt)||FIXED_DT,0.001,1/30);world.time+=dt;
@@ -183,7 +252,7 @@ export function stepWorld(world,input={},dt=FIXED_DT){
   if(moving){player.x+=dir.x*player.speed*dt;player.y+=dir.y*player.speed*dt;}
   player.x=clamp(player.x,gameBounds.l+player.r,gameBounds.r-player.r);
   player.y=clamp(player.y,gameBounds.t+player.r,gameBounds.b-player.r);
-  for(const rect of world.barriers){
+  for(const rect of [...world.barriers,...world.gates.filter(g=>!g.open)]){
     const nx=clamp(player.x,rect.x,rect.x+rect.w),ny=clamp(player.y,rect.y,rect.y+rect.h);
     const dx=player.x-nx,dy=player.y-ny,d=Math.hypot(dx,dy);
     if(d<player.r){const n=norm(dx||0.001,dy);player.x+=n.x*(player.r-d);player.y+=n.y*(player.r-d);}
@@ -193,11 +262,14 @@ export function stepWorld(world,input={},dt=FIXED_DT){
     if(!item.active)continue;
     const surface=surfaceAt(world,item.x,item.y),drag=SURFACES[surface].drag;
     const damp=Math.exp(-drag*dt);item.vx*=damp;item.vy*=damp;
+    for(const belt of world.belts){if(item.x>=belt.x&&item.x<=belt.x+belt.w&&item.y>=belt.y&&item.y<=belt.y+belt.h){
+      const gain=1-Math.exp(-3*dt);item.vx+=(belt.vx-item.vx)*gain;item.vy+=(belt.vy-item.vy)*gain;
+    }}
     if(item.launch)item.launch.travel+=Math.hypot(item.vx,item.vy)*dt;
     if(Math.hypot(item.vx,item.vy)<1.2){item.vx=0;item.vy=0;if(item.launch){world.experiments.push({...item.launch,distance:Math.round(item.launch.travel)});world.experiments=world.experiments.slice(-5);item.launch=null;world.events.push({type:'experiment'});}}
     item.x+=item.vx*dt;item.y+=item.vy*dt;
     collideWalls(item);
-    for(const rect of world.barriers)bumpRect(item,rect);
+    for(const rect of [...world.barriers,...world.gates.filter(g=>!g.open)])bumpRect(item,rect);
     for(const b of world.bumpers){if(bumpStatic(item,b.x,b.y,b.r,1.06)&&Math.hypot(item.vx,item.vy)>45){world.events.push({type:'bounce'});}}
     if(world.mode!=='arcade')goalInteractions(world,item);
   }
@@ -206,12 +278,13 @@ export function stepWorld(world,input={},dt=FIXED_DT){
     for(let j=i+1;j<world.items.length;j++){const b=world.items[j];if(b.held||!b.active)continue;
       if(collidePair(a,b)){hit(world,(a.x+b.x)/2,(a.y+b.y)/2,'#ffffff',4);world.events.push({type:'clack'});}}
   }
+  stepMachines(world,dt);
   for(const p of world.particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;}
   world.particles=world.particles.filter(p=>p.life>0).slice(-250);
   for(const goal of world.goals)goal.pulse=Math.max(0,goal.pulse-dt);
   world.comboTimer-=dt;if(world.comboTimer<=0)world.combo=0;
   if(world.mode==='arcade')botsStep(world,dt);
-  else if(world.goals.length&&world.goals.every(g=>g.active)){world.status='won';world.events.push({type:'won',score:world.score});}
+  else if(world.goals.length&&world.goals.every(g=>g.active) && world.gates.every(g=>g.open)){world.status='won';world.events.push({type:'won',score:world.score});}
   return world;
 }
 export function simulate(world,steps,input={}){for(let i=0;i<steps;i++)stepWorld(world,input,FIXED_DT);return world;}
