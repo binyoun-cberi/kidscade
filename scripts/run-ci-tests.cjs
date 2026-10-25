@@ -8,6 +8,7 @@ const TEST_FILES = [
   "tests/rotary-club-interchanges.test.mjs",
   "tests/rotary-club-traffic-expansion.test.mjs",
   "tests/rotary-club-junction-safety.test.mjs",
+  "tests/rotary-club-qa-loops.test.mjs",
   "tests/rotary-club-ui.test.cjs",
   "tests/daily-english.test.cjs",
   "tests/yi-sun-sin-sim.test.cjs",
