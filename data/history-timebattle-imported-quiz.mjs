@@ -5,7 +5,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-001",
     "source": "역사 퀴즈 1회 1번",
     "era": "선사",
-    "type": "용어",
+    "type": "유물",
     "q": "청동기 시대에 커다란 돌을 쌓아 만든 족장의 무덤을 무엇이라고 하는가?",
     "answer": "고인돌",
     "aliases": []
@@ -23,7 +23,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-003",
     "source": "역사 퀴즈 1회 3번",
     "era": "고조선",
-    "type": "용어",
+    "type": "사상",
     "q": "‘널리 인간을 이롭게 한다.’는 고조선의 건국 이념은?",
     "answer": "홍익인간",
     "aliases": []
@@ -86,7 +86,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-011",
     "source": "역사 퀴즈 1회 11번",
     "era": "고려",
-    "type": "인물",
+    "type": "나라",
     "q": "고려를 세 차례 침략했으며, 요나라를 세운 민족은 누구일까요?",
     "answer": "거란족",
     "aliases": []
@@ -131,7 +131,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-017",
     "source": "역사 퀴즈 1회 17번",
     "era": "조선 후기",
-    "type": "인물",
+    "type": "사건",
     "q": "이순신 장군이 적선을 한산도 앞 넓은 바다로 유인하여 학익진 전법으로 크게 무찔러 승리한 싸움은?",
     "answer": "한산도대첩",
     "aliases": []
@@ -185,7 +185,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-023",
     "source": "역사 퀴즈 1회 23번",
     "era": "조선 후기",
-    "type": "나라",
+    "type": "학문",
     "q": "조선 후기 백성들이 잘 살고 나라가 튼튼해지는 방법을 연구한 학문을 무엇이라고 하는가?",
     "answer": "실학",
     "aliases": []
@@ -194,7 +194,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-024",
     "source": "역사 퀴즈 1회 24번",
     "era": "고려",
-    "type": "용어",
+    "type": "관청",
     "q": "고려 말기에 화약 및 화기의 제조를 맡아 본 임시 관청의 이름은?",
     "answer": "화통도감",
     "aliases": []
@@ -221,7 +221,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-027",
     "source": "역사 퀴즈 1회 27번",
     "era": "남북국",
-    "type": "나라",
+    "type": "제도",
     "q": "당나라에는 신라인들이 집단으로 거주하는 마을이 있었는데 이를 무엇이라고 하는가?",
     "answer": "신라방",
     "aliases": []
@@ -230,7 +230,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-028",
     "source": "역사 퀴즈 1회 28번",
     "era": "고려",
-    "type": "나라",
+    "type": "장소",
     "q": "고려는 송나라 뿐만 아니라 멀리 아라비아 상인들하고도 무역을 활발히 하였는데, 당시 국제 무역항의 역할을 하였던 곳은?",
     "answer": "벽란도",
     "aliases": []
@@ -239,7 +239,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-029",
     "source": "역사 퀴즈 1회 29번",
     "era": "조선 후기",
-    "type": "용어",
+    "type": "제도",
     "q": "조선 시대에 일본으로 보내던 사신으로 오늘날의 외교 사절에 해당하는 것은?",
     "answer": "통신사",
     "aliases": []
@@ -257,7 +257,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-032",
     "source": "역사 퀴즈 1회 32번",
     "era": "조선 후기",
-    "type": "용어",
+    "type": "기구",
     "q": "서양에서 전래된 물건 중에서 멀리 있는 것을 가깝게 볼 수 있게 해 주는 것은 무엇인가?",
     "answer": "천리경",
     "aliases": []
@@ -275,7 +275,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-034",
     "source": "역사 퀴즈 1회 34번",
     "era": "조선 후기",
-    "type": "나라",
+    "type": "제도",
     "q": "흥선 대원군은 우리나라 여러 곳에 서양과의 교섭을 금지하는 글을 적은 비석을 세웠는데 이를 무엇이라고 하는가?",
     "answer": "척화비",
     "aliases": []
@@ -293,7 +293,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-036",
     "source": "역사 퀴즈 1회 36번",
     "era": "개항기",
-    "type": "용어",
+    "type": "조약",
     "q": "1876년 강화도에서 일본의 강압에 의해 맺어진 조약은?",
     "answer": "강화도 조약",
     "aliases": []
@@ -302,7 +302,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-037",
     "source": "역사 퀴즈 1회 37번",
     "era": "개항기",
-    "type": "나라",
+    "type": "군사",
     "q": "외세의 침입으로부터 나라를 지키기 위해 근대적인 무기를 가지고 새로운 훈련을 받는 군대를 조직하였는데 이 군대의 이름은?",
     "answer": "별기군",
     "aliases": []
@@ -374,7 +374,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-045",
     "source": "역사 퀴즈 1회 45번",
     "era": "개항기",
-    "type": "나라",
+    "type": "학교",
     "q": "민족 의식을 교육할 새로운 학교를 세우자는 원산 주민들의 자발적인 성금으로 설립한 최초의 근대적 사립 학교는 무엇인가?",
     "answer": "원산 학사",
     "aliases": []
@@ -383,7 +383,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-047",
     "source": "역사 퀴즈 1회 47번",
     "era": "대한제국",
-    "type": "인물",
+    "type": "종교",
     "q": "‘사람이 곧 하늘이다.’라는 인간 중심 사상에 뿌리를 두고 국민들에게 애국심을 불어넣은 종교는 무엇인가?",
     "answer": "천도교",
     "aliases": []
@@ -392,7 +392,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-048",
     "source": "역사 퀴즈 1회 48번",
     "era": "대한제국",
-    "type": "나라",
+    "type": "종교",
     "q": "나철이 단군 신앙을 바탕으로 창시한 민족 종교는 무엇인가?",
     "answer": "대종교",
     "aliases": []
@@ -401,7 +401,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-049",
     "source": "역사 퀴즈 1회 49번",
     "era": "개항기",
-    "type": "문헌",
+    "type": "문학",
     "q": "개항기 이후 등장하여 새로운 사회 모습을 주제로 삼은 소설 양식은 무엇일까요?",
     "answer": "신소설",
     "aliases": []
@@ -421,7 +421,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-051",
     "source": "역사 퀴즈 1회 51번",
     "era": "개항기",
-    "type": "용어",
+    "type": "직업",
     "q": "집배원을 예전에는 무엇이라고 불렀는가?",
     "answer": "벙거지꾼",
     "aliases": []
@@ -430,7 +430,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-052",
     "source": "역사 퀴즈 1회 52번",
     "era": "개항기",
-    "type": "용어",
+    "type": "관청",
     "q": "1884년에 설치되어 근대적인 우편 사무를 담당한 곳은?",
     "answer": "우정국",
     "aliases": []
@@ -439,7 +439,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-053",
     "source": "역사 퀴즈 1회 53번",
     "era": "개항기",
-    "type": "용어",
+    "type": "의학",
     "q": "지석영이 널리 보급하려 했던 천연두 예방법은 무엇일까요?",
     "answer": "종두법",
     "aliases": []
@@ -448,7 +448,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-054",
     "source": "역사 퀴즈 1회 54번",
     "era": "개항기",
-    "type": "나라",
+    "type": "문헌",
     "q": "지석영이 우두법을 널리 알리기 위해 1885년에 펴낸 의학서는 무엇일까요?",
     "answer": "우두 신서",
     "aliases": []
@@ -457,7 +457,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-055",
     "source": "역사 퀴즈 1회 55번",
     "era": "개항기",
-    "type": "나라",
+    "type": "의학",
     "q": "우리나라 최초의 근대식 의료 기관은 무엇인가?",
     "answer": "광혜원",
     "aliases": []
@@ -466,7 +466,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-056",
     "source": "역사 퀴즈 1회 56번",
     "era": "개항기",
-    "type": "나라",
+    "type": "시설",
     "q": "우리나라에서 최초로 만들어진 철교는 무엇인가?",
     "answer": "한강 철교",
     "aliases": []
@@ -475,7 +475,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-057",
     "source": "역사 퀴즈 1회 57번",
     "era": "개항기",
-    "type": "나라",
+    "type": "군사",
     "q": "일본의 침략에 맞서 자발적으로 무기를 들고 싸운 민간인 무리를 무엇이라고 하나요?",
     "answer": "의병",
     "aliases": []
@@ -484,7 +484,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-058",
     "source": "역사 퀴즈 1회 58번",
     "era": "국권 피탈",
-    "type": "용어",
+    "type": "조약",
     "q": "1905년 일본이 대한제국의 외교권을 빼앗기 위해 강제로 체결한 조약은 무엇일까요?",
     "answer": "을사늑약",
     "aliases": [
@@ -551,7 +551,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-065",
     "source": "역사 퀴즈 1회 65번",
     "era": "일제강점기",
-    "type": "나라",
+    "type": "제도",
     "q": "3·1운동 이후 일제가 무단 통치를 완화하는 것처럼 선전하며 실시한 식민지 통치 방식을 무엇이라고 하나요?",
     "answer": "문화 정치",
     "aliases": []
@@ -569,7 +569,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-067",
     "source": "역사 퀴즈 1회 67번",
     "era": "일제강점기",
-    "type": "용어",
+    "type": "단체",
     "q": "1919년 일제의 주요 기관을 파괴하고 일본 관리를 암살할 목적으로 만주 길림성에서 조직된 단체는 무엇인가?",
     "answer": "의열단",
     "aliases": []
@@ -587,7 +587,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-070",
     "source": "역사 퀴즈 1회 70번",
     "era": "일제강점기",
-    "type": "용어",
+    "type": "군사",
     "q": "대한민국 임시 정부가 중국의 여러 지역에 흩어져 싸우고 있던 독립군을 하나로 모아 만든 군대는 무엇인가?",
     "answer": "광복군",
     "aliases": []
@@ -596,7 +596,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-071",
     "source": "역사 퀴즈 1회 71번",
     "era": "일제강점기",
-    "type": "나라",
+    "type": "학교",
     "q": "안창호 선생이 나라의 힘을 기르는 방법은 교육을 통해서 백성들을 깨우치는 것이라 생각하고 평양에 세운 학교는 무엇인가?",
     "answer": "대성 학교",
     "aliases": []
@@ -605,7 +605,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-072",
     "source": "역사 퀴즈 1회 72번",
     "era": "일제강점기",
-    "type": "나라",
+    "type": "단체",
     "q": "안창호 선생이 우리 민족이 단결하고 독립 정신을 잃지 않도록 하기 위해 조직한 단체는 무엇인가?",
     "answer": "흥사단",
     "aliases": []
@@ -661,7 +661,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-078",
     "source": "역사 퀴즈 1회 78번",
     "era": "일제강점기",
-    "type": "용어",
+    "type": "단체",
     "q": "일제 침략기 때 연극 활동을 전개한 단체의 이름은 무엇인가?",
     "answer": "토월회",
     "aliases": []
@@ -688,7 +688,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-081",
     "source": "역사 퀴즈 1회 81번",
     "era": "고조선",
-    "type": "나라",
+    "type": "법",
     "q": "고조선의 사회 질서를 짐작하게 하는 여덟 가지 법 조항을 무엇이라고 하나요?",
     "answer": "8조금법",
     "aliases": [
@@ -718,7 +718,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-085",
     "source": "역사 퀴즈 1회 85번",
     "era": "고려",
-    "type": "용어",
+    "type": "문헌",
     "q": "고려는 유교 정치 강화를 위해 최승로를 통해서 무엇을 만들었는가?",
     "answer": "시무 28조",
     "aliases": []
@@ -736,7 +736,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-087",
     "source": "역사 퀴즈 1회 87번",
     "era": "조선 전기",
-    "type": "용어",
+    "type": "관청",
     "q": "조선 시대 국왕의 명령을 전달하던 승정원과 함께 왕권을 뒷받침하며 중대한 죄를 조사하던 관청은 무엇일까요?",
     "answer": "의금부",
     "aliases": []
@@ -745,7 +745,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-088",
     "source": "역사 퀴즈 1회 88번",
     "era": "조선 전기",
-    "type": "용어",
+    "type": "관직",
     "q": "조선은 지방 8도에 어떤 관리를 파견하였는가?",
     "answer": "관찰사",
     "aliases": []
@@ -754,7 +754,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-089",
     "source": "역사 퀴즈 1회 89번",
     "era": "조선 전기",
-    "type": "용어",
+    "type": "인물",
     "q": "조선의 붕당정치는 어느 임금부터 시작되었는가?",
     "answer": "선조",
     "aliases": []
@@ -781,7 +781,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-092",
     "source": "역사 퀴즈 1회 92번",
     "era": "조선 전기",
-    "type": "용어",
+    "type": "신분",
     "q": "양반과 상민의 중간 신분 계층을 무엇이라 했는가?",
     "answer": "중인",
     "aliases": []
@@ -790,7 +790,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-093",
     "source": "역사 퀴즈 1회 93번",
     "era": "남북국",
-    "type": "나라",
+    "type": "인물",
     "q": "인도와 중앙아시아의 여러 나라의 풍물을 기록한 왕오천축국전은 누가 썼는가?",
     "answer": "혜초",
     "aliases": []
@@ -799,7 +799,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-094",
     "source": "역사 퀴즈 1회 94번",
     "era": "남북국",
-    "type": "용어",
+    "type": "유물",
     "q": "불국사 석가탑에서 발견된 통일 신라 시대의 목판 인쇄물은 무엇일까요?",
     "answer": "무구정광대다라니경",
     "aliases": [
@@ -811,7 +811,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-095",
     "source": "역사 퀴즈 1회 95번",
     "era": "삼국",
-    "type": "용어",
+    "type": "건축",
     "q": "백제의 미륵사지 석탑은 어떤 양식으로 만들어진 것인가?",
     "answer": "목탑양식",
     "aliases": []
@@ -841,7 +841,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-099",
     "source": "역사 퀴즈 1회 99번",
     "era": "광복 이후",
-    "type": "인물",
+    "type": "사건",
     "q": "1987년 대통령 직선제 개헌을 요구하며 전국적으로 벌어진 민주화 운동은 무엇일까요?",
     "answer": "6월 민주 항쟁",
     "aliases": [
@@ -879,7 +879,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-003",
     "source": "역사 퀴즈 2회 3번",
     "era": "삼국",
-    "type": "장소",
+    "type": "나라",
     "q": "668년 고구려가 멸망한 뒤 나당 전쟁을 거쳐 삼국 통일을 이룬 나라는 어디일까요?",
     "answer": "신라",
     "aliases": []
@@ -933,7 +933,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-009",
     "source": "역사 퀴즈 2회 9번",
     "era": "조선 전기",
-    "type": "나라",
+    "type": "시대",
     "q": "우리나라의 영토가 오늘날과 같이 압록강과 두만강 유역까지 정해진 시대는?",
     "answer": "조선시대",
     "aliases": []
@@ -942,7 +942,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-010",
     "source": "역사 퀴즈 2회 10번",
     "era": "조선 전기",
-    "type": "나라",
+    "type": "문헌",
     "q": "우리나라 최초의 성문 법전으로, 세조 때 엮어지기 시작하여 1485년 성종 때 완성된 것은?",
     "answer": "경국대전",
     "aliases": []
@@ -978,7 +978,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-015",
     "source": "역사 퀴즈 2회 15번",
     "era": "고려",
-    "type": "사건",
+    "type": "군사",
     "q": "몽골의 침략에 굴하지 않고 근거지를 강화도, 진도, 제주도로 옮겨 가며 끝까지 항쟁한 부대는?",
     "answer": "삼별초",
     "aliases": []
@@ -987,7 +987,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-016",
     "source": "역사 퀴즈 2회 16번",
     "era": "조선 후기",
-    "type": "용어",
+    "type": "문헌",
     "q": "허준이 한국과 중국의 의학 서적을 정리하여 25권으로 새롭게 정리한 의학 백과 사전은 무엇인가?",
     "answer": "동의보감",
     "aliases": []
@@ -1149,7 +1149,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-034",
     "source": "역사 퀴즈 2회 34번",
     "era": "조선 후기",
-    "type": "인물",
+    "type": "문헌",
     "q": "조선 중기의 학자 이수광이 편찬한 백과전서로 천주교와 서구문물을 소개한 책 이름은 무엇인가?",
     "answer": "지봉유설",
     "aliases": []
@@ -1194,7 +1194,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-039",
     "source": "역사 퀴즈 2회 39번",
     "era": "개항기",
-    "type": "나라",
+    "type": "유적",
     "q": "독립 협회에서 중국 사신을 맞아들였던 영은문을 헐고 우리나라의 자주 독립을 나타내기 위해 세운 것은 무엇인가?",
     "answer": "독립문",
     "aliases": []
@@ -1203,7 +1203,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-040",
     "source": "역사 퀴즈 2회 40번",
     "era": "개항기",
-    "type": "인물",
+    "type": "단체",
     "q": "종로 네거리에서 여러 일에 종사하는 사람들이 모여 자유롭게 발언하고 토론하던 모임의 이름은?",
     "answer": "만민 공동회",
     "aliases": []
@@ -1212,7 +1212,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-041",
     "source": "역사 퀴즈 2회 41번",
     "era": "개항기",
-    "type": "나라",
+    "type": "학교",
     "q": "최초의 근대 국립 학교로 나라에서 직접 학생들을 선발하여 기숙사를 마련하고 외국인 교사도 채용한 학교는?",
     "answer": "육영 공원",
     "aliases": []
@@ -1221,7 +1221,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-042",
     "source": "역사 퀴즈 2회 42번",
     "era": "개항기",
-    "type": "용어",
+    "type": "학교",
     "q": "1895년 이후 근대적 학교 제도로 설치되어 오늘날 초등학교에 해당하는 학교는 무엇일까요?",
     "answer": "소학교",
     "aliases": []
@@ -1230,7 +1230,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-043",
     "source": "역사 퀴즈 2회 43번",
     "era": "개항기",
-    "type": "용어",
+    "type": "학교",
     "q": "1885년 미국인 선교사 아펜젤러가 세운 학교는 무엇인가?",
     "answer": "배재 학당",
     "aliases": []
@@ -1239,7 +1239,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-044",
     "source": "역사 퀴즈 2회 44번",
     "era": "개항기",
-    "type": "용어",
+    "type": "학교",
     "q": "북감리교 선교사 스크랜튼 부인이 여성 교육을 위해 세운 학교는 무엇인가?",
     "answer": "이화 학당",
     "aliases": []
@@ -1248,7 +1248,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-045",
     "source": "역사 퀴즈 2회 45번",
     "era": "개항기",
-    "type": "용어",
+    "type": "학교",
     "q": "새로운 제도의 교육 방식에 따른 학교를 세우기 시작하였는데 교사를 양성하는 학교를 무엇이라고 불렀는가?",
     "answer": "사범 학교",
     "aliases": []
@@ -1284,7 +1284,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-049",
     "source": "역사 퀴즈 2회 49번",
     "era": "조선 후기",
-    "type": "용어",
+    "type": "통신",
     "q": "높은 산에 올라가 불을 피워 불빛이나 연기에 의해 신호를 전달한 방법을 무엇이라고 하는가?",
     "answer": "봉화",
     "aliases": []
@@ -1293,7 +1293,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-050",
     "source": "역사 퀴즈 2회 50번",
     "era": "조선 후기",
-    "type": "인물",
+    "type": "통신",
     "q": "사람이 말을 타거나 달려서 소식을 전달하는 방법을 무엇이라고 하는가?",
     "answer": "파발",
     "aliases": []
@@ -1311,7 +1311,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-054",
     "source": "역사 퀴즈 2회 54번",
     "era": "개항기",
-    "type": "나라",
+    "type": "시설",
     "q": "우리나라에서 최초로 건설된 철도 이름은 무엇인가?",
     "answer": "경인선",
     "aliases": []
@@ -1320,7 +1320,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-055",
     "source": "역사 퀴즈 2회 55번",
     "era": "개항기",
-    "type": "용어",
+    "type": "통신",
     "q": "‘덕률풍’, ‘다리풍’이라고 불린 것의 이름은 무엇인가?",
     "answer": "전화",
     "aliases": []
@@ -1374,7 +1374,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-062",
     "source": "역사 퀴즈 2회 62번",
     "era": "일제강점기",
-    "type": "인물",
+    "type": "사건",
     "q": "일제가 한 마을 사람들을 모두 교회에 모아 놓고 불을 질러 죽게 했던 사건은 무엇인가?",
     "answer": "제암리 사건",
     "aliases": []
@@ -1383,7 +1383,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-063",
     "source": "역사 퀴즈 2회 63번",
     "era": "일제강점기",
-    "type": "나라",
+    "type": "단체",
     "q": "1919년 중국 상하이에서 수립된 독립운동 정부의 이름은 무엇일까요?",
     "answer": "대한민국임시정부",
     "aliases": []
@@ -1392,7 +1392,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-065",
     "source": "역사 퀴즈 2회 65번",
     "era": "일제강점기",
-    "type": "사건",
+    "type": "문헌",
     "q": "1919년 상하이에서 대한민국 임시정부의 독립운동 소식을 전하기 위해 발행한 신문의 이름은 무엇일까요?",
     "answer": "독립 신문",
     "aliases": []
@@ -1428,7 +1428,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-070",
     "source": "역사 퀴즈 2회 70번",
     "era": "일제강점기",
-    "type": "인물",
+    "type": "사건",
     "q": "김좌진 장군이 크게 활약하여 독립군의 사기를 드높였던 전투의 이름은 무엇인가?",
     "answer": "청산리 대첩",
     "aliases": []
@@ -1437,7 +1437,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-071",
     "source": "역사 퀴즈 2회 71번",
     "era": "일제강점기",
-    "type": "용어",
+    "type": "단체",
     "q": "일제강점기 우리말의 연구와 보급에 힘쓴 단체는 무엇일까요?",
     "answer": "조선어 학회",
     "aliases": []
@@ -1446,7 +1446,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-072",
     "source": "역사 퀴즈 2회 72번",
     "era": "일제강점기",
-    "type": "용어",
+    "type": "제도",
     "q": "조선어 학회 회원들은 세종 대왕이 훈민정음을 반포한 날을 무엇이라 정하고 기념하였는가?",
     "answer": "가갸날",
     "aliases": []
@@ -1464,7 +1464,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-074",
     "source": "역사 퀴즈 2회 74번",
     "era": "일제강점기",
-    "type": "나라",
+    "type": "문헌",
     "q": "일본이 우리나라를 침략해 온 과정을 자세하게 밝힌 박은식이 쓴 역사책은 무엇인가?",
     "answer": "한국 통사",
     "aliases": []
@@ -1527,7 +1527,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-081",
     "source": "역사 퀴즈 2회 81번",
     "era": "선사",
-    "type": "용어",
+    "type": "시대",
     "q": "경기도 연천 전곡리에서 발견된 주먹도끼는 어느 시대의 유물일까요?",
     "answer": "구석기시대",
     "aliases": []
@@ -1536,7 +1536,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-082",
     "source": "역사 퀴즈 2회 82번",
     "era": "삼국",
-    "type": "용어",
+    "type": "인물",
     "q": "신라의 왕으로 우산국을 복속하고 국호를 신라로 바꾼 임금은?",
     "answer": "지증왕",
     "aliases": []
@@ -1554,7 +1554,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-084",
     "source": "역사 퀴즈 2회 84번",
     "era": "고려",
-    "type": "용어",
+    "type": "제도",
     "q": "1391년 고려 말 신진 사대부의 경제 기반이 되었으며 관리에게 토지의 수조권을 지급한 제도는 무엇일까요?",
     "answer": "과전법",
     "aliases": []
@@ -1572,7 +1572,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-086",
     "source": "역사 퀴즈 2회 86번",
     "era": "조선 전기",
-    "type": "문헌",
+    "type": "제도",
     "q": "조선은 여진과의 관계에서 강경책을 실시하였는데 이 때 국경 근방에 세워진 것은 무엇인가?",
     "answer": "4군 6진",
     "aliases": []
@@ -1581,7 +1581,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-087",
     "source": "역사 퀴즈 2회 87번",
     "era": "조선 후기",
-    "type": "문헌",
+    "type": "외교",
     "q": "조선의 광해군은 명과 후금 사이에서 어떤 외교 정책을 펼쳤는가?",
     "answer": "중립 외교",
     "aliases": []
@@ -1590,7 +1590,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-088",
     "source": "역사 퀴즈 2회 88번",
     "era": "조선 후기",
-    "type": "문헌",
+    "type": "제도",
     "q": "영조가 붕당 사이의 갈등을 줄이고 인재를 고루 등용하려고 추진한 정책은 무엇일까요?",
     "answer": "탕평책",
     "aliases": []
@@ -1599,7 +1599,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-089",
     "source": "역사 퀴즈 2회 89번",
     "era": "조선 후기",
-    "type": "용어",
+    "type": "제도",
     "q": "19세기 조선에서 왕실의 외척 가문들이 권력을 장악한 정치 형태를 무엇이라고 하나요?",
     "answer": "세도정치",
     "aliases": []
@@ -1608,7 +1608,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-090",
     "source": "역사 퀴즈 2회 90번",
     "era": "삼국",
-    "type": "용어",
+    "type": "제도",
     "q": "신라에서 귀족들이 국가의 중요한 일을 만장일치로 결정하던 회의는 무엇일까요?",
     "answer": "화백회의",
     "aliases": []
@@ -1617,7 +1617,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-091",
     "source": "역사 퀴즈 2회 91번",
     "era": "삼국",
-    "type": "나라",
+    "type": "인물",
     "q": "화랑도가 국가 차원에서 정비된 시기의 신라 왕은 누구일까요?",
     "answer": "진흥왕",
     "aliases": []
@@ -1635,7 +1635,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-093",
     "source": "역사 퀴즈 2회 93번",
     "era": "고려",
-    "type": "용어",
+    "type": "유물",
     "q": "몽골의 침입을 막기 위한 염원으로 만든 이것은 무엇인가?",
     "answer": "팔만대장경",
     "aliases": []
@@ -1689,7 +1689,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-100",
     "source": "역사 퀴즈 2회 100번",
     "era": "광복 이후",
-    "type": "용어",
+    "type": "정부",
     "q": "1998년 외환위기 극복 과정에서 노사정위원회를 출범시킨 대통령의 정부는 무엇일까요?",
     "answer": "김대중 정부",
     "aliases": []
