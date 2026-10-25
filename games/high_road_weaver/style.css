@@ -116,3 +116,11 @@ button:focus-visible{outline:3px solid #226756;outline-offset:2px}
 .undo{grid-column:2;min-width:48px;min-height:35px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* 작은 화면에서는 가로로 숨겨진 건설 도구가 있다는 사실을 명확히 알린다. */
+@media(max-width:600px){
+  .toolbar::before{content:'도구를 옆으로 밀어 더 보기';grid-column:1/-1;display:block;font-size:10px;font-weight:800;color:#4f7760;padding:0 4px 1px;letter-spacing:-.015em}
+  .mode-group{scroll-padding-inline:8px}
+  .guide{max-height:20dvh;overflow:hidden}
+  .guide p{line-height:1.45}
+}
