@@ -97,3 +97,12 @@ test('weekday tourist difference remains but weekend peak is less extreme',()=>{
   const saturday=getDemandRate('home','tourism',11,6);
   assert.ok(saturday>weekday*3&&saturday<weekday*4);
 });
+
+test('city hub supports sustained seven-town traffic without a universal junction lock',()=>{
+  const sim=new RoadWeaver();sim.budget=10000;sim.openTowns=7;
+  sim.day=1;sim.minutes=0;sim.growthClock=-1e8;
+  for(const town of TOWN_TYPES.slice(1))assert.ok(sim.addRoad([home,town],4).ok);
+  for(let i=0;i<1200;i++)sim.update(.1);
+  assert.ok(sim.delivered>=400,'city hub throttled by overlong reservations');
+  assert.ok(sim.waiting<50,'unnecessary queue accumulated at city hub');
+});
