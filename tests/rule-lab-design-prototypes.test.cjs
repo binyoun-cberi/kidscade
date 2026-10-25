@@ -68,3 +68,34 @@ test('시제품은 기존 60단계 게임 데이터와 진행 기록을 변경�
  const runtime=read('games/high_rule_lab/game.js');
  assert.match(runtime,/high_rule_lab:progress_v3/);
 });
+
+test('모든 60단계의 설계 목표가 현재 제목과 챕터에 대응하며 라이브 데이터는 그대로다',()=>{
+ const proposal=JSON.parse(read('games/high_rule_lab/design-prototypes/stage-blueprints-v5.json'));
+ assert.equal(proposal.version,'v5-planning-only');
+ assert.equal(proposal.chapters.length,7);
+ assert.equal(proposal.stages.length,60);
+ proposal.stages.forEach((entry,i)=>{
+  const source=ctx.RuleLabData.levels[i];
+  assert.equal(entry.stage,i+1);
+  assert.equal(entry.chapter,source.chapter);
+  assert.equal(entry.currentTitle,source.title);
+  assert.equal(entry.status,'proposed-not-implemented');
+  assert.ok(entry.levelIntent.length>=12);
+  assert.ok(Number.isInteger(entry.target.minimumMeaningfulRuleChanges));
+ });
+});
+test('시제품은 모든 세로 관문을 ICE 장벽으로 막되 바뀌는 관문 한 칸을 구별한다',()=>{
+ for(const [filename,barriers] of [
+  ['return-route.json',[{x:6,gateType:'wall'}]],
+  ['dual-gate.json',[{x:5,gateType:'wall'},{x:9,gateType:'door'}]]
+ ]){
+  const {level}=JSON.parse(read('games/high_rule_lab/design-prototypes/'+filename));
+  for(const {x,gateType} of barriers){
+   for(let y=0;y<level.h;y++){
+    const gate=level.objects.find(e=>e.x===x&&e.y===y);
+    assert.ok(gate,'continuous barrier '+filename+' '+x+','+y);
+    assert.equal(gate.type,y===2?gateType:'ice','only the intended tile changes');
+   }
+  }
+ }
+});
