@@ -59,6 +59,7 @@ function setMode(next){
     overpass:'고가도로는 다른 도로 위를 지나가요. 진출입로를 그려 연결해 주세요.',
     ramp:'먼저 지상 도로에서 출발해 고가도로까지 진출입로를 그리세요.',
     roundabout:'지상 도로가 만나는 교차로를 눌러 회전교차로를 설치하세요.',
+    island:'교차로의 우회전할 모퉁이를 누르면 우회전 전용 차로가 생겨요.',
     widen:'넓히고 싶은 도로를 눌러 주세요. 자재가 필요해요.',
     light:'교차로를 누르면 신호등을 설치하거나 철거할 수 있어요.',
     pan:'화면을 드래그해서 지도를 이동하세요. 손가락 두 개로 확대할 수 있어요.'
@@ -81,8 +82,9 @@ function applyEdit(p){
   if(mode==='widen')result=sim.widenRoad(p);
   if(mode==='light')result=sim.toggleLight(p);
   if(mode==='roundabout')result=sim.addRoundabout(p);
+  if(mode==='island')result=sim.addTrafficIsland(p);
   if(result){
-    notice(result.ok?(mode==='widen'?'차로를 넓혔어요.':mode==='light'?'신호등을 바꿨어요.':'회전교차로를 만들었어요. 차량이 원형 차로를 따라 이동해요.'):result.reason);
+    notice(result.ok?(mode==='widen'?'차로를 넓혔어요.':mode==='light'?'신호등을 바꿨어요.':mode==='island'?'교통섬과 우회전 전용 차로가 생겼어요.':'회전교차로를 만들었어요. 차량이 원형 차로를 따라 이동해요.'):result.reason);
     if(result.ok)save();
   }
 }
@@ -188,18 +190,19 @@ function drawPath(points){
 }
 function drawRoad(road,alpha=1){
   const pts=road.points,w=road.lanes*11+6;
-  const bridge=road.kind==='bridge',ramp=road.kind==='ramp',circle=road.kind==='roundabout';
+  const bridge=road.kind==='bridge',ramp=road.kind==='ramp',circle=road.kind==='roundabout',slip=road.kind==='slip';
   ctx.save();ctx.globalAlpha=alpha;ctx.lineJoin='round';ctx.lineCap='round';
   if(bridge){
     ctx.save();ctx.translate(5,9);drawPath(pts);ctx.strokeStyle='rgba(48,53,62,.37)';ctx.lineWidth=w+16;ctx.stroke();ctx.restore();
   }
-  drawPath(pts);ctx.strokeStyle=bridge?'#9ea9b1':circle?'#769a81':'#627469';ctx.lineWidth=w+6;ctx.stroke();
-  drawPath(pts);ctx.strokeStyle=bridge?'#637483':ramp?'#737f88':circle?'#5b6965':'#606b70';ctx.lineWidth=w;ctx.stroke();
+  drawPath(pts);ctx.strokeStyle=bridge?'#9ea9b1':circle?'#769a81':slip?'#d2ad6d':'#627469';ctx.lineWidth=w+6;ctx.stroke();
+  drawPath(pts);ctx.strokeStyle=bridge?'#637483':ramp?'#737f88':circle?'#5b6965':slip?'#75716b':'#606b70';ctx.lineWidth=w;ctx.stroke();
   if(circle){
     offsetLine(pts,-w/2+3,'#d0dbd1',1.8,[6,8]);
     ctx.restore();return;
   }
   drawPath(pts);ctx.strokeStyle=bridge?'#f9ecbb':'#f4e3a2';ctx.lineWidth=2.2;ctx.setLineDash(ramp?[5,9]:[12,10]);ctx.stroke();ctx.setLineDash([]);
+  if(slip){const pos=pointOnPath(pts,road.length/2);ctx.save();ctx.translate(pos.x,pos.y);ctx.rotate(pos.angle);ctx.fillStyle='#fff4d4';ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(-6,-5);ctx.lineTo(-6,5);ctx.closePath();ctx.fill();ctx.restore();}
   for(const side of [-1,1]){
     const outer=w/2-2;offsetLine(pts,side*outer,bridge?'#d8e4e9':'#b8c5c2',1.3,[]);
     for(let x=1;x<road.lanes/2;x++)offsetLine(pts,side*(x*11+4),'#d9dfdd',1.1,[7,9]);
