@@ -1,4 +1,4 @@
-import {W,H,FIXED_DT,ZONES,ITEMS,SURFACES,STAGES,createWorld,stepWorld,pickup,drop,throwItem,surfaceAt,medal,getStage} from './sim.mjs';
+import {W,H,FIXED_DT,ZONES,ITEMS,SURFACES,ALL_STAGES,createWorld,stepWorld,pickup,drop,throwItem,surfaceAt,medal,getStage} from './sim.mjs';
 const $=id=>document.getElementById(id);
 const canvas=$('arena'),ctx=canvas.getContext('2d');
 const ui={overlay:$('overlay'),title:$('overlay-title'),description:$('overlay-description'),content:$('overlay-content'),actions:$('overlay-actions'),
@@ -8,7 +8,7 @@ const ui={overlay:$('overlay'),title:$('overlay-title'),description:$('overlay-d
 const experimentLog=$('experiment-log');
 const ICONS={tennis:'●',ball:'●',wood:'▣',metal:'●',cube:'◆'};
 const savedKey='kidscade.physics_lab.progress.v1';
-function loadProgress(){try{const o=JSON.parse(localStorage.getItem(savedKey)||'null');return {unlocked:Math.max(1,Math.min(24,Number(o?.unlocked)||1)),medals:typeof o?.medals==='object'&&o.medals?o.medals:{}};}catch{return {unlocked:1,medals:{}};}}
+function loadProgress(){try{const o=JSON.parse(localStorage.getItem(savedKey)||'null');return {unlocked:Math.max(1,Math.min(ALL_STAGES.length,Number(o?.unlocked)||1)),medals:typeof o?.medals==='object'&&o.medals?o.medals:{}};}catch{return {unlocked:1,medals:{}};}}
 let progress=loadProgress();
 function saveProgress(){try{localStorage.setItem(savedKey,JSON.stringify(progress));}catch{}}
 let world=createWorld(1),scene='menu',last=0,acc=0,aim={x:800,y:300},power=.85,muted=false,toastUntil=0,zoneSelected=0,reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -27,7 +27,7 @@ function showMenu(initial=false){scene='menu';setOverlay(true);clearModal();ui.t
   ZONES.forEach((zone,i)=>{const card=document.createElement('button');card.className='zone-card'+(zoneSelected===i?' selected':'');card.innerHTML=`<b>${i+1}구역</b><strong>${zone.name}</strong><span>${zone.concept} · ${Math.max(0,Math.min(6,progress.unlocked-1-i*6))}/6 완료</span>`;
     card.addEventListener('click',()=>{zoneSelected=i;showMenu();});zones.append(card);});ui.content.append(zones);
   const grid=document.createElement('div');grid.className='stage-grid';
-  STAGES.slice(zoneSelected*6,zoneSelected*6+6).forEach(s=>{const b=document.createElement('button');b.disabled=s.id>progress.unlocked;b.className=s.id===world.stage.id?'selected':'';
+  ALL_STAGES.slice(zoneSelected*6,zoneSelected*6+6).forEach(s=>{const b=document.createElement('button');b.disabled=s.id>progress.unlocked;b.className=s.id===world.stage.id?'selected':'';
     b.innerHTML=`<b>${s.id}</b>${s.id>progress.unlocked?'잠김':('★'.repeat(progress.medals[s.id]||0)||'도전')}`;
     b.title=s.title;b.addEventListener('click',()=>beginStage(s.id));grid.append(b);});ui.content.append(grid);
   button('이어하기 · '+getStage(progress.unlocked).title,()=>beginStage(progress.unlocked));
@@ -43,7 +43,7 @@ function showResult(won){syncUi();scene='result';setOverlay(true);clearModal();u
   const p=document.createElement('p');p.textContent=world.mode==='arcade'?`로봇 ${world.hits}대 · 최고 콤보 ${world.maxCombo}회`:`물건 ${world.shots}번 던지기 · 스위치 ${world.hits}개 작동`;d.append(p);
   if(world.mode==='campaign'){const lesson=document.createElement('div');lesson.className='lesson-note';lesson.textContent=`오늘의 발견 · ${ZONES[world.stage.zone].concept} — ${world.stage.tip}`;d.append(lesson);}
   ui.content.append(d);button('다시 도전',()=>world.mode==='arcade'?beginArcade():beginStage(world.stage.id));
-  if(won&&world.mode==='campaign'&&world.stage.id<STAGES.length)button('다음 실험으로',()=>beginStage(world.stage.id+1));
+  if(won&&world.mode==='campaign'&&world.stage.id<ALL_STAGES.length)button('다음 실험으로',()=>beginStage(world.stage.id+1));
   button('단계 선택',()=>{zoneSelected=world.mode==='arcade'?0:world.stage.zone;showMenu();},true);
   sdkResult(won?'clear':'loss');
 }
@@ -54,6 +54,7 @@ function tryThrow(){if(scene!=='playing')return;if(throwItem(world,aim.x,aim.y,p
 function syncUi(){ui.mission.textContent=world.mode==='arcade'?'와르르 챌린지 · 로봇을 막아라':`${world.stage.id}단계 · ${world.stage.title}`;
   ui.chapter.textContent=world.mode==='arcade'?'무한 액션 도전':`${world.stage.zone+1}구역 · ${ZONES[world.stage.zone].concept}`;
   ui.goals.textContent=world.mode==='arcade'?`남은 생명 ${'♥'.repeat(Math.max(0,world.hearts))}`:`스위치 ${world.goals.filter(x=>x.active).length} / ${world.goals.length}`;
+  $('mechanism-status').textContent=world.mode==='arcade'?'':world.dominos.length?`도미노 ${world.dominos.filter(x=>x.fallen).length}/${world.dominos.length} · 문 ${world.gates.every(g=>g.open)?'열림':'닫힘'}`:world.pads.length?`압력판 ${world.pads.filter(p=>p.active).length}/${world.pads.length} · 문 ${world.gates.every(g=>g.open)?'열림':'닫힘'}`:'';
   ui.shots.textContent=`투척 ${world.shots}회`;ui.score.textContent=`${world.score.toLocaleString()}점`;
   ui.concept.textContent=world.mode==='arcade'?'연쇄 반응':ZONES[world.stage.zone].concept;
   ui.tip.textContent=world.stage.tip;
@@ -61,7 +62,7 @@ function syncUi(){ui.mission.textContent=world.mode==='arcade'?'와르르 챌린
   const item=world.items.find(it=>it.id===world.player.held);
   ui.heldName.textContent=item?ITEMS[item.type].name:'없음';ui.heldIcon.textContent=item?ICONS[item.type]:'◯';
   ui.heldDescription.textContent=item?`질량 ${ITEMS[item.type].mass} · 튕김 ${Math.round(ITEMS[item.type].restitution*100)}%`:'물건 가까이에서 집기를 눌러.';
-  ui.progress.textContent=`${Math.min(progress.unlocked,24)} / 24`;ui.progressFill.style.width=`${(progress.unlocked-1)/23*100}%`;
+  ui.progress.textContent=`${Math.min(progress.unlocked,ALL_STAGES.length)} / ${ALL_STAGES.length}`;ui.progressFill.style.width=`${(progress.unlocked-1)/(ALL_STAGES.length-1)*100}%`;
   experimentLog.textContent=world.experiments.length?world.experiments.slice(-2).map(e=>`${ITEMS[e.type].name} · ${SURFACES[e.surface].label} · 힘 ${Math.round(e.power*100)}% → ${e.distance} 걸음`).join(' / '):'실험한 물건의 이동 거리가 여기에 기록돼요.';
 }
 function processEvents(){for(const event of world.events){switch(event.type){case'goal':toast(`스위치 작동! +${event.score}점${event.combo>1?` · ${event.combo}콤보`:''}`);beep(770,.16,'triangle');break;
@@ -70,7 +71,10 @@ function processEvents(){for(const event of world.events){switch(event.type){cas
   case'restock':toast('새 물건이 도착했어!');break;
   case'experiment':syncUi();break;
   case'bounce':beep(360,.055);break;
-  case'won':if(world.stage.id>=progress.unlocked)progress.unlocked=Math.min(24,world.stage.id+1);progress.medals[world.stage.id]=Math.max(progress.medals[world.stage.id]||0,medal(world));saveProgress();showResult(true);break;
+  case'domino':if(event.id===0)toast('첫 도미노가 쓰러졌어! 이어지는 움직임을 봐.');beep(490,.06);break;
+  case'gate':toast('연쇄 장치 성공! 문이 열렸어!');beep(840,.17);break;
+  case'pad':toast('압력판 작동! 이제 문으로 갈 수 있어.');beep(710,.11);break;
+  case'won':if(world.stage.id>=progress.unlocked)progress.unlocked=Math.min(ALL_STAGES.length,world.stage.id+1);progress.medals[world.stage.id]=Math.max(progress.medals[world.stage.id]||0,medal(world));saveProgress();showResult(true);break;
   case'lost':showResult(false);break;
  }}world.events.length=0;}
 function roundrect(x,y,w,h,r,fill,stroke,line=2){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=line;ctx.stroke();}}
@@ -86,6 +90,33 @@ function drawFloor(time){const zone=world.mode==='arcade'?0:world.stage.zone,col
   for(let i=0;i<5;i++)circle(75+i*37,94,3,'#adc2af');
   text(world.mode==='arcade'?'로봇 진입 방향 →':'스위치 목표 →',750,80,16,'#618c82');
   if(world.mode==='arcade'){roundrect(150,95,10,410,4,'#d6a3a1');text('방어선',157,85,12,'#a95451');}
+}
+function drawMachines(t){
+  for(const belt of world.belts){
+    roundrect(belt.x,belt.y,belt.w,belt.h,13,'#7799ba','#365a83',4);
+    ctx.save();ctx.beginPath();ctx.rect(belt.x+7,belt.y+7,belt.w-14,belt.h-14);ctx.clip();
+    const offset=reduceMotion?0:((t* Math.abs(belt.vx)/3)%53);
+    for(let x=belt.x-52+offset;x<belt.x+belt.w;x+=53){
+      const dir=Math.sign(belt.vx);text(dir>0?'➜':'⬅',x,belt.y+belt.h/2,26,'#e2f4ff');
+    }ctx.restore();
+  }
+  for(const pad of world.pads){
+    circle(pad.x,pad.y,pad.r+6,pad.active?'#50b999':'#bd956a','#ffffff',3);
+    circle(pad.x,pad.y,pad.r-1,pad.active?'#b3f3d8':'#f8dcac','#816b50',3);
+    text(pad.active?'✓':'↓',pad.x,pad.y,23,pad.active?'#147857':'#9b6735');
+    text('무게 '+pad.requiredMass+'↑',pad.x,pad.y+42,12,'#38555d');
+  }
+  for(const gate of world.gates){
+    if(gate.open){ctx.strokeStyle='#58ac8b';ctx.lineWidth=3;ctx.setLineDash([9,8]);ctx.strokeRect(gate.x,gate.y,gate.w,gate.h);ctx.setLineDash([]);}
+    else{roundrect(gate.x,gate.y,gate.w,gate.h,5,'#be7868','#803f36',3);
+      for(let y=gate.y+14;y<gate.y+gate.h-5;y+=33)roundrect(gate.x+5,y,gate.w-10,13,3,'#f2c183');
+      text('닫힘',gate.x+14,gate.y-18,12,'#9a4d42');}
+  }
+  for(const d of world.dominos){
+    ctx.save();ctx.translate(d.x,d.y);if(d.fallen){ctx.rotate(-.98);roundrect(-13,-19,26,38,5,'#e5c78d','#9c7b40',3);}
+    else{roundrect(-11,-23,22,46,5,'#f5bc72','#925c3e',3);circle(0,-8,3,'#d7834d');}
+    ctx.restore();
+  }
 }
 function drawBarriers(){for(const b of world.barriers){roundrect(b.x+4,b.y+6,b.w,b.h,6,'#6576745d');roundrect(b.x,b.y,b.w,b.h,5,'#8c9995','#596d69',4);for(let y=b.y+10;y<b.y+b.h-8;y+=26){ctx.fillStyle='#ffdd81';ctx.fillRect(b.x+4,y,b.w-8,7);}}}
 function drawBumpers(t){for(const b of world.bumpers){circle(b.x+3,b.y+5,b.r+6,'#0000001f');circle(b.x,b.y,b.r+6,'#6b518a');circle(b.x,b.y,b.r+2,'#c0a1e8','#fff',3);circle(b.x,b.y,b.r*.6,`rgba(248,240,255,${.45+Math.sin(t*3+b.x)*.14})`);text('✦',b.x,b.y+1,24,'#8158b1');}}
@@ -104,7 +135,7 @@ function drawPlayer(t){const {x,y,r,held}=world.player;circle(x+4,y+7,25,'#183c3
 function drawAim(){if(scene!=='playing'||world.player.held===null)return;
   const {x,y}=world.player;const dx=aim.x-x,dy=aim.y-y,len=Math.hypot(dx,dy)||1;const nx=dx/len,ny=dy/len;
   ctx.save();ctx.strokeStyle='#075c609c';ctx.lineWidth=4;ctx.setLineDash([10,9]);ctx.beginPath();ctx.moveTo(x+nx*36,y+ny*36);ctx.lineTo(x+nx*Math.min(260,len),y+ny*Math.min(260,len));ctx.stroke();ctx.setLineDash([]);
-  const d=170;const px=x+nx*d,py=y+ny*d;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px-nx*13-ny*9,py-ny*13+nx*9);ctx.lineTo(px-nx*13+ny*9,py-ny*13-nx*9);ctx.closePath();ctx.fillStyle='#0f7073';ctx.fill();ctx.restore();}
+  const d=90+power*165;const px=x+nx*d,py=y+ny*d;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px-nx*13-ny*9,py-ny*13+nx*9);ctx.lineTo(px-nx*13+ny*9,py-ny*13-nx*9);ctx.closePath();ctx.fillStyle='#0f7073';ctx.fill();text('힘 '+Math.round(power*100)+'%',px,py-22,14,'#075c60');ctx.restore();}
 function drawBots(t){for(const b of world.bots){circle(b.x+3,b.y+5,b.r+3,'#0003');circle(b.x,b.y,b.r,'#e5a0b3','#b25271',4);roundrect(b.x-13,b.y-8,26,13,5,'#512f53');circle(b.x-7,b.y-2,3,'#8fecec');circle(b.x+7,b.y-2,3,'#8fecec');ctx.strokeStyle='#974e68';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(b.x-10,b.y-19);ctx.lineTo(b.x-14,b.y-27);ctx.moveTo(b.x+10,b.y-19);ctx.lineTo(b.x+14,b.y-27);ctx.stroke();}}
 function drawParticles(){for(const p of world.particles){ctx.globalAlpha=Math.max(0,p.life/p.max);circle(p.x,p.y,3.5,p.color);}ctx.globalAlpha=1;}
 function drawAnnotations(){if(world.mode==='campaign'){
@@ -112,7 +143,7 @@ function drawAnnotations(){if(world.mode==='campaign'){
   }
   if(world.player.held===null){const near=world.items.filter(i=>!i.held&&Math.hypot(i.x-world.player.x,i.y-world.player.y)<92).sort((a,b)=>Math.hypot(a.x-world.player.x,a.y-world.player.y)-Math.hypot(b.x-world.player.x,b.y-world.player.y))[0];if(near){text('집기!',near.x,near.y-34,13,'#216e72');}}
 }
-function render(t){ctx.clearRect(0,0,W,H);drawFloor(t);drawBarriers();drawBumpers(t);drawGoals(t);
+function render(t){ctx.clearRect(0,0,W,H);drawFloor(t);drawMachines(t);drawBarriers();drawBumpers(t);drawGoals(t);
   for(const item of world.items)if(!item.held)drawItem(item,t);
   drawBots(t);drawAim();drawPlayer(t);for(const item of world.items)if(item.held)drawItem(item,t);drawParticles();drawAnnotations();}
 function frame(timestamp){requestAnimationFrame(frame);const dt=Math.min((timestamp-last)/1000||0,0.06);last=timestamp;
@@ -124,13 +155,21 @@ function frame(timestamp){requestAnimationFrame(frame);const dt=Math.min((timest
   }else acc=0;
   render(timestamp/1000);if(ui.toast.classList.contains('visible')&&timestamp>toastUntil)ui.toast.classList.remove('visible');}
 function pointerWorld(e){const rect=canvas.getBoundingClientRect();return{x:(e.clientX-rect.left)/rect.width*W,y:(e.clientY-rect.top)/rect.height*H};}
-canvas.addEventListener('pointermove',e=>{if(scene==='playing'){aim=pointerWorld(e);}});
-canvas.addEventListener('pointerdown',e=>{if(scene!=='playing')return;const p=pointerWorld(e);aim=p;
-  // On touch, the on-screen stick is used for movement; touching the scene points and throws.
-  if(world.player.held!==null){tryThrow();return;}
+// Aim on pointer down, release to throw: prevents accidental firing on mobile
+// and lets learners adjust the arrow while keeping a finger on the arena.
+let aimingPointer=null;
+canvas.addEventListener('pointerdown',e=>{
+  if(scene!=='playing')return;
+  e.preventDefault();const p=pointerWorld(e);aim=p;
+  if(world.player.held!==null){aimingPointer=e.pointerId;canvas.setPointerCapture(e.pointerId);return;}
   const near=world.items.find(i=>!i.held&&Math.hypot(i.x-p.x,i.y-p.y)<i.r+12&&Math.hypot(i.x-world.player.x,i.y-world.player.y)<92);
-  if(near)tryPickup();else if(e.pointerType==='mouse')toast('먼저 물건을 집어 보자!');});
+  if(near)tryPickup();else if(e.pointerType==='mouse')toast('먼저 물건을 집어 보자!');
+});
+canvas.addEventListener('pointermove',e=>{if(scene==='playing'&&(e.pointerType==='mouse'||e.pointerId===aimingPointer))aim=pointerWorld(e);});
+canvas.addEventListener('pointerup',e=>{if(e.pointerId!==aimingPointer)return;aim=pointerWorld(e);aimingPointer=null;tryThrow();});
+canvas.addEventListener('pointercancel',e=>{if(e.pointerId===aimingPointer)aimingPointer=null;});
 $('pickup-btn').addEventListener('click',tryPickup);$('throw-btn').addEventListener('click',tryThrow);$('drop-btn').addEventListener('click',()=>{if(drop(world)){beep(350);syncUi();}});
+$('hint-btn').addEventListener('click',()=>{if(scene==='playing')toast(world.stage.tip);});
 $('restart-btn').addEventListener('click',()=>{world.mode==='arcade'?beginArcade():beginStage(world.stage.id);});
 $('home-btn').addEventListener('click',()=>showMenu());$('close-overlay').addEventListener('click',()=>{if(scene==='paused'||scene==='menu'&&world.status==='playing')resume();else if(scene==='result')showMenu();else showMenu();});
 $('sound-btn').addEventListener('click',()=>{muted=!muted;$('sound-btn').textContent=muted?'♪̸':'♫';$('sound-btn').setAttribute('aria-label',muted?'소리 켜기':'소리 끄기');});
