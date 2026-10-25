@@ -42,7 +42,7 @@ const cameraOffset = new THREE.Vector3(11,17,20);
 const scenery = new THREE.Group(), citizens = new THREE.Group(), movingCars = new THREE.Group(), marker = new THREE.Group();
 scene.add(scenery,citizens,movingCars,marker);
 let town = null, viewSize = 21, initialViewSize = 21, worldSerial = 0, currentTarget = 0, found = [], hintLevel = 0;
-let active = false, zoomTouchDist = 0, tapStart = null, lastFrame = performance.now(), lastToast = 0;
+let active = false, zoomTouchDist = 0, pinchCenter = null, tapStart = null, lastFrame = performance.now(), lastToast = 0;
 const pointerPositions = new Map();
 const citizenMeshes = new Map();
 const cars = [];
@@ -656,29 +656,37 @@ function resize(){
   updateCamera();
 }
 function resetView(){if(!town)return;cameraOffset.set(11,17,20);cameraLook.set(0,0,0);viewSize=initialViewSize;resize()}
-function zoom(factor){
-  if(!town)return;
-  viewSize=THREE.MathUtils.clamp(viewSize*factor,7,Math.max(initialViewSize*1.25,11));resize();
-}
-function pan(dx,dy){
-  if(!town)return;
-  // Drag the ground itself, rather than guessing screen-up vectors.
-  // This continues to work correctly after a 90-degree camera rotation.
+function groundAt(clientX,clientY){
   camera.updateMatrixWorld(true);
   const rect=canvas.getBoundingClientRect();
-  const cx=rect.width/2,cy=rect.height/2;
-  const ground=(x,y)=>{
-    const ray=new THREE.Raycaster();
-    ray.setFromCamera(new THREE.Vector2(x/Math.max(1,rect.width)*2-1,1-y/Math.max(1,rect.height)*2),camera);
-    return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),new THREE.Vector3());
-  };
-  const before=ground(cx,cy),after=ground(cx+dx,cy+dy);
-  if(!before||!after)return;
-  cameraLook.add(before.sub(after));cameraLook.y=0;
+  const ndc=new THREE.Vector2((clientX-rect.left)/Math.max(1,rect.width)*2-1,1-(clientY-rect.top)/Math.max(1,rect.height)*2);
+  const ray=new THREE.Raycaster();ray.setFromCamera(ndc,camera);
+  return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),new THREE.Vector3());
+}
+function keepInsideTown(){
+  if(!town)return;
+  cameraLook.y=0;
   const limitX=town.config.cols*BLOCK_PITCH/2,limitZ=town.config.rows*BLOCK_PITCH/2;
   cameraLook.x=THREE.MathUtils.clamp(cameraLook.x,-limitX,limitX);
   cameraLook.z=THREE.MathUtils.clamp(cameraLook.z,-limitZ,limitZ);
   updateCamera();
+}
+function zoom(factor,clientX=null,clientY=null){
+  if(!town)return;
+  const anchored=clientX!==null&&clientY!==null;
+  const before=anchored?groundAt(clientX,clientY):null;
+  viewSize=THREE.MathUtils.clamp(viewSize*factor,7,Math.max(initialViewSize*1.25,11));
+  resize();
+  const after=anchored?groundAt(clientX,clientY):null;
+  if(before&&after){cameraLook.add(before.sub(after));keepInsideTown();}
+}
+function pan(dx,dy){
+  if(!town)return;
+  const rect=canvas.getBoundingClientRect();
+  const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  const before=groundAt(cx,cy),after=groundAt(cx+dx,cy+dy);
+  if(!before||!after)return;
+  cameraLook.add(before.sub(after));keepInsideTown();
 }
 canvas.addEventListener('pointerdown',event=>{
   canvas.setPointerCapture(event.pointerId);
@@ -691,24 +699,27 @@ canvas.addEventListener('pointermove',event=>{
   pointerPositions.set(event.pointerId,{x:event.clientX,y:event.clientY});
   if(pointerPositions.size===2){
     const [a,b]=[...pointerPositions.values()];const distance=Math.hypot(a.x-b.x,a.y-b.y);
-    if(zoomTouchDist)zoom(zoomTouchDist/distance);
-    zoomTouchDist=distance;if(tapStart)tapStart.moved=true;return;
+    const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+    if(pinchCenter)pan(center.x-pinchCenter.x,center.y-pinchCenter.y);
+    if(zoomTouchDist&&distance>0)zoom(zoomTouchDist/distance,center.x,center.y);
+    zoomTouchDist=distance;pinchCenter=center;
+    if(tapStart)tapStart.moved=true;return;
   }
   if(tapStart?.id===event.pointerId){
-    if(Math.hypot(event.clientX-tapStart.x,event.clientY-tapStart.y)>8)tapStart.moved=true;
+    if(Math.hypot(event.clientX-tapStart.x,event.clientY-tapStart.y)>(event.pointerType==='touch'?13:8))tapStart.moved=true;
     if(tapStart.moved&&town)pan(event.clientX-tapStart.lastX,event.clientY-tapStart.lastY);
     tapStart.lastX=event.clientX;tapStart.lastY=event.clientY;
   }
 });
 function releasePointer(event,canceled=false){
   const tap=!canceled&&pointerPositions.size===1&&tapStart?.id===event.pointerId&&!tapStart.moved;
-  pointerPositions.delete(event.pointerId);zoomTouchDist=0;
+  pointerPositions.delete(event.pointerId);zoomTouchDist=0;pinchCenter=null;
   if(tap)pick(event.clientX,event.clientY);
   if(event.pointerId===tapStart?.id)tapStart=null;
 }
 canvas.addEventListener('pointerup',event=>releasePointer(event));
 canvas.addEventListener('pointercancel',event=>releasePointer(event,true));
-canvas.addEventListener('wheel',event=>{event.preventDefault();zoom(event.deltaY>0?1.11:.9)},{passive:false});
+canvas.addEventListener('wheel',event=>{event.preventDefault();zoom(event.deltaY>0?1.11:.9,event.clientX,event.clientY)},{passive:false});
 let previewDrag=null;
 previewCanvas.addEventListener('pointerdown',event=>{previewDrag=event.clientX;previewCanvas.setPointerCapture(event.pointerId);});
 previewCanvas.addEventListener('pointermove',event=>{if(previewDrag===null||!previewActor)return;previewActor.rotation.y+=(event.clientX-previewDrag)*.018;previewDrag=event.clientX;});
