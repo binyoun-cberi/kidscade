@@ -107,15 +107,16 @@ export function hostCommand(state, action, body, now) {
 }
 
 function normalizeShortAnswer(value){
-  return String(value??'').normalize('NFKC').toLowerCase().trim().replace(/[\\s\\-_.·ㆍ,!?'"“”‘’()[\\]{}:;]/g,'');
+  return String(value??'').normalize('NFKC').toLowerCase().trim().replace(/[\s\-_.·ㆍ,!?'"“”‘’()[\]{}:;]/g,'');
 }
 function shortAnswerVariants(answer){
-  const raw=normalizeShortAnswer(answer),values=new Set(raw?[raw]:[]);
-  if(/^\\d{3,4}년$/.test(raw))values.add(raw.slice(0,-1));
-  if(/^\\d{3,4}$/.test(raw))values.add(raw+'년');
-  if(raw.endsWith('대왕')&&raw.length>2)values.add(raw.slice(0,-2));
-  if(raw.endsWith('법사')&&raw.length>2)values.add(raw.slice(0,-2));
-  return values;
+  const raw=normalizeShortAnswer(answer),set=new Set(raw?[raw]:[]);
+  if(/^\d{3,4}년$/.test(raw))set.add(raw.slice(0,-1));
+  if(/^\d{3,4}$/.test(raw))set.add(raw+'년');
+  if(raw.endsWith('대왕')&&raw.length>2)set.add(raw.slice(0,-2));
+  if(raw.endsWith('법사')&&raw.length>2)set.add(raw.slice(0,-2));
+  if(raw.endsWith('세')&&/^\d+세$/.test(raw))set.add(raw.slice(0,-1));
+  return set;
 }
 export function gradeHistoryShortAnswer(input,answers=[]){
   if(typeof input!=='string'||!input.trim()||input.length>40)return false;
