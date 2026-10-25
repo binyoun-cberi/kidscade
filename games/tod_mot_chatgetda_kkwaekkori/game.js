@@ -695,6 +695,13 @@ $('zoomOut').addEventListener('click',()=>zoom(1.22));
 $('resetViewBtn').addEventListener('click',resetView);
 $('hintBtn').addEventListener('click',hint);
 $('speakBtn').addEventListener('click',announceClue);
+$('compactMission').addEventListener('click',()=>{
+  const compact=document.querySelector('.mission').classList.toggle('minimized');
+  $('compactMission').setAttribute('aria-pressed',String(compact));
+  $('compactMission').setAttribute('aria-label',compact?'찾기 카드 크게 보기':'찾기 카드 작게 보기');
+  $('compactMission').textContent=compact?'크게':'작게';
+  resize();
+});
 $('menuBtn').addEventListener('click',()=>{$('finish').classList.add('hidden');$('start').classList.remove('hidden')});
 document.querySelectorAll('[data-stage]').forEach(button=>button.addEventListener('click',()=>startTown(button.dataset.stage)));
 $('quickStart').addEventListener('click',()=>startTown('small',getSeed(),[],'easy'));
