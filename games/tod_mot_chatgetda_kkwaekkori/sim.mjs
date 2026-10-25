@@ -66,8 +66,9 @@ export function getRoutePosition(person,stage){
     return {x:c.x+x,z:c.z+z};
   }
   const anchor=person.slot===0?-1.48:person.slot===1?0:1.48;
-  const moving=person.activity==='deliver'||person.activity==='ball'||person.activity==='wave';
-  const drift=moving?Math.sin(t*.82*pace+phase)*.28:Math.sin(t*.29+phase)*.045;
+  // Residents in activity bays keep the same center while changing their pose.
+  // Animation is applied to the model, never to its walking-lane assignment.
+  const drift=Math.sin(t*.29+phase)*.045;
   return {x:c.x+anchor+drift,z:c.z+1.61};
 }
 export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=true,challenge=null){
@@ -116,15 +117,16 @@ export function movePeople(town,deltaSeconds){
   const dt=Math.min(.1,Math.max(0,Number(deltaSeconds)||0));town.time+=dt;
   for(const p of town.people){
     p.elapsed+=dt;if(p.reserved||p.found||p.elapsed<p.routineAt)continue;
-    // Crossing from a walking route to a static pose would move a character
-    // instantly across the sidewalk. Keep the walking role consistent.
-    if(p.slot===1){p.routineAt=p.elapsed+25;continue;}
-    // Activity changes stay within a physically compatible category:
-    // no bench teleporting across a pavement or walking in place.
-    const list=p.block.activities.filter(id=>!['deliver','ball','wave'].includes(id));
-    const next=list[(Math.max(0,list.indexOf(p.activity))+1)%list.length];
-    if(!town.people.some(q=>q.id!==p.id&&signature(q)===signature({...p,activity:next}))){p.activity=next;p.action=next;}
-    p.routineAt=p.elapsed+20+(p.slot%3)*4;
+    // A delivery worker never teleports from the walking lane to an activity bay.
+    // The other residents may change their activity without moving their feet.
+    if(p.slot===1&&p.activity==='deliver'){p.routineAt=p.elapsed+40;continue;}
+    const activities=p.block.activities.filter(id=>!(p.slot===1&&id==='deliver'));
+    const index=activities.indexOf(p.activity);
+    const candidates=[...activities.slice(index+1),...activities.slice(0,index+1)];
+    const next=candidates.find(id=>id!==p.activity&&!town.people.some(q=>q.id!==p.id&&signature(q)===signature({...p,activity:id})));
+    if(next){p.activity=next;p.action=next;}
+    // A longer varied routine means the last frame won't always look like frame one.
+    p.routineAt=p.elapsed+42+(p.slot%3)*6;
   }
 }
 export function getClue(person,difficulty='easy'){
