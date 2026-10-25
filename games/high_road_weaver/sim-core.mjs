@@ -574,13 +574,41 @@ export class RoadWeaver {
     this.advance(dt);
   }
   sampleCar(c){
-    const d=c.dir===1?c.s:c.edge.length-c.s;
-    const p=pointOnPath(c.edge.points,d);
-    const angle=p.angle+(c.dir===1?0:Math.PI);
-    const count=Math.max(1,Math.floor(c.edge.lanes/2));
-    const side=c.dir===1?1:-1;
-    const offset=side*(5+((c.laneVisual??c.lane)+.5)*10);
-    return {x:p.x-Math.sin(p.angle)*offset,y:p.y+Math.cos(p.angle)*offset,angle};
+    const item=c.path[c.step];
+    const travel=(step,s)=>{
+      const d=step.dir===1?s:step.edge.length-s;
+      const p=pointOnPath(step.edge.points,d);
+      return {...p,angle:wrapAngle(p.angle+(step.dir===1?0:Math.PI))};
+    };
+    let p=travel(item,c.s);
+    let angle=p.angle;
+    const previous=c.path[c.step-1],next=c.path[c.step+1];
+    // 교차로의 진입/진출에 같은 베지어 곡선을 사용해 차량이 교차점에서 갑자기 회전하지 않게 한다.
+    let from=null,to=null,t=0;
+    if(next&&c.edge.length>35&&next.edge.length>35&&c.s>c.edge.length-13
+      &&this.getTurn(c)!=='straight'&&this.getTurn(c)!=='uturn'
+      &&c.edge.kind!=='roundabout'&&next.edge.kind!=='roundabout'){
+      from=item;to=next;t=(c.s-(c.edge.length-13))/26;
+    }else if(previous&&c.s<13&&previous.edge.length>35&&c.edge.length>35
+      &&previous.edge.kind!=='roundabout'&&c.edge.kind!=='roundabout'){
+      const prevAngle=travelAngle(previous.edge,previous.dir,true);
+      if(['left','right'].includes(classifyTurn(prevAngle,travelAngle(c.edge,c.dir,false)))){
+        from=previous;to=item;t=.5+c.s/26;
+      }
+    }
+    if(from&&to){
+      const start=travel(from,from.edge.length-13),end=travel(to,13);
+      const node=this.nodes.get(from.dir===1?from.edge.b:from.edge.a);
+      const center=node||{x:(start.x+end.x)/2,y:(start.y+end.y)/2};
+      const inv=1-t;
+      p={x:inv*inv*start.x+2*inv*t*center.x+t*t*end.x,
+         y:inv*inv*start.y+2*inv*t*center.y+t*t*end.y};
+      angle=Math.atan2(inv*(center.y-start.y)+t*(end.y-center.y),
+                       inv*(center.x-start.x)+t*(end.x-center.x));
+    }
+    const laneOffset=(5+((c.laneVisual??c.lane)+.5)*10);
+    // 주행 방향을 기준으로 차선 오른쪽에 자동차를 배치한다.
+    return {x:p.x-Math.sin(angle)*laneOffset,y:p.y+Math.cos(angle)*laneOffset,angle};
   }
   snapshot(){
     return {version:2,roads:this.roads.map(r=>({id:r.id,lanes:r.lanes,points:r.points,kind:r.kind||'ground'})),
