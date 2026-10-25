@@ -519,7 +519,10 @@ export class RoadWeaver {
     for(const a of this.towns)for(const b of this.towns){
       if(a===b)continue;
       const pair=a.id+'>'+b.id;
-      let carry=(this.spawnFraction.get(pair)||0)+getDemandRate(a.id,b.id,this.hour,this.day)*dt*.85;
+      // 구역이 많아져도 통행량이 물리적인 도로 처리능력을 영구히 초과하지 않도록
+      // 추가 지역당 생성 비율을 낮춘다. 출퇴근/주말 상대적 차이는 유지한다.
+      const districtScale=this.openTowns<=4?1:this.openTowns===5?.85:this.openTowns===6?.55:.42;
+      let carry=(this.spawnFraction.get(pair)||0)+getDemandRate(a.id,b.id,this.hour,this.day)*dt*.85*districtScale;
       while(carry>=1){this.pending.set(pair,Math.min(75,(this.pending.get(pair)||0)+1));carry--;}
       this.spawnFraction.set(pair,carry);
       if(mayDispatch&&(this.pending.get(pair)||0)>0&&this.spawn(a.id,b.id)){
