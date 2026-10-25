@@ -17,11 +17,11 @@ test('takoyaki shop is available to preschool players',()=>{
 
 test('takoyaki shop unlocks exactly one hole from 1 through 12',()=>{
   const html = fs.readFileSync(gamePath,'utf8');
-  const matches = [...html.matchAll(/\{day:(\d+), duration:\d+, holes:(\d+), queueMax:1/g)]
-    .map(match=>({day:Number(match[1]),holes:Number(match[2])}));
+  const matches = [...html.matchAll(/\{day:(\d+), duration:\d+, holes:(\d+), queueMax:(\d+)/g)]
+    .map(match=>({day:Number(match[1]),holes:Number(match[2]),queueMax:Number(match[3])}));
   assert.equal(matches.length,12);
   for(let i=1;i<=12;i++){
-    assert.deepEqual(matches[i-1],{day:i,holes:i});
+    assert.deepEqual(matches[i-1],{day:i,holes:i,queueMax:i<=4?1:i<=6?2:i<=9?3:4});
   }
   assert.match(html,/kidscade_takoyaki_holes_v1/);
   assert.match(html,/game\.dayServed >= 1/);

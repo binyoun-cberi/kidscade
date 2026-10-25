@@ -327,6 +327,45 @@
 .app{min-width:0;height:100dvh;grid-template-rows:58px minmax(0,1fr);padding:10px}.top{grid-template-columns:minmax(180px,1fr) minmax(130px,1fr) auto}.titleCard h1{font-size:20px}.main{grid-template-columns:210px minmax(0,1fr)}.infoPanel,.bottom,.recipeMini,.dayRibbon,.queuePanel .panelTitle,.statsCard .pill:nth-child(n+3){display:none}.card{border-width:2px;box-shadow:none}.stageCard{min-height:340px}.holesBar{bottom:16px;gap:8px}.holeBtn{width:44px;min-width:44px;height:44px;padding:0;font-size:15px}.holeBtn.ready{background:#d5f7c3;border-color:#26854d;color:#164426}.queuePanel{padding:8px}.orderWait,.waitBar{display:none}.orderName{font-size:19px}.orderNeed{font-size:14px;line-height:1.5}.stageOverlay{right:14px}.notice{max-width:100%;font-size:14px}
 @media(max-width:700px){.app{padding:6px;gap:6px}.top{grid-template-columns:1fr auto}.dayCard{display:none}.main{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}.queuePanel{padding:0;background:none;border:0}.orders{display:block}.orderCard{padding:8px;margin:0}.orderTop{margin:0}.orderNeed{font-size:12px}.tags{display:none}.stageCard{min-height:300px}.holeBtn{width:40px;min-width:40px;height:40px;padding:0}.holesBar{left:6px;right:6px;bottom:8px;gap:4px}.titleCard{padding:6px 10px}.notice{font-size:12px}}
 
+/* Keep the pan central; reveal only the decisions needed for the current day. */
+.app.cookHandsOn{grid-template-rows:58px minmax(0,1fr) 72px}
+.app.cookHandsOn .bottom{display:block}
+.app.cookHandsOn .controls{padding:7px 9px;background:rgba(255,249,229,.96)}
+.app.cookHandsOn .dockGrid{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.app.cookHandsOn .dockGrid .actionBtn{display:none;min-width:67px;min-height:42px;height:42px;padding:0 8px;white-space:nowrap}
+.app.cookHandsOn .dockGrid #btnSauce,.app.cookHandsOn .dockGrid #btnMayo,.app.cookHandsOn .dockGrid #btnKatsu,.app.cookHandsOn .dockGrid #btnAonori,.app.cookHandsOn .dockGrid #btnPack,.app.cookHandsOn .dockGrid #btnClean{display:inline-flex}
+.app.cookHandsOn.fillingChoices .dockGrid #btnOcto,.app.cookHandsOn.fillingChoices .dockGrid #btnCheese,.app.cookHandsOn.fillingChoices .dockGrid #btnHot{display:inline-flex}
+.app.cookHandsOn .actionBtn.selected{outline:3px solid #147e55;outline-offset:1px;box-shadow:inset 0 0 0 2px #fff}
+.app.cookHandsOn .actionBtn#btnPack{background:linear-gradient(#d9ffe6,#35c071)}
+.app.cookHandsOn .orderCard{cursor:pointer}
+.orderCard.chosen{border-color:#17845d!important;background:#e7ffed!important;box-shadow:0 0 0 2px rgba(22,144,91,.17)!important;opacity:1!important}
+.app.cookHandsOn .orders{overflow-y:auto;min-height:0}
+.qualityResult{display:none;padding:7px 8px;border:2px solid #8e5a3b;border-radius:10px;background:#fff6da;font-weight:900;font-size:11px;line-height:1.4}
+.qualityResult.visible{display:block}
+.app.cookHandsOn .queuePanel{max-height:min(57vh,430px)}
+@media(max-width:980px){.app.cookHandsOn{grid-template-rows:44px minmax(0,1fr) 85px}.app.cookHandsOn .dockGrid .actionBtn{height:36px;min-height:36px;min-width:62px;font-size:12px}}
+@media(max-width:700px){.app.cookHandsOn{grid-template-rows:44px minmax(0,1fr) 116px}.app.cookHandsOn .controls{padding:4px}.app.cookHandsOn .dockGrid{gap:4px}.app.cookHandsOn .dockGrid .actionBtn{height:34px;min-height:34px;min-width:62px;padding:0 5px;font-size:11px}.app.cookHandsOn .queuePanel{max-height:32vh;width:min(220px,58vw)}.app.cookHandsOn .qualityResult{display:none}}
+/* Keep the pan, touch targets and the order HUD inside very narrow viewports. */
+.app.cookHandsOn .stageCard{min-height:0}
+.app.cookHandsOn .stageOverlay{left:auto;right:12px;transform:none;align-items:flex-end;top:12px}
+.app.cookHandsOn .holesBar{left:12px;right:12px;bottom:12px;transform:none;width:calc(100% - 24px);max-width:none;display:flex;flex-wrap:nowrap;justify-content:center;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;gap:5px}
+.app.cookHandsOn .holeBtn{flex:0 0 38px;min-width:38px;width:38px;height:38px;padding:0}
+@media(max-width:700px){
+ .app.cookHandsOn .holesBar{left:7px;right:7px;width:calc(100% - 14px);justify-content:flex-start;bottom:8px;gap:4px}
+ .app.cookHandsOn .holeBtn{width:34px;min-width:34px;flex-basis:34px;height:34px;font-size:12px}
+ .app.cookHandsOn .stageOverlay{right:6px;top:6px}
+ .app.cookHandsOn .notice{max-width:min(150px,41vw);font-size:11px;padding:5px 7px;line-height:1.3}
+}
+@media(max-height:480px) and (orientation:landscape){
+ .app.cookHandsOn{grid-template-rows:40px minmax(0,1fr) 72px;gap:5px;padding:5px}
+ .app.cookHandsOn .stageCard{min-height:0}
+ .app.cookHandsOn .holesBar{bottom:5px}
+ .app.cookHandsOn .holeBtn{width:29px;min-width:29px;flex-basis:29px;height:29px;font-size:11px}
+ .app.cookHandsOn .dockGrid .actionBtn{height:29px;min-height:29px}
+ .app.cookHandsOn .queuePanel{max-height:calc(100% - 24px);width:170px;padding:6px;left:8px;top:8px}
+ .app.cookHandsOn .qualityResult{display:none}
+ .app.cookHandsOn .notice{max-width:240px;font-size:11px}
+}
 </style>
 </head>
 <body>
@@ -359,6 +398,7 @@
         <div class="activeOrderMini" id="activeOrderMini">첫 주문을 확인하세요.</div>
       </div>
       <div class="orders" id="orders"></div>
+      <div class="qualityResult" id="qualityResult" role="status" aria-live="polite"></div>
     </aside>
 
     <section class="card stageCard">
@@ -431,7 +471,7 @@
     <div class="how">
       <div><b>1. 빈 구 누르기</b><br>반죽과 속재료가 한 번에 쏙 들어가요.</div>
       <div><b>2. 노릇하면 또 누르기</b><br>같은 구를 눌러 빙글빙글 뒤집어요.</div>
-      <div><b>3. 주문 1개 완성</b><br>성공하면 다음 구가 하나 열려요. 12구까지 모아봐요!</div>
+      <div><b>3. 노릇하게 완성하기</b><br>4구부터 토핑을 직접 골라 포장해요. 7구부터 속재료도 선택해요.</div>
     </div>
     <button class="bigBtn" id="startBtn">1구부터 시작</button>
   </div>
@@ -482,14 +522,14 @@ const daySettings = [
   {day:2, duration:65, holes:2, queueMax:1, orderGap:[5,7], menu:['basic'], pieces:[2], guide:'2구가 열렸어요. 두 구를 차례로 눌러 한 번에 2알을 만들어봐요.'},
   {day:3, duration:68, holes:3, queueMax:1, orderGap:[5,7], menu:['basic','mayo'], pieces:[3], guide:'3구가 열렸어요. 주문이 달라도 조작은 똑같아요. 구만 눌러주면 됩니다.'},
   {day:4, duration:70, holes:4, queueMax:1, orderGap:[5,7], menu:['basic','mayo','classic'], pieces:[4], guide:'4구 팬 완성! 노릇해지는 구부터 천천히 눌러주세요.'},
-  {day:5, duration:72, holes:5, queueMax:1, orderGap:[5,7], menu:['basic','mayo','classic','katsu'], pieces:[5], guide:'5구가 열렸어요. 초록색이 되면 뒤집을 차례예요.'},
-  {day:6, duration:74, holes:6, queueMax:1, orderGap:[5,7], menu:['basic','mayo','classic','katsu','aonori'], pieces:[6], guide:'절반인 6구까지 왔어요. 여러 구를 차례로 살펴보며 눌러봐요.'},
-  {day:7, duration:76, holes:7, queueMax:1, orderGap:[5,7], menu:['basic','classic','katsu','aonori','cheese'], pieces:[7], guide:'7구가 열렸어요. 치즈 주문도 구를 누르기만 하면 자동으로 들어가요.'},
-  {day:8, duration:78, holes:8, queueMax:1, orderGap:[5,7], menu:['basic','classic','aonori','cheese','hot'], pieces:[8], guide:'8구가 열렸어요. 이제 팬이 제법 북적북적해졌어요.'},
-  {day:9, duration:80, holes:9, queueMax:1, orderGap:[5,7], menu:['classic','katsu','aonori','cheese','octoPlus'], pieces:[9], guide:'9구가 열렸어요. 익은 구부터 하나씩 눌러도 충분해요.'},
-  {day:10, duration:82, holes:10, queueMax:1, orderGap:[5,7], menu:['classic','katsu','aonori','cheese','crispy'], pieces:[10], guide:'10구 도전! 서두르지 말고 초록색 구를 찾아 눌러봐요.'},
-  {day:11, duration:84, holes:11, queueMax:1, orderGap:[5,7], menu:['classic','katsu','aonori','cheese','hot','mix'], pieces:[11], guide:'11구가 열렸어요. 이제 마지막 한 구만 남았어요.'},
-  {day:12, duration:90, holes:12, queueMax:1, orderGap:[5,7], menu:['basic','mayo','classic','katsu','aonori','cheese','hot','octoPlus','crispy','mix'], pieces:[12], guide:'12구 팬 완성! 모든 구를 자유롭게 사용하며 계속 놀 수 있어요.'}
+  {day:5, duration:72, holes:5, queueMax:2, orderGap:[5,7], menu:['basic','mayo','classic','katsu'], pieces:[5], guide:'5구가 열렸어요. 초록색이 되면 뒤집을 차례예요.'},
+  {day:6, duration:74, holes:6, queueMax:2, orderGap:[5,7], menu:['basic','mayo','classic','katsu','aonori'], pieces:[6], guide:'절반인 6구까지 왔어요. 여러 구를 차례로 살펴보며 눌러봐요.'},
+  {day:7, duration:76, holes:7, queueMax:3, orderGap:[5,7], menu:['basic','classic','katsu','aonori','cheese'], pieces:[7], guide:'7구가 열렸어요. 치즈 주문도 구를 누르기만 하면 자동으로 들어가요.'},
+  {day:8, duration:78, holes:8, queueMax:3, orderGap:[5,7], menu:['basic','classic','aonori','cheese','hot'], pieces:[8], guide:'8구가 열렸어요. 이제 팬이 제법 북적북적해졌어요.'},
+  {day:9, duration:80, holes:9, queueMax:3, orderGap:[5,7], menu:['classic','katsu','aonori','cheese','octoPlus'], pieces:[9], guide:'9구가 열렸어요. 익은 구부터 하나씩 눌러도 충분해요.'},
+  {day:10, duration:82, holes:10, queueMax:4, orderGap:[5,7], menu:['classic','katsu','aonori','cheese','crispy'], pieces:[10], guide:'10구 도전! 서두르지 말고 초록색 구를 찾아 눌러봐요.'},
+  {day:11, duration:84, holes:11, queueMax:4, orderGap:[5,7], menu:['classic','katsu','aonori','cheese','hot','mix'], pieces:[11], guide:'11구가 열렸어요. 이제 마지막 한 구만 남았어요.'},
+  {day:12, duration:90, holes:12, queueMax:4, orderGap:[5,7], menu:['basic','mayo','classic','katsu','aonori','cheese','hot','octoPlus','crispy','mix'], pieces:[12], guide:'12구 팬 완성! 모든 구를 자유롭게 사용하며 계속 놀 수 있어요.'}
 ];
 
 const SAVE_KEY = 'kidscade_takoyaki_holes_v1';
@@ -522,6 +562,7 @@ const game = {
   selected:0,
   slots:[],
   orders:[],
+  activeOrderId:null,
   orderViewKey:'',
   nextOrderAt:0,
   messageTimer:0,
@@ -533,7 +574,7 @@ const game = {
 const elems = {
   timeFill:$('timeFill'), dayLabel:$('dayLabel'), dayRibbon:$('dayRibbon'), todaySummary:$('todaySummary'),
   scoreText:$('scoreText'), servedText:$('servedText'), comboText:$('comboText'), rankText:$('rankText'), queueCountText:$('queueCountText'), queueLimitText:$('queueLimitText'),
-  orders:$('orders'), notice:$('notice'), holesBar:$('holesBar'), popupLayer:$('popupLayer'),
+  orders:$('orders'), qualityResult:$('qualityResult'), notice:$('notice'), holesBar:$('holesBar'), popupLayer:$('popupLayer'),
   dayGuide:$('dayGuide'), slotName:$('slotName'), slotGuide:$('slotGuide'),
   mCook:$('mCook'), mInner:$('mInner'), mShape:$('mShape'), mBurn:$('mBurn'),
   mCookText:$('mCookText'), mInnerText:$('mInnerText'), mShapeText:$('mShapeText'), mBurnText:$('mBurnText'),
@@ -544,7 +585,7 @@ const elems = {
 
 function emptySlot(i){
   return {
-    i, unlocked:false,
+    i, unlocked:false, orderId:null,
     oil:0, batter:false, fill:0, filling:null, extraOcto:0,
     totalCook:0, innerCook:0, phaseCook:0, burn:0, shape:0, collapse:0, rollCount:0,
     sauce:0, mayo:0, katsu:0, aonori:0,
@@ -563,6 +604,8 @@ function resetSlots(){
 function getCfg(){ return daySettings[clamp(game.day,1,12)]; }
 function rand(a,b){ return a + Math.random()*(b-a); }
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function activeOrder(){ return game.orders.find(o=>o.id===game.activeOrderId) || game.orders[0] || null; }
+function chooseOrder(id){ if(!game.orders.some(o=>o.id===id)) return; game.activeOrderId=id; game.orderViewKey=''; updateUI(true); playSound('click'); }
 
 function makeOrder(){
   const cfg = getCfg();
@@ -603,6 +646,7 @@ function addOrder(force){
       Object.assign(order, {type:'basic', pieces:1, filling:'octopus', extraOcto:false, cheese:false, hot:false, crispy:false, sauce:1, mayo:0, katsu:0, aonori:0, maxWait:105});
     }
     game.orders.push(order);
+    if(!game.activeOrderId) game.activeOrderId=order.id;
     setNotice('새 주문이 들어왔습니다.', 'warn');
     playSound('order');
     updateOrdersUI();
@@ -623,7 +667,12 @@ function startDay(){
   game.combo = 0;
   game.fire = 1;
   game.orders = [];
+  game.activeOrderId = null;
   game.orderViewKey = '';
+  elems.qualityResult.className='qualityResult';
+  elems.qualityResult.textContent='';
+  const app=document.querySelector('.app');
+  if(app){ app.classList.toggle('cookHandsOn',game.day>=4); app.classList.toggle('fillingChoices',game.day>=7); }
   resetSlots();
   addOrder(true);
   scheduleNextOrder();
@@ -633,6 +682,7 @@ function startDay(){
   elems.todaySummary.textContent = `${cfg.holes}구 도전 · 12구까지 하나씩 열기`;
   elems.dayRibbon.textContent = `${cfg.holes}구 팬 도전`;
   elems.queueLimitText.textContent = `${cfg.queueMax}개까지`;
+  $('btnPack').textContent='포장·제공';
   setNotice('빈 구를 클릭해 시작! 노릇해지면 같은 구를 다시 눌러요.', 'good');
   buildHoleButtons();
   updateUI(true);
@@ -685,13 +735,13 @@ function getDayRank(){
 function setNotice(text, type){
   elems.notice.textContent = text;
   elems.notice.className = 'notice show' + (type ? ' '+type : '');
-  game.messageTimer = 2.2;
+  game.messageTimer = 2.8;
 }
 
 function getOrdersViewKey(){
   if(game.orders.length===0) return 'empty';
   return game.orders.map((o,idx)=>[
-    idx,o.id,o.type,o.pieces,simpleNeed(o)
+    idx,o.id,o.type,o.pieces,o.id===activeOrder()?.id,simpleNeed(o)
   ].join('|')).join('||');
 }
 
@@ -724,7 +774,11 @@ function updateOrdersUI(force){
   }
   game.orders.forEach((o,idx)=>{
     const card = document.createElement('div');
-    card.className = 'orderCard' + (idx===0?' first':'');
+    card.className = 'orderCard' + (idx===0?' first':'') + (o.id===activeOrder()?.id?' chosen':'');
+    card.tabIndex=0; card.setAttribute('role','button');
+    card.setAttribute('aria-label',ORDER_NAMES[o.type]+' 주문 선택');
+    card.addEventListener('click',()=>chooseOrder(o.id));
+    card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseOrder(o.id);}});
     card.dataset.orderId = o.id;
     const remain = clamp(1 - o.age/o.maxWait,0,1);
     const tags = orderTags(o).slice(1).map(t=>`<span class="tag ${t[1]||''}">${t[0]}</span>`).join('');
@@ -742,7 +796,7 @@ function updateOrdersUI(force){
 
 function updateRecipeMini(){
   if(!elems.activeOrderMini) return;
-  const o = game.orders[0];
+  const o = activeOrder();
   if(!o){
     elems.activeOrderMini.textContent = '대기 주문이 없습니다. 팬을 정리하며 기다리세요.';
     return;
@@ -753,7 +807,7 @@ function updateRecipeMini(){
   if(o.katsu) tops.push('가쓰오');
   if(o.aonori) tops.push('파래');
   const filling = o.cheese ? '치즈' : o.hot ? '매운속' : o.extraOcto ? '문어 2개' : '문어';
-  const cooked = game.slots.filter(s=>s.batter && s.rollCount>=2).length;
+  const cooked = game.slots.filter(s=>s.orderId===o.id && s.finished).length;
   elems.activeOrderMini.textContent = `현재 주문: ${o.pieces}알 · 속재료 ${filling} · 토핑 ${tops.length?tops.join('+'):'없음'} · 준비 ${Math.min(cooked,o.pieces)}/${o.pieces}알`;
 }
 
@@ -830,22 +884,37 @@ function selectSlot(i){
   game.selected = i;
   refreshHoleButtons();
   updateSlotInfo();
+  updateButtonLocks();
   playSound('click');
 }
 
 // A click acts on the food itself; no tool switching is needed.
 function tapSlot(i){
- if(!game.started||game.paused||!game.orders.length)return;
- const s=game.slots[i];if(!s||!s.unlocked||s.finished)return;
- selectSlot(i);const o=game.orders[0];
- if(!s.batter){actionOil();actionBatter();actionFilling(o.filling);if(o.extraOcto)actionFilling('octopus');}
- else if(s.burn>=82){cleanSlot();}
- else if(isReady(s)&&s.rollCount>=3){
-   ['sauce','mayo','katsu','aonori'].forEach(k=>s[k]=o[k]);s.finished=true;s.dirty=true;game.dirtyVisual=true;
-   playSound('pack');setNotice('접시에 담았어요. 나머지 알도 완성해 주세요.','good');actionPack();
- }else if(s.phaseCook>=7&&s.rollCount<3){actionRoll();}
- else setNotice(s.rollCount>=3?'속까지 익는 중이에요. 잠깐 기다려 주세요.':'조금 더 노릇해지면 뒤집어요.','warn');
- refreshHoleButtons();
+  if(!game.started||game.paused||!game.orders.length)return;
+  const s=game.slots[i];if(!s||!s.unlocked)return;
+  selectSlot(i);
+  if(s.finished){setNotice('다 구운 알이에요. 토핑을 고르거나 포장하세요.','good');return;}
+  if(!s.batter){
+    const o=activeOrder();if(!o)return;
+    s.orderId=o.id;
+    actionOil();actionBatter();
+    if(game.day<7){actionFilling(o.filling);if(o.extraOcto)actionFilling('octopus');}
+    else setNotice('속재료를 골라주세요. 문어 듬뿍은 문어를 두 번 눌러요.','good');
+  }else if(s.burn>=82){cleanSlot();}
+  else if(game.day>=7 && !s.filling){setNotice('먼저 속재료를 골라주세요.','warn');}
+  else if(isReady(s)&&s.rollCount>=3){
+    if(game.day<=3){
+      const o=game.orders.find(o=>o.id===s.orderId)||activeOrder();
+      ['sauce','mayo','katsu','aonori'].forEach(k=>s[k]=o[k]);
+    }
+    s.finished=true;s.dirty=true;game.dirtyVisual=true;
+    playSound('pack');
+    setNotice(game.day<=3?'완성했어요!':'잘 구웠어요. 토핑을 고르고 포장·제공을 눌러요.','good');
+    if(game.day<=3)actionPack();
+  }else if(s.phaseCook>=7&&s.rollCount<3){actionRoll();}
+  else setNotice(s.rollCount>=3?'속까지 익는 중이에요. 잠깐 기다려 주세요.':'조금 더 노릇해지면 뒤집어요.','warn');
+  refreshHoleButtons();
+  updateButtonLocks();
 }
 function selectedSlot(){ return game.slots[game.selected]; }
 
@@ -920,14 +989,14 @@ function actionRoll(){
 function actionTopping(type){
   const s = selectedSlot();
   if(!s.batter || s.rollCount<2){ setNotice('타코야키가 어느 정도 동그랗게 익은 뒤 토핑을 올려주세요.', 'warn'); return; }
-  if(type==='sauce') s.sauce = clamp(s.sauce+1,0,2);
-  if(type==='mayo') s.mayo = clamp(s.mayo+1,0,2);
-  if(type==='katsu') s.katsu = clamp(s.katsu+1,0,2);
-  if(type==='aonori') s.aonori = clamp(s.aonori+1,0,2);
+  // Apply once; tap again to remove a mistaken topping.
+  if(!['sauce','mayo','katsu','aonori'].includes(type))return;
+  s[type] = s[type] ? 0 : 1;
   s.dirty=true; game.dirtyVisual=true;
   spawnActionParticles(type);
   floatText({sauce:'소스',mayo:'마요',katsu:'가쓰오',aonori:'파래'}[type],50,46);
-  setNotice('토핑 완료. 주문서의 토핑을 다 맞췄으면 포장하세요.', 'good');
+  setNotice(s[type]?'토핑을 올렸어요. 주문서와 비교해보세요.':'토핑을 덜어냈어요. 다시 고를 수 있어요.', 'good');
+  updateButtonLocks();
   playSound(type);
 }
 
@@ -962,6 +1031,7 @@ function scoreBall(s,o){
   else if(o.hot) score += s.filling==='hot' ? 18 : -20;
   else score += s.filling==='octopus' ? 15 : -18;
   if(o.extraOcto) score += s.extraOcto>=1 ? 12 : -12;
+  else if(s.extraOcto>0) score -= 12;
   const topScore = toppingMatch(s.sauce,o.sauce) + toppingMatch(s.mayo,o.mayo) + toppingMatch(s.katsu,o.katsu) + toppingMatch(s.aonori,o.aonori);
   score += topScore;
   if(o.crispy && s.totalCook>=47 && s.burn<35) score += 12;
@@ -980,20 +1050,41 @@ function toppingMatch(actual, want){
   return actual===0 ? 4 : -5;
 }
 
+function hasRecipeMismatch(s,o){
+  const wanted=o.cheese?'cheese':o.hot?'hot':'octopus';
+  if(s.filling!==wanted||!!s.extraOcto!==!!o.extraOcto)return true;
+  return ['sauce','mayo','katsu','aonori'].some(k=>!!s[k]!==!!o[k]);
+}
+function qualityReasons(s,o){
+  const reasons=[];
+  const wanted=o.cheese?'cheese':o.hot?'hot':'octopus';
+  if(s.filling!==wanted)reasons.push('속재료가 달라요');
+  if(o.extraOcto&&s.extraOcto<1)reasons.push('문어가 부족해요');
+  if(!o.extraOcto&&s.extraOcto>0)reasons.push('문어가 더 들어갔어요');
+  for(const [key,label] of [['sauce','소스'],['mayo','마요'],['katsu','가쓰오'],['aonori','파래']]){
+    if(o[key]&&!s[key])reasons.push(label+'가 빠졌어요');
+    if(!o[key]&&s[key])reasons.push(label+'가 더 들어갔어요');
+  }
+  if(s.burn>=28||s.totalCook>(o.crispy?60:53))reasons.push('조금 오래 구웠어요');
+  if(s.innerCook<25)reasons.push('속을 조금 더 익혀요');
+  if(s.collapse)reasons.push('천천히 뒤집어봐요');
+  return reasons;
+}
 function actionPack(){
   if(game.orders.length===0){ setNotice('아직 포장할 주문이 없습니다.', 'warn'); return; }
-  const o = game.orders[0];
+  const o = activeOrder();
   const candidates = game.slots
     .map((s,i)=>({s,i,sc:scoreBall(s,o).score,ready:isReady(s)}))
-    .filter(x=>x.s.finished)
+    .filter(x=>x.s.finished && x.s.orderId===o.id)
     .sort((a,b)=>(b.ready-a.ready)||b.sc-a.sc);
   if(candidates.length===0){ setNotice('포장할 타코야키가 없습니다. 먼저 굴려서 익혀주세요.', 'warn'); return; }
-  if(candidates.length<o.pieces)return;
+  if(candidates.length<o.pieces){setNotice(`이 주문은 ${o.pieces}알이 필요해요. 지금은 ${candidates.length}알이에요.`,'warn');return;}
   const chosen = candidates.slice(0,o.pieces);
   let score = 0;
   chosen.forEach(x=>score += x.sc);
-  const countPenalty = chosen.length<o.pieces ? (o.pieces-chosen.length)*45 : 0;
-  const waitBonus = Math.round(clamp(1 - o.age/o.maxWait,0,1)*80);
+  const countPenalty = 0; // Incomplete orders cannot be served.
+  // Speed cannot cancel out a wrong recipe: reward accuracy first, pace second.
+  const waitBonus = chosen.every(x=>!hasRecipeMismatch(x.s,o)) ? Math.round(clamp(1 - o.age/o.maxWait,0,1)*80) : 0;
   const avg = chosen.length ? score/chosen.length : 0;
   let final = Math.round(score + waitBonus - countPenalty);
   if(avg>=122 && chosen.length>=o.pieces){ game.combo++; final += game.combo*25; floatText('PERFECT',50,38); }
@@ -1009,8 +1100,14 @@ function actionPack(){
     game.slots[idx] = emptySlot(idx);
     game.slots[idx].unlocked = unlocked;
   });
-  game.orders.shift();
-  setNotice(`${ORDER_NAMES[o.type]} 포장 완료! +${final}점`, avg>=90?'good':'warn');
+  game.orders=game.orders.filter(order=>order.id!==o.id);
+  game.activeOrderId=game.orders[0]?.id||null;
+  const problems=[...new Set(chosen.flatMap(x=>qualityReasons(x.s,o)))];
+  const quality=Math.round(avg);
+  const feedback=problems.length?problems.slice(0,3).join(' · '):'재료를 모두 맞췄어요!';
+  elems.qualityResult.className='qualityResult visible';
+  elems.qualityResult.textContent=`맛 평가 ${quality}점 · ${feedback}`;
+  setNotice(`제공 완료! 맛 ${quality}점`,avg>=90?'good':'warn');
   spawnSparkBurst();
   playSound(avg>=90?'success':'pack');
   if(game.orders.length===0 && now()<game.dayStart+getCfg().duration-4){
@@ -1095,7 +1192,7 @@ function updateSlotInfo(){
   if(s.batter && s.filling && s.rollCount===0) guide='가장자리가 노릇해질 때 굴리세요. 너무 빠르면 무너집니다.';
   if(s.rollCount===1) guide='반원이 됐습니다. 조금 더 익힌 뒤 한 번 더 굴리세요.';
   if(s.rollCount===2) guide='거의 동그랗습니다. 마지막으로 굴리면 모양이 좋아집니다.';
-  if(s.rollCount>=3) guide='완성에 가깝습니다. 주문에 맞춰 토핑을 올리고 포장하세요.';
+  if(s.rollCount>=3) guide='다 익으면 팬을 눌러 완성해요. 4구부터는 토핑을 골라 포장하세요.';
   if(s.burn>55) guide='탄맛이 강해지고 있습니다. 포장하거나 팬을 정리하세요.';
   elems.slotGuide.textContent = guide;
   elems.quickTip.textContent = `${game.selected+1}번 · ${guide}`;
@@ -1112,8 +1209,8 @@ function setMeter(bar,text,val){ bar.style.width = `${val}%`; text.textContent =
 
 function updateButtonLocks(){
   const s = selectedSlot();
-  $('btnCheese').style.display = game.day>=4 ? '' : 'none';
-  $('btnHot').style.display = game.day>=4 ? '' : 'none';
+  $('btnCheese').style.display = game.day>=7 ? '' : 'none';
+  $('btnHot').style.display = game.day>=7 ? '' : 'none';
   $('btnKatsu').style.display = '';
   $('btnAonori').style.display = '';
   $('btnKatsu').textContent = game.day>=3 ? '가쓰오' : '가쓰오 3일차';
@@ -1130,8 +1227,13 @@ function updateButtonLocks(){
   $('btnKatsu').disabled = game.day<3 || topDisabled;
   $('btnAonori').disabled = game.day<3 || topDisabled;
   $('btnClean').disabled = !s.unlocked || (!s.batter && !s.oil);
-  const packable = game.slots.some(x=>x.batter && x.rollCount>=2);
-  $('btnPack').disabled = game.orders.length===0 || !packable;
+  const o=activeOrder();
+  const packable=!!o&&game.slots.filter(x=>x.finished&&x.orderId===o.id).length>=o.pieces;
+  $('btnPack').disabled=!packable;
+  for(const [key,id] of [['sauce','btnSauce'],['mayo','btnMayo'],['katsu','btnKatsu'],['aonori','btnAonori']]){
+    $(id).classList.toggle('selected',!!s[key]);
+    $(id).disabled=!(game.day>=4&&s.unlocked&&s.finished);
+  }
 }
 
 function updateFireUI(){
@@ -1142,7 +1244,7 @@ function updateFireUI(){
 }
 function setFire(v){ game.fire=v; updateFireUI(); playSound('click'); }
 
-function showHelp(){ alert('빈 구를 누르면 재료가 자동으로 들어가요. 초록색 구는 다시 눌러 뒤집고, 다 익은 구를 누르면 접시에 담겨요. 주문 하나를 완성하면 다음 구가 하나씩 열립니다.'); }
+function showHelp(){ alert('빈 구를 누르고 노릇해지면 다시 눌러 세 번 뒤집어요. 다 익으면 한 번 더 눌러 완성해요. 4구부터는 완성된 알을 고른 뒤 아래 토핑 버튼으로 주문대로 올리고 포장·제공을 눌러요. 7구부터는 속재료도 직접 골라요. 주문이 여럿이면 주문 카드를 눌러 바꿀 수 있어요.'); }
 
 // ----- Three.js -----
 let scene, camera, renderer, raycaster, pointer, fallbackCtx;
@@ -1458,29 +1560,39 @@ function addFillingMarker(g,pos,s){
 }
 
 function addToppings(g,pos,s){
-  if(s.sauce>0){
-    for(let k=0;k<s.sauce;k++){
-      const line = new THREE.Mesh(new THREE.TorusGeometry(.38+.05*k,.028,8,58,Math.PI*1.55), material('sauce',0x5b2218,.42,.03));
-      line.position.set(pos.x,pos.y+.86+.025*k,pos.z); line.rotation.set(Math.PI/2,0,k*.8); g.add(line);
-    }
+  // Follow the dome surface. Flat torus outlines used to hover visibly over the balls.
+  const radius=.58;
+  function surfaceHeight(dx,dz){
+    return pos.y+.2+Math.sqrt(Math.max(.01,radius*radius-dx*dx-dz*dz))+.018;
   }
-  if(s.mayo>0){
-    for(let k=0;k<s.mayo;k++){
-      const line = new THREE.Mesh(new THREE.TorusGeometry(.32+.05*k,.024,8,58,Math.PI*1.55), material('mayo',0xfff5db,.32,.02));
-      line.position.set(pos.x,pos.y+.92+.025*k,pos.z); line.rotation.set(Math.PI/2,0,Math.PI/2+k*.7); g.add(line);
+  function sauceLine(color,key,alongX,offset){
+    const points=[];
+    for(let j=0;j<=16;j++){
+      const t=j/16;
+      const sweep=-.37+t*.74;
+      const wiggle=Math.sin(t*Math.PI*4)*.06+offset;
+      const x=alongX?sweep:wiggle,z=alongX?wiggle:sweep;
+      points.push(new THREE.Vector3(pos.x+x,surfaceHeight(x,z),pos.z+z));
     }
+    const path=new THREE.CatmullRomCurve3(points);
+    const mesh=new THREE.Mesh(new THREE.TubeGeometry(path,28,.025,6,false),material(key,color,.4,.02));
+    mesh.castShadow=true;g.add(mesh);
   }
+  if(s.sauce>0)for(let k=0;k<s.sauce;k++)sauceLine(0x5b2218,'sauce',true,(k-(s.sauce-1)/2)*.13);
+  if(s.mayo>0)for(let k=0;k<s.mayo;k++)sauceLine(0xfff5db,'mayo',false,(k-(s.mayo-1)/2)*.13);
   if(s.katsu>0){
     for(let k=0;k<Math.min(8,4+s.katsu*3);k++){
-      const chip = new THREE.Mesh(new THREE.BoxGeometry(.18,.018,.05), material('katsu',0xd8a159,.8,.01));
-      chip.position.set(pos.x+rand(-.28,.28),pos.y+.83+rand(0,.08),pos.z+rand(-.28,.28));
-      chip.rotation.set(rand(0,Math.PI),rand(0,Math.PI),rand(0,Math.PI)); g.add(chip);
+      const x=rand(-.27,.27),z=rand(-.27,.27);
+      const chip=new THREE.Mesh(new THREE.BoxGeometry(.15,.018,.048),material('katsu',0xd8a159,.8,.01));
+      chip.position.set(pos.x+x,surfaceHeight(x,z),pos.z+z);
+      chip.rotation.set(rand(-.3,.3),rand(0,Math.PI),rand(-.3,.3));g.add(chip);
     }
   }
   if(s.aonori>0){
     for(let k=0;k<Math.min(12,5+s.aonori*5);k++){
-      const dot = new THREE.Mesh(new THREE.SphereGeometry(.025,8,6), material('aonori',0x1f7b3a,.8,.01));
-      dot.position.set(pos.x+rand(-.32,.32),pos.y+.84+rand(0,.05),pos.z+rand(-.32,.32)); g.add(dot);
+      const x=rand(-.29,.29),z=rand(-.29,.29);
+      const dot=new THREE.Mesh(new THREE.SphereGeometry(.022,8,6),material('aonori',0x1f7b3a,.8,.01));
+      dot.position.set(pos.x+x,surfaceHeight(x,z),pos.z+z);g.add(dot);
     }
   }
 }
@@ -1502,7 +1614,12 @@ function resizeThree(){
   if(!renderer) return;
   const rect = canvas.getBoundingClientRect();
   renderer.setSize(rect.width, rect.height, false);
-  camera.aspect = rect.width/rect.height;
+  camera.aspect = Math.max(.3,rect.width/Math.max(1,rect.height));
+  // A fixed camera crops entire rows of the pan on narrow portrait devices.
+  // Move away while preserving the original diagonal kitchen viewpoint.
+  const portraitScale=Math.max(1,1.08/camera.aspect);
+  camera.position.set(0,8.4*portraitScale,10.7*portraitScale);
+  camera.lookAt(0,0,.12);
   camera.updateProjectionMatrix();
 }
 
