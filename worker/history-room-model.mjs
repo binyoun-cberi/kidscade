@@ -114,6 +114,7 @@ function shortAnswerVariants(answer){
   if(/^\\d{3,4}년$/.test(raw))values.add(raw.slice(0,-1));
   if(/^\\d{3,4}$/.test(raw))values.add(raw+'년');
   if(raw.endsWith('대왕')&&raw.length>2)values.add(raw.slice(0,-2));
+  if(raw.endsWith('법사')&&raw.length>2)values.add(raw.slice(0,-2));
   return values;
 }
 export function gradeHistoryShortAnswer(input,answers=[]){
