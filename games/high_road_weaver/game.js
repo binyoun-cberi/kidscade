@@ -56,6 +56,9 @@ function setMode(next){
   document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('selected',b.dataset.mode===next));
   const hints={
     road:'시작점부터 끝점까지 드래그하거나, 시작과 끝을 차례로 누르세요.',
+    overpass:'고가도로는 다른 도로 위를 지나가요. 진출입로를 그려 연결해 주세요.',
+    ramp:'먼저 지상 도로에서 출발해 고가도로까지 진출입로를 그리세요.',
+    roundabout:'지상 도로가 만나는 교차로를 눌러 회전교차로를 설치하세요.',
     widen:'넓히고 싶은 도로를 눌러 주세요. 자재가 필요해요.',
     light:'교차로를 누르면 신호등을 설치하거나 철거할 수 있어요.',
     pan:'화면을 드래그해서 지도를 이동하세요. 손가락 두 개로 확대할 수 있어요.'
@@ -66,16 +69,22 @@ function setLanes(n){
   lanes=n;document.querySelectorAll('[data-lanes]').forEach(b=>b.classList.toggle('selected',+b.dataset.lanes===n));
   setMode('road');
 }
+const drawingMode=()=>mode==='road'||mode==='overpass'||mode==='ramp';
 function finishBuild(points){
-  const result=sim.addRoad(points,lanes);
-  if(result.ok){notice('도로 완성! 자재 '+result.cost+'을 사용했어요.');save();}
+  const kind=mode==='overpass'?'bridge':mode==='ramp'?'ramp':'ground';
+  const result=sim.addRoad(points,kind==='ramp'?2:lanes,kind);
+  if(result.ok){notice((kind==='bridge'?'고가도로':kind==='ramp'?'진출입로':'도로')+' 완성! 자재 '+result.cost+'을 사용했어요.');save();}
   else notice(result.reason);
 }
 function applyEdit(p){
   let result;
   if(mode==='widen')result=sim.widenRoad(p);
   if(mode==='light')result=sim.toggleLight(p);
-  if(result){notice(result.ok?(mode==='widen'?'차로를 넓혔어요.':'신호등을 바꿨어요.'):result.reason);if(result.ok)save();}
+  if(mode==='roundabout')result=sim.addRoundabout(p);
+  if(result){
+    notice(result.ok?(mode==='widen'?'차로를 넓혔어요.':mode==='light'?'신호등을 바꿨어요.':'회전교차로를 만들었어요. 차량이 원형 차로를 따라 이동해요.'):result.reason);
+    if(result.ok)save();
+  }
 }
 function stopDraft(){draft=null;pending=null;gesture=null;}
 canvas.addEventListener('pointerdown',event=>{
@@ -87,8 +96,8 @@ canvas.addEventListener('pointerdown',event=>{
     suppressGesture=true;draft=null;pending=null;
     const a=[...active.values()],midX=(a[0].clientX+a[1].clientX)/2,midY=(a[0].clientY+a[1].clientY)/2;
     gesture={distance:Math.hypot(a[0].clientX-a[1].clientX,a[0].clientY-a[1].clientY),zoom,anchor:worldOf(midX,midY)};
-  }else if(active.size===1&&mode==='road'){
-    draft=[sim.snap(p)];
+  }else if(active.size===1&&drawingMode()){
+    draft=[sim.snap(p,mode==='overpass'?1:0)];
   }
 });
 canvas.addEventListener('pointermove',event=>{
@@ -104,7 +113,7 @@ canvas.addEventListener('pointermove',event=>{
     cam.x+=gesture.anchor.x-after.x;cam.y+=gesture.anchor.y-after.y;clampCamera();return;
   }
   if(mode==='pan'){moveCameraFromDrag(dx,dy);return;}
-  if(mode==='road'&&draft&&state.moved){
+  if(drawingMode()&&draft&&state.moved){
     const p=worldOf(event.clientX,event.clientY);
     if(distance(p,draft.at(-1))>8)draft.push(p);
   }
@@ -123,13 +132,13 @@ function pointerEnd(event,cancel=false){
   }
   if(cancel){draft=null;return;}
   const p=worldOf(event.clientX,event.clientY);
-  if(mode==='road'){
+  if(drawingMode()){
     if(state.moved&&draft&&draft.length>=1){
       const path=[...draft,p];draft=null;pending=null;finishBuild(path);
     }else if(pending){
       const from=pending;pending=null;draft=null;finishBuild([from,p]);
     }else{
-      pending=sim.snap(p);draft=null;notice('도로 시작점을 골랐어요. 이제 끝점을 눌러 주세요.');
+      pending=sim.snap(p,mode==='overpass'?1:0);draft=null;notice('시작점을 골랐어요. 이제 끝점을 눌러 주세요.');
     }
   }else if(mode!=='pan'&&!state.moved)applyEdit(p);
 }
@@ -179,13 +188,20 @@ function drawPath(points){
 }
 function drawRoad(road,alpha=1){
   const pts=road.points,w=road.lanes*11+6;
+  const bridge=road.kind==='bridge',ramp=road.kind==='ramp',circle=road.kind==='roundabout';
   ctx.save();ctx.globalAlpha=alpha;ctx.lineJoin='round';ctx.lineCap='round';
-  drawPath(pts);ctx.strokeStyle='#627469';ctx.lineWidth=w+6;ctx.stroke();
-  drawPath(pts);ctx.strokeStyle='#606b70';ctx.lineWidth=w;ctx.stroke();
-  drawPath(pts);ctx.strokeStyle='#f4e3a2';ctx.lineWidth=2.2;ctx.setLineDash([12,10]);ctx.stroke();ctx.setLineDash([]);
-  // 도로 양쪽 외곽선과 같은 방향 차선 사이의 흰 점선
+  if(bridge){
+    ctx.save();ctx.translate(5,9);drawPath(pts);ctx.strokeStyle='rgba(48,53,62,.37)';ctx.lineWidth=w+16;ctx.stroke();ctx.restore();
+  }
+  drawPath(pts);ctx.strokeStyle=bridge?'#9ea9b1':circle?'#769a81':'#627469';ctx.lineWidth=w+6;ctx.stroke();
+  drawPath(pts);ctx.strokeStyle=bridge?'#637483':ramp?'#737f88':circle?'#5b6965':'#606b70';ctx.lineWidth=w;ctx.stroke();
+  if(circle){
+    offsetLine(pts,-w/2+3,'#d0dbd1',1.8,[6,8]);
+    ctx.restore();return;
+  }
+  drawPath(pts);ctx.strokeStyle=bridge?'#f9ecbb':'#f4e3a2';ctx.lineWidth=2.2;ctx.setLineDash(ramp?[5,9]:[12,10]);ctx.stroke();ctx.setLineDash([]);
   for(const side of [-1,1]){
-    const outer=w/2-2;offsetLine(pts,side*outer,'#b8c5c2',1.3,[]);
+    const outer=w/2-2;offsetLine(pts,side*outer,bridge?'#d8e4e9':'#b8c5c2',1.3,[]);
     for(let x=1;x<road.lanes/2;x++)offsetLine(pts,side*(x*11+4),'#d9dfdd',1.1,[7,9]);
   }
   ctx.restore();
@@ -249,8 +265,25 @@ function drawCity(t,index){
   ctx.fillStyle='#254b3b';ctx.fillText(t.name,t.x,t.y+100);
   ctx.restore();
 }
+function drawRoundaboutCenters(){
+  for(const circle of sim.roundabouts){
+    ctx.save();
+    ctx.beginPath();ctx.arc(circle.x,circle.y,circle.radius-14,0,Math.PI*2);
+    ctx.fillStyle='#95c78b';ctx.fill();ctx.strokeStyle='#cfddd0';ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.arc(circle.x,circle.y,11,0,Math.PI*2);ctx.fillStyle='#70a875';ctx.fill();
+    ctx.strokeStyle='rgba(250,255,245,.9)';ctx.lineWidth=2;
+    for(let i=0;i<4;i++){
+      const a=i*Math.PI/2+.3,x=circle.x+Math.cos(a)*(circle.radius-1),y=circle.y+Math.sin(a)*(circle.radius-1);
+      ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);
+      ctx.beginPath();ctx.moveTo(-4,4);ctx.lineTo(0,-3);ctx.lineTo(4,4);ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+}
 function drawSignals(){
   for(const n of sim.nodes.values()){
+    if(n.level!==0||sim.roundabouts.some(c=>distance(n,c)<c.radius+8))continue;
     if((sim.adj.get(n.id)||[]).length<3)continue;
     const active=sim.lights.has(n.id);
     ctx.beginPath();ctx.arc(n.x,n.y,active?10:5,0,Math.PI*2);
@@ -280,8 +313,11 @@ function drawDraft(){
   if(!pts)return;
   ctx.save();
   if(pts.length>=2){
-    const cost=costOfRoad(pts,lanes),bad=cost>sim.budget;
-    drawPath(pts);ctx.strokeStyle=bad?'#bd605d':'#3eab8a';ctx.lineWidth=lanes*11+6;ctx.globalAlpha=.38;ctx.setLineDash([15,8]);ctx.stroke();ctx.setLineDash([]);
+    const selectedLanes=mode==='ramp'?2:lanes;
+    const cost=Math.ceil(costOfRoad(pts,selectedLanes)*(mode==='overpass'?1.75:mode==='ramp'?1.4:1)),bad=cost>sim.budget;
+    drawPath(pts);
+    ctx.strokeStyle=bad?'#bd605d':mode==='overpass'?'#4c78c5':mode==='ramp'?'#da9b52':'#3eab8a';
+    ctx.lineWidth=selectedLanes*11+6;ctx.globalAlpha=.38;ctx.setLineDash([15,8]);ctx.stroke();ctx.setLineDash([]);
     const last=pts.at(-1);rounded(last.x-36,last.y-54,72,27,7,bad?'#8d3f41':'#286850');
     ctx.fillStyle='#fff';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('자재 '+cost,last.x,last.y-37);
   }else{
@@ -297,8 +333,10 @@ function render(){
   scale=currentScale();
   ctx.save();ctx.translate(viewW/2,viewH/2);ctx.scale(scale,scale);ctx.translate(-cam.x,-cam.y);
   drawGrass();
-  for(const old of sim.oldRoads)for(const e of old.edges)drawRoad({points:e.points,lanes:e.lanes},.12);
-  for(const r of sim.roads)drawRoad(r);
+  for(const old of sim.oldRoads)for(const e of old.edges)drawRoad(e,.12);
+  for(const e of sim.edges.filter(e=>e.kind!=='bridge'))drawRoad(e);
+  for(const e of sim.edges.filter(e=>e.kind==='bridge'))drawRoad(e);
+  drawRoundaboutCenters();
   drawSignals();
   sim.towns.forEach(drawCity);
   for(const c of sim.cars)drawCar(c);
@@ -344,7 +382,7 @@ function loop(time){
   if(time-lastSave>6500&&!paused){save();lastSave=time;}
   render();requestAnimationFrame(loop);
 }
-const stored=safeRead();saveAvailable=Boolean(stored&&stored.version===1);
+const stored=safeRead();saveAvailable=Boolean(stored&&[1,2].includes(stored.version));
 $('continueBtn').classList.toggle('hidden',!saveAvailable);
 resize();window.addEventListener('resize',resize,{passive:true});
 refreshButtons();requestAnimationFrame(loop);
