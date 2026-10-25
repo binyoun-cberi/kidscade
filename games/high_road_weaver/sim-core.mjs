@@ -622,6 +622,21 @@ export class RoadWeaver {
     // 주행 방향을 기준으로 차선 오른쪽에 자동차를 배치한다.
     return {x:p.x-Math.sin(angle)*laneOffset,y:p.y+Math.cos(angle)*laneOffset,angle};
   }
+  trafficOverview(){
+    const first=this.towns[0],second=this.towns[1];
+    if(!this.route(first,second))return {flow:'연결 전',queue:'도로 연결 필요'};
+    const disconnected=this.towns.slice(2).some(t=>!this.route(first,t));
+    // 출발 대기 숫자에는 아직 길이 없는 지역의 사람도 포함된다.
+    // 실제 도로의 혼잡도는 *주행 중인 자동차*의 속도로만 판단한다.
+    const moving=this.cars.filter(c=>c.s>16);
+    const slow=moving.filter(c=>c.speed<c.maxSpeed*.42).length;
+    const ratio=moving.length?slow/moving.length:0;
+    const flow=slow>=8&&ratio>=.35?'심한 정체':
+      slow>=4&&ratio>=.23?'혼잡':slow>=2&&ratio>=.12?'서행':'원활';
+    const queue=disconnected?'새 지역 연결 필요':
+      this.waiting>20?'대기 길어짐':this.waiting>4?'대기 발생':'한산';
+    return {flow,queue};
+  }
   snapshot(){
     return {version:2,roads:this.roads.map(r=>({id:r.id,lanes:r.lanes,points:r.points,kind:r.kind||'ground'})),
       roundabouts:this.roundabouts.map(c=>({...c})),
