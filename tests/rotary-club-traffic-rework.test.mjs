@@ -106,3 +106,52 @@ test('city hub supports sustained seven-town traffic without a universal junctio
   assert.ok(sim.delivered>=400,'city hub throttled by overlong reservations');
   assert.ok(sim.waiting<50,'unnecessary queue accumulated at city hub');
 });
+
+
+test('roundabout with many connecting streets widens its circulation rather than choking the hub',()=>{
+  const sim=new RoadWeaver();sim.budget=10000;sim.openTowns=7;
+  const center={x:535,y:366};
+  assert.equal(sim.addRoad([TOWN_TYPES[0],center],4).ok,true);
+  for(const town of TOWN_TYPES.slice(1))assert.equal(sim.addRoad([center,town],4).ok,true);
+  const built=sim.addRoundabout(center);
+  assert.equal(built.ok,true);
+  assert.equal(built.lanes,4);
+  assert.equal(built.cost,95);
+  assert.ok(sim.edges.filter(e=>e.kind==='roundabout').every(e=>e.lanes===4));
+  const saved=sim.snapshot(),copy=new RoadWeaver();
+  assert.ok(copy.restore(saved));
+  assert.equal(copy.roundabouts[0].lanes,4);
+  assert.ok(copy.edges.filter(e=>e.kind==='roundabout').every(e=>e.lanes===4));
+});
+
+test('ordinary four-way junctions remain affordable two-lane roundabouts',()=>{
+  const sim=commute('cross');
+  const ring=sim.addRoundabout({x:530,y:366});
+  assert.equal(ring.ok,true);
+  assert.equal(ring.cost,75);
+  assert.equal(ring.lanes,2);
+  const legacy={...sim.snapshot(),version:2,
+    roundabouts:sim.roundabouts.map(({lanes,...old})=>old)};
+  const copy=new RoadWeaver();
+  assert.equal(copy.restore(legacy),true);
+  assert.equal(copy.roundabouts[0].lanes,undefined);
+  assert.ok(copy.edges.filter(e=>e.kind==='roundabout').every(e=>e.lanes===2));
+});
+
+test('crowded roundabout keeps a substantial fraction of the hub throughput on a weekend',()=>{
+  const make=roundabout=>{
+    const sim=new RoadWeaver();sim.budget=10000;sim.openTowns=7;
+    sim.day=6;sim.minutes=0;sim.growthClock=-1e9;
+    const center={x:535,y:366};
+    sim.addRoad([home,center],4);
+    for(const town of TOWN_TYPES.slice(1))sim.addRoad([center,town],4);
+    if(roundabout)assert.ok(sim.addRoundabout(center).ok);
+    for(let i=0;i<1000;i++)sim.update(.1);
+    return sim;
+  };
+  const baseline=make(false),rotary=make(true);
+  assert.ok(rotary.delivered>0);
+  assert.ok(rotary.delivered>=baseline.delivered*.68,
+    'a wide roundabout is throttling the whole city');
+  assert.ok(rotary.cars.length<=180);
+});
