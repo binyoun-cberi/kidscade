@@ -8,6 +8,18 @@ const stageDialog=$('stageDialog'),clearDialog=$('clearDialog'),settings=C.defau
 const SAVE='kidscade_game_v1:high_rule_lab:settings_mode_v1';
 const heroImage=new Image();
 heroImage.src='../../../assets/game/characters/people/kenney-platformer-characters/player/poses/player-stand.png';
+const scenery={};
+for(const [name,file] of Object.entries({
+ cloud1:'cloud1.png',cloud2:'cloud2.png',bush:'bush.png',rock:'rock.png',spike:'spikes.png',flag:'flag-blue.png'
+})){
+ const image=new Image();image.src='../../../assets/game/2d/platformer-art/base/items/'+file;scenery[name]=image;
+}
+const guardArt=new Image();guardArt.src='../../../assets/game/2d/platformer-art/base/enemies/poker-mad.png';
+function sprite(name,x,y,w,h){
+ const im=name==='guard'?guardArt:scenery[name];
+ if(!im||!im.complete||!im.naturalWidth)return false;
+ try{ctx.drawImage(im,x,y,w,h);return true}catch(_){return false}
+}
 const player={x:64,y:C.FLOOR-38,w:29,h:38,vx:0,vy:0,grounded:true,coyote:0,jumpBuffer:0};
 const keys={left:false,right:false,jump:false};
 const panel={x:180,y:260,w:155,h:64};
@@ -161,6 +173,8 @@ function drawBackground(t){
   ctx.fillStyle='#4a6475';for(let y=448-h+13;y<433;y+=22)for(let z=x+12;z<x+50;z+=17)if((Math.round(z+y)%3)!==0)ctx.fillRect(z,y,4,5);
  }
  ctx.fillStyle='#172e44';ctx.fillRect(0,C.FLOOR,C.W,C.H-C.FLOOR);
+ sprite('cloud1',110,76,118,54);
+ sprite('cloud2',612,112,142,54);
  ctx.strokeStyle='#203e57';ctx.lineWidth=1;for(let x=0;x<C.W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,C.H);ctx.stroke()}
  if(C.STAGES[stage].kind==='dark'||C.STAGES[stage].kind==='final'){
   const alpha=C.clamp((80-settings.brightness)/100,0,.68);
@@ -175,8 +189,13 @@ function drawFloor(){
   ctx.fillStyle=p.bridge?'#469e97':'#203f50';
   for(let x=p.x+8;x<p.x+p.w-4;x+=29)ctx.fillRect(x,p.y+20,13,3);
  }
+ // Existing Kidscade platformer artwork; visual scenery never changes the collision map.
+ sprite('bush',120,C.FLOOR-34,44,35);
+ sprite('rock',777,C.FLOOR-34,38,35);
  if(stage===3||stage===4||stage===6){
-  ctx.fillStyle='#ec7c70';for(let x=345;x<690;x+=24){ctx.beginPath();ctx.moveTo(x,526);ctx.lineTo(x+12,507);ctx.lineTo(x+24,526);ctx.fill()}
+  ctx.fillStyle='#ec7c70';for(let x=345;x<690;x+=24){
+   if(!sprite('spike',x,500,24,26)){ctx.beginPath();ctx.moveTo(x,526);ctx.lineTo(x+12,507);ctx.lineTo(x+24,526);ctx.fill()}
+  }
  }
  const gate=obstacle();
  if(gate){roundRect(gate.x,gate.y,gate.w,gate.h,4,'#a65e8d');ctx.fillStyle='#f0b8ce';ctx.fillRect(gate.x+6,gate.y+12,5,45)}
@@ -186,8 +205,10 @@ function drawGuard(){
  const x=stage===2?640:810,rad=C.guardRadius(settings.volume);
  ctx.fillStyle='rgba(248,121,107,.1)';ctx.beginPath();ctx.arc(x,420,rad,0,Math.PI*2);ctx.fill();
  ctx.lineWidth=2;ctx.strokeStyle='rgba(248,121,107,.65)';ctx.stroke();
- roundRect(x-18,398,36,48,10,'#ce6878');roundRect(x-11,410,22,13,5,'#311e43');
- roundRect(x-5,412,10,4,1,'#fcdbc7');
+ if(!sprite('guard',x-24,394,48,54)){
+  roundRect(x-18,398,36,48,10,'#ce6878');roundRect(x-11,410,22,13,5,'#311e43');
+  roundRect(x-5,412,10,4,1,'#fcdbc7');
+ }
 }
 function drawTurret(){
  if(C.STAGES[stage].kind!=='shield')return;
@@ -206,7 +227,7 @@ function drawExit(t){
  roundRect(894,385,30,55,2,open?'#1e584f':'#412a3e');
  ctx.fillStyle=open?'#f9e8ad':'#e3a3ab';ctx.fillRect(915,416,5,5);
  ctx.textAlign='center';ctx.font='bold 13px system-ui';ctx.fillStyle='#f6e1ae';ctx.fillText(open?'EXIT':'LOCK',909,357);
- ctx.textAlign='left';
+ ctx.textAlign='left';sprite('flag',883,335,31,34);
 }
 function drawPlayer(){
  if(heroImage.complete&&heroImage.naturalWidth>0){
