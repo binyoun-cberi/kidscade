@@ -871,7 +871,7 @@ function tapSlot(i){
   if(!game.started||game.paused||!game.orders.length)return;
   const s=game.slots[i];if(!s||!s.unlocked)return;
   selectSlot(i);
-  if(s.finished){setNotice('접시에 담긴 알이에요. 토핑을 고르거나 포장하세요.','good');return;}
+  if(s.finished){setNotice('다 구운 알이에요. 토핑을 고르거나 포장하세요.','good');return;}
   if(!s.batter){
     const o=activeOrder();if(!o)return;
     s.orderId=o.id;
@@ -1008,6 +1008,7 @@ function scoreBall(s,o){
   else if(o.hot) score += s.filling==='hot' ? 18 : -20;
   else score += s.filling==='octopus' ? 15 : -18;
   if(o.extraOcto) score += s.extraOcto>=1 ? 12 : -12;
+  else if(s.extraOcto>0) score -= 12;
   const topScore = toppingMatch(s.sauce,o.sauce) + toppingMatch(s.mayo,o.mayo) + toppingMatch(s.katsu,o.katsu) + toppingMatch(s.aonori,o.aonori);
   score += topScore;
   if(o.crispy && s.totalCook>=47 && s.burn<35) score += 12;
@@ -1162,7 +1163,7 @@ function updateSlotInfo(){
   if(s.batter && s.filling && s.rollCount===0) guide='가장자리가 노릇해질 때 굴리세요. 너무 빠르면 무너집니다.';
   if(s.rollCount===1) guide='반원이 됐습니다. 조금 더 익힌 뒤 한 번 더 굴리세요.';
   if(s.rollCount===2) guide='거의 동그랗습니다. 마지막으로 굴리면 모양이 좋아집니다.';
-  if(s.rollCount>=3) guide='완성에 가깝습니다. 주문에 맞춰 토핑을 올리고 포장하세요.';
+  if(s.rollCount>=3) guide='다 익으면 팬을 눌러 완성해요. 4구부터는 토핑을 골라 포장하세요.';
   if(s.burn>55) guide='탄맛이 강해지고 있습니다. 포장하거나 팬을 정리하세요.';
   elems.slotGuide.textContent = guide;
   elems.quickTip.textContent = `${game.selected+1}번 · ${guide}`;
@@ -1179,8 +1180,8 @@ function setMeter(bar,text,val){ bar.style.width = `${val}%`; text.textContent =
 
 function updateButtonLocks(){
   const s = selectedSlot();
-  $('btnCheese').style.display = game.day>=4 ? '' : 'none';
-  $('btnHot').style.display = game.day>=4 ? '' : 'none';
+  $('btnCheese').style.display = game.day>=7 ? '' : 'none';
+  $('btnHot').style.display = game.day>=7 ? '' : 'none';
   $('btnKatsu').style.display = '';
   $('btnAonori').style.display = '';
   $('btnKatsu').textContent = game.day>=3 ? '가쓰오' : '가쓰오 3일차';
@@ -1214,7 +1215,7 @@ function updateFireUI(){
 }
 function setFire(v){ game.fire=v; updateFireUI(); playSound('click'); }
 
-function showHelp(){ alert('빈 구를 누르고 노릇해지면 다시 눌러 세 번 뒤집어요. 다 익으면 한 번 더 눌러 접시에 담아요. 4구부터는 담긴 알을 고른 뒤 아래 토핑 버튼으로 주문대로 올리고 포장·제공을 눌러요. 7구부터는 속재료도 직접 골라요. 주문이 여럿이면 주문 카드를 눌러 바꿀 수 있어요.'); }
+function showHelp(){ alert('빈 구를 누르고 노릇해지면 다시 눌러 세 번 뒤집어요. 다 익으면 한 번 더 눌러 완성해요. 4구부터는 완성된 알을 고른 뒤 아래 토핑 버튼으로 주문대로 올리고 포장·제공을 눌러요. 7구부터는 속재료도 직접 골라요. 주문이 여럿이면 주문 카드를 눌러 바꿀 수 있어요.'); }
 
 // ----- Three.js -----
 let scene, camera, renderer, raycaster, pointer, fallbackCtx;
