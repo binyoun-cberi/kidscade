@@ -1363,7 +1363,7 @@ for(const heritage of HISTORY_HERITAGE_FACTS){
 
 // Append new worksheet facts without changing existing fact IDs or question indices.
 for(const row of IMPORTED_HISTORY_QUIZ) CORE_FACTS.push({
-  era:row.era,type:row.type,term:row.answer,clue:row.q,imported:true,
+  era:row.era,type:row.type,term:row.answer,clue:row.q,direct:true,imported:true,
   question:row.q,answer:row.answer,aliases:row.aliases||[],source:row.source,sourceId:row.id
 });
 
@@ -1461,46 +1461,47 @@ const TERM_PROMPTS = [
   clue => `설명을 읽고 알맞은 답을 고르세요.\n${clue}`,
   clue => `이 역사 단서가 가리키는 것은 무엇일까요?\n${clue}`,
   clue => `다음 내용과 가장 관련 깊은 것은 무엇일까요?\n${clue}`,
-  clue => `역사 탐정 문제입니다. 단서를 보고 정답을 찾으세요.\n${clue}`
+  clue => `다음 단서를 읽고 알맞은 역사 용어를 찾아보세요.\n${clue}`
 ];
 const CLUE_PROMPTS = [
   term => `‘${term}’에 대한 설명으로 알맞은 것은 무엇일까요?`,
   term => `‘${term}’와 가장 관련 있는 설명을 고르세요.`,
-  term => `‘${term}’에 알맞은 설명을 고르세요.`
+  term => `‘${term}’의 특징을 올바르게 설명한 것은 무엇일까요?`
 ];
 const ERA_PROMPTS = [
   term => `‘${term}’와 가장 관련 깊은 시대·시기는 언제일까요?`,
-  term => `‘${term}’를 공부할 때 함께 살펴볼 역사 시기로 알맞은 것은?`
+  term => `다음 역사 용어와 관련 깊은 시기는 언제일까요?\n${term}`
 ];
 
+function oxEraGroup(era){
+  if(['선사','고조선','삼국','남북국'].includes(era))return '고대';
+  if(era==='고려')return '고려';
+  if(['조선 전기','조선 후기'].includes(era))return '조선';
+  return '근현대';
+}
 function wrongFactForOx(fact,index){
-  const all=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>!x.f.direct&&x.i!==index&&x.f.term!==fact.term&&(index>=BASE_FACT_COUNT||x.i<BASE_FACT_COUNT)&&(index>=PREVIOUS_FACT_COUNT||x.i<PREVIOUS_FACT_COUNT));
-  const groups=[
-    all.filter(x=>x.f.era===fact.era&&x.f.type===fact.type),
-    all.filter(x=>x.f.era===fact.era),
-    all.filter(x=>x.f.type===fact.type),
-    all
-  ];
-  for(let g=0;g<groups.length;g++){
-    const group=groups[g];if(!group.length)continue;
-    const pick=hashText(fact.term+':ox:'+g)%group.length;
-    return group[pick].f;
-  }
-  return null;
+  // Mismatching a different person's generic achievement can be accidentally true.
+  // Select a clearly different broad period instead; avoid misleading false statements.
+  const group=oxEraGroup(fact.era);
+  const candidates=CORE_FACTS.map((f,i)=>({f,i})).filter(({f,i})=>
+    !f.direct&&i!==index&&f.term!==fact.term&&oxEraGroup(f.era)!==group
+    &&(index>=BASE_FACT_COUNT||i<BASE_FACT_COUNT)
+    &&(index>=PREVIOUS_FACT_COUNT||i<PREVIOUS_FACT_COUNT));
+  return candidates.length?candidates[hashText(fact.term+':era-ox')%candidates.length].f:null;
 }
 function regularOxQuestions(fact,index){
   const out=[{
     id:`ox-${index}-true`,era:fact.era,difficulty:2,
-    q:`OX 문제\n다음 설명은 ‘${fact.term}’에 대한 설명이다.\n${fact.clue}`,
+    q:`OX 문제\n다음 설명은 ‘${fact.term}’에 관한 내용이다.\n${fact.clue}`,
     o:['O','X'],a:0,e:`O가 정답입니다. ${fact.term}: ${fact.clue}`,
     sourceFact:index,family:'ox'
   }];
   const wrong=wrongFactForOx(fact,index);
   if(wrong)out.push({
     id:`ox-${index}-false`,era:fact.era,difficulty:2,
-    q:`OX 문제\n다음 설명은 ‘${fact.term}’에 대한 설명이다.\n${wrong.clue}`,
+    q:`OX 문제\n‘${fact.term}’은(는) ${wrong.era}와 가장 관련 깊다.`,
     o:['O','X'],a:1,
-    e:`X가 정답입니다. 제시된 설명은 ‘${wrong.term}’에 더 알맞습니다. ${fact.term}: ${fact.clue}`,
+    e:`X가 정답입니다. ‘${fact.term}’은(는) ${fact.era}와 가장 관련 깊습니다.`,
     sourceFact:index,family:'ox'
   });
   return out;
