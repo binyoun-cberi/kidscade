@@ -360,6 +360,7 @@
 
   </style>
   <link rel="stylesheet" href="math-rain.css?v=1">
+  <link rel="stylesheet" href="shrine-night.css?v=1">
 <script src="../../app/features/avatar/game-avatar-bridge.js?v=1"></script>
 </head>
 <body>
@@ -466,7 +467,14 @@
         </div>
       </div>
 
-      <div class="arena" id="arena">
+      <div class="arena shrine-theme" id="arena">
+        <div class="shrine-atmosphere" aria-hidden="true">
+          <div class="shrine-fog fog-back"></div>
+          <div class="shrine-fog fog-front"></div>
+          <i class="shrine-ghostlight light-left"></i>
+          <i class="shrine-ghostlight light-right"></i>
+          <i class="shrine-ghostlight light-far"></i>
+        </div>
         <div class="speed-lines"></div>
         <div class="status-float" id="battleStatus">준비!</div>
         <div class="cpu-question" id="cpuQuestion">CPU 계산 중...</div>
