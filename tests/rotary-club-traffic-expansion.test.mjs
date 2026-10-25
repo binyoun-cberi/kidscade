@@ -89,3 +89,14 @@ test('older saves restore, while v2 saves preserve all seven open regions',()=>{
   assert.equal(migrated.restore(old),true);
   assert.equal(migrated.openTowns,4);
 });
+
+test('a connected seven-district map can process normal trips without impossible permanent backlogs',()=>{
+  const sim=new RoadWeaver();sim.budget=10000;sim.openTowns=7;
+  for(const town of TOWN_TYPES.slice(1))assert.ok(sim.addRoad([TOWN_TYPES[0],town],4).ok);
+  for(let i=0;i<3600;i++)sim.update(1/30);
+  assert.ok(sim.delivered>250,'connected city network never carries people');
+  assert.ok(sim.waiting<120,'traffic demand grows faster than physically possible even with a functioning road system');
+  assert.ok(sim.cars.every(car=>Number.isFinite(sim.sampleCar(car).x)));
+  assert.ok(sim.cars.every(car=>car.lane>=0&&car.lane<Math.max(1,car.edge.lanes/2)));
+  assert.ok(sim.cars.some(car=>['tractor','bus','truck'].includes(car.kind)),'special region traffic is missing');
+});
