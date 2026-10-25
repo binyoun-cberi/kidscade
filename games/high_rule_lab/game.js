@@ -84,7 +84,19 @@ function clearLevel(){
  const clearedCount=Object.keys(save.cleared).length;window.KidscadeGame?.result?.({scope:'stage',status:'completed',outcome:'clear',score:clearedCount,scoreOptions:{unit:'단계',higherIsBetter:true},stage:levelIndex+1,completedCount:clearedCount,completed:true,moves:state.moves});
  $('clearChapter').textContent=DATA.levels[levelIndex].chapter;$('clearTitle').textContent=levelIndex===DATA.levels.length-1?'내 말 좀 들어 완주!':'실험 성공!';$('clearText').textContent=levelIndex===DATA.levels.length-1?'세상의 법칙을 읽고, 부수고, 다시 만드는 법을 익혔어요.':'세상의 법칙을 이용해 길을 만들었어요.';$('clearMoves').textContent=state.moves+'수';$('clearBest').textContent='최고 기록 '+save.best[key]+'수';$('nextBtn').textContent=levelIndex===DATA.levels.length-1?'처음으로':'다음 실험';if(!clearDialog.open)clearDialog.showModal();renderLevelGrid();announce('실험 성공. '+state.moves+'수');
 }
-function showHint(){const l=DATA.levels[levelIndex],hints=l.hints||[];if(!hints.length){toast('이 단계에는 힌트가 없어요.');return}const text=hints[Math.min(hintStep,hints.length-1)];hintStep++;toast(text);$('labNote').textContent=text;tone(420,.05,'sine');announce('힌트. '+text)}
+function showHint(){
+ const l=DATA.levels[levelIndex],hints=l.hints||[];
+ if(!hints.length){toast('이 단계에는 힌트가 없어요.');return}
+ let text;
+ if(l.mazeReworked&&hintStep===0){
+  text='먼저 갈림길을 둘러보세요. 위쪽 방과 아래쪽 방에 서로 다른 길이 있어요.';
+ }else{
+  const pos=l.mazeReworked?hintStep-1:hintStep;
+  text=hints[Math.min(Math.max(0,pos),hints.length-1)];
+ }
+ hintStep++;toast(text);$('labNote').textContent=text;
+ tone(420,.05,'sine');announce('힌트. '+text);
+}
 function renderLevelGrid(){
  const save=safeLoad();$('levelGrid').innerHTML='';let lastChapter='';
  DATA.levels.forEach((l,i)=>{if(l.chapter!==lastChapter){lastChapter=l.chapter;const h=document.createElement('div');h.className='chapter-row';const total=DATA.levels.filter(x=>x.chapter===l.chapter).length;const done=DATA.levels.reduce((n,x,j)=>n+(x.chapter===l.chapter&&save.cleared[String(j)]?1:0),0);h.innerHTML='<b>'+l.chapter+'</b><span>'+done+' / '+total+'</span>';$('levelGrid').appendChild(h)}
