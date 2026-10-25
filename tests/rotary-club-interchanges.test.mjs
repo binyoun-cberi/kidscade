@@ -109,3 +109,25 @@ test('editing while cars are on the road preserves those cars',()=>{
   for(let i=0;i<100;i++)sim.update(1/30);
   assert.ok(Number.isFinite(sim.sampleCar(car).x));
 });
+
+test('a disconnected pair of cities can connect exclusively through elevated roads and two ramps',()=>{
+  const sim=new RoadWeaver();sim.budget=2500;
+  assert.ok(sim.addRoad([{x:164,y:378},{x:345,y:372}],2).ok);
+  assert.ok(sim.addRoad([{x:730,y:360},{x:915,y:354}],2).ok);
+  assert.equal(sim.route(TOWN_TYPES[0],TOWN_TYPES[1]),null);
+  assert.ok(sim.addRoad([{x:530,y:140},{x:530,y:560}],2,'bridge').ok);
+  assert.equal(sim.route(TOWN_TYPES[0],TOWN_TYPES[1]),null,'a bridge directly joins ground roads');
+  assert.ok(sim.addRoad([{x:345,y:372},{x:530,y:180}],2,'ramp').ok);
+  assert.ok(sim.addRoad([{x:730,y:360},{x:530,y:540}],2,'ramp').ok);
+  const path=sim.route(TOWN_TYPES[0],TOWN_TYPES[1]);
+  assert.deepEqual(path.map(s=>s.edge.kind),['ground','ramp','bridge','ramp','ground']);
+  assert.ok(path.some(s=>s.dir===-1&&s.edge.kind==='ramp'),'exit ramp is not traversable downhill');
+  assert.ok(sim.spawn('home','office'));
+  let observed=false;
+  for(let i=0;i<2300;i++){
+    sim.update(1/30);
+    if(sim.cars.some(car=>car.edge.kind==='bridge'))observed=true;
+  }
+  assert.ok(observed,'cars never use the elevated road');
+  assert.ok(sim.delivered>0,'cars never reach the other town via ramps');
+});
