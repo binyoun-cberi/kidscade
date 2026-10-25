@@ -22,7 +22,7 @@ class Element{
   getContext(){return this.ctx;}
   setPointerCapture(){}
 }
-async function makePage(){
+async function makePage(savedCity=null){
   const sim=await import(pathToFileURL(path.join(ROOT,'games/high_road_weaver/sim-core.mjs')).href);
   const ctx=new Proxy({measureText:s=>({width:String(s).length*9})},{
     get(target,key){if(key in target)return target[key];return()=>{};},
@@ -43,7 +43,7 @@ async function makePage(){
     addEventListener(){}
   };
   const window={addEventListener(){}};
-  const store=new Map(),localStorage={
+  const store=new Map(savedCity?[['kidscade_game_v1:high_road_weaver:world',JSON.stringify(savedCity)]]:[]),localStorage={
     getItem:k=>store.get(k)||null,
     setItem:(k,v)=>store.set(k,v)
   };
@@ -111,4 +111,30 @@ test('UI draws new district scenes and weekday HUD without image assets',async()
   assert.doesNotThrow(()=>page.updateHud(1000));
   assert.match(get('day').textContent,/토요일/);
   assert.match(get('guideTitle').textContent,/길이 필요|이어/);
+});
+
+test('QA 2: existing city is never overwritten by a single accidental tap',async()=>{
+  const {RoadWeaver,TOWN_TYPES}=await import(pathToFileURL(path.join(ROOT,'games/high_road_weaver/sim-core.mjs')).href);
+  const city=new RoadWeaver();
+  assert.ok(city.addRoad([TOWN_TYPES[0],TOWN_TYPES[1]],2).ok);
+  const saved=city.snapshot(),key='kidscade_game_v1:high_road_weaver:world';
+  const {page,get,store}=await makePage(saved);
+  assert.equal(get('continueBtn').classList.contains('hidden'),false);
+  const before=store.get(key);
+  get('startBtn').click();
+  assert.equal(store.get(key),before,'one tap destroyed an existing save');
+  assert.equal(get('overwriteWarning').classList.contains('hidden'),false);
+  get('continueBtn').click();
+  assert.equal(page.sim().roads.length,1,'continue must still load the old city');
+});
+
+test('QA 2: canceling a touch after setting a start point does not draw an unexpected road',async()=>{
+  const {page,get}=await makePage();
+  get('startBtn').click();
+  const canvas=get('map');
+  tap(canvas,1,164,378);
+  const event={pointerId:2,clientX:350,clientY:370,preventDefault(){}};
+  canvas.emit('pointerdown',event);canvas.emit('pointercancel',event);
+  tap(canvas,3,915,354);
+  assert.equal(page.sim().roads.length,0,'canceled touch reused the old start position');
 });
