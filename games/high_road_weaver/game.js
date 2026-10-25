@@ -1,0 +1,343 @@
+import {RoadWeaver,TOWN_TYPES,costOfRoad,pointOnPath} from './sim-core.mjs';
+
+const $=id=>document.getElementById(id);
+const canvas=$('map'),ctx=canvas.getContext('2d',{alpha:false});
+let sim=new RoadWeaver();
+let paused=true,speed=1,mode='road',lanes=2,zoom=1;
+let cam={x:540,y:360},scale=1,dpr=1,viewW=1,viewH=1;
+let draft=null,pending=null,active=new Map(),gesture=null;
+let accumulator=0,lastFrame=0,lastUi=0,lastSave=0,toastUntil=0;
+let guideCache='',saveAvailable=false;
+const STORAGE_KEY='kidscade_game_v1:high_road_weaver:world';
+const imageRoot='../../assets/game/2d/vehicles/pixel/cars/';
+const sprites={};
+for(const name of ['sedan','sedan-blue','taxi','rounded-green','suv','truck','truckdelivery','bus','van-small']){
+  const img=new Image();img.src=imageRoot+name+'.png';img.onload=()=>render();
+  sprites[name]=img;
+}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function safeRead(){
+  try{const raw=localStorage.getItem(STORAGE_KEY);return raw?JSON.parse(raw):null;}catch(_){return null;}
+}
+function save(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(sim.snapshot()));saveAvailable=true;}catch(_){}
+}
+function notice(message){
+  const el=$('toast');el.textContent=message;el.classList.add('show');toastUntil=performance.now()+3300;
+}
+function resize(){
+  const r=canvas.getBoundingClientRect();viewW=r.width;viewH=r.height;
+  dpr=Math.min(2,devicePixelRatio||1);
+  canvas.width=Math.max(1,Math.floor(r.width*dpr));
+  canvas.height=Math.max(1,Math.floor(r.height*dpr));
+  render();
+}
+function currentScale(){return Math.min(viewW/1080,viewH/720)*zoom;}
+function worldOf(clientX,clientY){
+  const r=canvas.getBoundingClientRect(),s=currentScale();
+  return {x:cam.x+(clientX-r.left-r.width/2)/s,y:cam.y+(clientY-r.top-r.height/2)/s};
+}
+function worldAtScreen(x,y){const s=currentScale();return {x:cam.x+(x-viewW/2)/s,y:cam.y+(y-viewH/2)/s};}
+function moveCameraFromDrag(dx,dy){
+  const s=currentScale();cam.x-=dx/s;cam.y-=dy/s;clampCamera();
+}
+function clampCamera(){
+  cam.x=clamp(cam.x,100,980);cam.y=clamp(cam.y,75,645);
+}
+function setZoom(newZoom,x=viewW/2,y=viewH/2){
+  const before=worldAtScreen(x,y);zoom=clamp(newZoom,.72,3.6);
+  const after=worldAtScreen(x,y);cam.x+=before.x-after.x;cam.y+=before.y-after.y;clampCamera();
+}
+function showOverlay(id,show=true){$(id).classList.toggle('hidden',!show);}
+function setMode(next){
+  mode=next;pending=null;draft=null;
+  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('selected',b.dataset.mode===next));
+  const hints={
+    road:'시작점부터 끝점까지 드래그하거나, 시작과 끝을 차례로 누르세요.',
+    widen:'넓히고 싶은 도로를 눌러 주세요. 자재가 필요해요.',
+    light:'교차로를 누르면 신호등을 설치하거나 철거할 수 있어요.',
+    pan:'화면을 드래그해서 지도를 이동하세요. 손가락 두 개로 확대할 수 있어요.'
+  };
+  $('editHint').textContent=hints[next];
+}
+function setLanes(n){
+  lanes=n;document.querySelectorAll('[data-lanes]').forEach(b=>b.classList.toggle('selected',+b.dataset.lanes===n));
+  setMode('road');
+}
+function finishBuild(points){
+  const result=sim.addRoad(points,lanes);
+  if(result.ok){notice('도로 완성! 자재 '+result.cost+'을 사용했어요.');save();}
+  else notice(result.reason);
+}
+function applyEdit(p){
+  let result;
+  if(mode==='widen')result=sim.widenRoad(p);
+  if(mode==='light')result=sim.toggleLight(p);
+  if(result){notice(result.ok?(mode==='widen'?'차로를 넓혔어요.':'신호등을 바꿨어요.'):result.reason);if(result.ok)save();}
+}
+function stopDraft(){draft=null;pending=null;gesture=null;}
+canvas.addEventListener('pointerdown',event=>{
+  event.preventDefault();
+  canvas.setPointerCapture(event.pointerId);
+  const p=worldOf(event.clientX,event.clientY);
+  active.set(event.pointerId,{clientX:event.clientX,clientY:event.clientY,startX:event.clientX,startY:event.clientY,world:p,moved:false});
+  if(active.size===2){
+    draft=null;pending=null;
+    const a=[...active.values()],midX=(a[0].clientX+a[1].clientX)/2,midY=(a[0].clientY+a[1].clientY)/2;
+    gesture={distance:Math.hypot(a[0].clientX-a[1].clientX,a[0].clientY-a[1].clientY),zoom,anchor:worldOf(midX,midY)};
+  }else if(active.size===1&&mode==='road'){
+    draft=[sim.snap(p)];
+  }
+});
+canvas.addEventListener('pointermove',event=>{
+  const state=active.get(event.pointerId);if(!state)return;
+  const dx=event.clientX-state.clientX,dy=event.clientY-state.clientY;
+  state.clientX=event.clientX;state.clientY=event.clientY;
+  if(Math.hypot(event.clientX-state.startX,event.clientY-state.startY)>8)state.moved=true;
+  if(active.size===2&&gesture){
+    const a=[...active.values()],dist=Math.hypot(a[0].clientX-a[1].clientX,a[0].clientY-a[1].clientY);
+    const midX=(a[0].clientX+a[1].clientX)/2,midY=(a[0].clientY+a[1].clientY)/2;
+    zoom=clamp(gesture.zoom*dist/Math.max(4,gesture.distance),.72,3.6);
+    const after=worldOf(midX,midY);
+    cam.x+=gesture.anchor.x-after.x;cam.y+=gesture.anchor.y-after.y;clampCamera();return;
+  }
+  if(mode==='pan'){moveCameraFromDrag(dx,dy);return;}
+  if(mode==='road'&&draft&&state.moved){
+    const p=worldOf(event.clientX,event.clientY);
+    if(distance(p,draft.at(-1))>8)draft.push(p);
+  }
+});
+function pointerEnd(event,cancel=false){
+  const state=active.get(event.pointerId);if(!state)return;
+  active.delete(event.pointerId);
+  if(gesture||active.size){
+    if(active.size<2)gesture=null;
+    draft=null;
+    return;
+  }
+  if(cancel){draft=null;return;}
+  const p=worldOf(event.clientX,event.clientY);
+  if(mode==='road'){
+    if(state.moved&&draft&&draft.length>=1){
+      const path=[...draft,p];draft=null;pending=null;finishBuild(path);
+    }else if(pending){
+      const from=pending;pending=null;draft=null;finishBuild([from,p]);
+    }else{
+      pending=sim.snap(p);draft=null;notice('도로 시작점을 골랐어요. 이제 끝점을 눌러 주세요.');
+    }
+  }else if(mode!=='pan'&&!state.moved)applyEdit(p);
+}
+canvas.addEventListener('pointerup',e=>pointerEnd(e));
+canvas.addEventListener('pointercancel',e=>pointerEnd(e,true));
+canvas.addEventListener('wheel',event=>{
+  event.preventDefault();
+  const r=canvas.getBoundingClientRect();
+  setZoom(zoom*(event.deltaY>0?.89:1.12),event.clientX-r.left,event.clientY-r.top);
+},{passive:false});
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+document.querySelectorAll('[data-lanes]').forEach(b=>b.addEventListener('click',()=>setLanes(+b.dataset.lanes)));
+$('zoomIn').addEventListener('click',()=>setZoom(zoom*1.18));
+$('zoomOut').addEventListener('click',()=>setZoom(zoom/1.18));
+$('resetView').addEventListener('click',()=>{zoom=1;cam={x:540,y:360};});
+$('pauseBtn').addEventListener('click',()=>{paused=!paused;refreshButtons();});
+$('speedBtn').addEventListener('click',()=>{speed=speed===1?2:speed===2?3:1;refreshButtons();});
+$('undoBtn').addEventListener('click',()=>{const r=sim.undo();notice(r.ok?'마지막 작업을 되돌렸어요.':r.reason);if(r.ok)save();});
+$('helpBtn').addEventListener('click',()=>showOverlay('help'));
+$('closeHelp').addEventListener('click',()=>showOverlay('help',false));
+function startNew(){sim=new RoadWeaver();zoom=1;cam={x:540,y:360};paused=false;speed=1;stopDraft();save();showOverlay('intro',false);refreshButtons();notice('두 도시 사이에 도로를 그려 보세요.');}
+$('startBtn').addEventListener('click',startNew);
+$('continueBtn').addEventListener('click',()=>{
+  const data=safeRead();
+  if(!sim.restore(data)){notice('저장 기록을 불러올 수 없어 새 도시를 시작합니다.');startNew();return;}
+  paused=false;stopDraft();showOverlay('intro',false);refreshButtons();notice('이전 도로망을 불러왔어요.');
+});
+window.addEventListener('keydown',event=>{
+  if(event.key==='Escape'){pending=null;draft=null;showOverlay('help',false);}
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'){
+    event.preventDefault();$('undoBtn').click();
+  }
+  if(event.target instanceof HTMLButtonElement)return;
+  if(event.key===' '){event.preventDefault();$('pauseBtn').click();}
+  if(event.key==='2'||event.key==='4'||event.key==='6')setLanes(+event.key);
+});
+window.addEventListener('pagehide',save);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){save();paused=true;refreshButtons();}});
+function refreshButtons(){
+  $('pauseBtn').textContent=paused?'▶':'Ⅱ';
+  $('pauseBtn').title=paused?'재개':'일시정지';
+  $('speedBtn').textContent='×'+speed;
+}
+function drawPath(points){
+  ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
+  for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
+}
+function drawRoad(road,alpha=1){
+  const pts=road.points,w=road.lanes*11+6;
+  ctx.save();ctx.globalAlpha=alpha;ctx.lineJoin='round';ctx.lineCap='round';
+  drawPath(pts);ctx.strokeStyle='#627469';ctx.lineWidth=w+6;ctx.stroke();
+  drawPath(pts);ctx.strokeStyle='#606b70';ctx.lineWidth=w;ctx.stroke();
+  drawPath(pts);ctx.strokeStyle='#f4e3a2';ctx.lineWidth=2.2;ctx.setLineDash([12,10]);ctx.stroke();ctx.setLineDash([]);
+  // 도로 양쪽 외곽선과 같은 방향 차선 사이의 흰 점선
+  for(const side of [-1,1]){
+    const outer=w/2-2;offsetLine(pts,side*outer,'#b8c5c2',1.3,[]);
+    for(let x=1;x<road.lanes/2;x++)offsetLine(pts,side*(x*11+4),'#d9dfdd',1.1,[7,9]);
+  }
+  ctx.restore();
+}
+function offsetLine(pts,offset,color,width,dash){
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);
+  ctx.beginPath();
+  for(let i=0;i<pts.length;i++){
+    const prev=pts[Math.max(0,i-1)],next=pts[Math.min(pts.length-1,i+1)];
+    const dx=next.x-prev.x,dy=next.y-prev.y,mag=Math.hypot(dx,dy)||1;
+    const x=pts[i].x-dy/mag*offset,y=pts[i].y+dx/mag*offset;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.stroke();ctx.restore();
+}
+function rounded(x,y,w,h,r,fill){
+  ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();
+}
+function drawGrass(){
+  ctx.fillStyle='#d3e8c9';ctx.fillRect(0,0,1080,720);
+  for(let i=0;i<165;i++){
+    const x=(i*319.3+73)%1080,y=(i*169.7+47)%720;
+    ctx.beginPath();ctx.ellipse(x,y,9+i%5*3,5+i%3*4,(i%7)*.5,0,Math.PI*2);
+    ctx.fillStyle=i%3===0?'#c8e0bf':'#ddebce';ctx.fill();
+  }
+  // 설계망 밖에도 도시 외곽 풍경이 이어지는 느낌을 줍니다.
+  ctx.strokeStyle='rgba(121,169,128,.21)';ctx.lineWidth=1;
+  for(let x=0;x<=1080;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,720);ctx.stroke();}
+  for(let y=0;y<=720;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(1080,y);ctx.stroke();}
+}
+function drawTrees(cx,cy,spread){
+  for(let i=0;i<18;i++){
+    const angle=i*2.399,r=spread*(.65+(i%4)*.16),x=cx+Math.cos(angle)*r,y=cy+Math.sin(angle)*r;
+    ctx.beginPath();ctx.arc(x,y,3+i%3,0,Math.PI*2);ctx.fillStyle=i%3?'#94bd83':'#76ad78';ctx.fill();
+  }
+}
+function drawCity(t,index){
+  const near=76;
+  ctx.save();
+  ctx.beginPath();ctx.arc(t.x,t.y,near,0,Math.PI*2);
+  ctx.fillStyle=index===0?'rgba(105,162,198,.09)':index===1?'rgba(173,137,190,.08)':'rgba(204,151,96,.08)';
+  ctx.fill();
+  ctx.strokeStyle=t.color;ctx.lineWidth=2.4;ctx.setLineDash([7,7]);ctx.stroke();ctx.setLineDash([]);
+  drawTrees(t.x,t.y,93);
+  const floors=index===1?3:index===2?2:1;
+  for(let i=0;i<8;i++){
+    const angle=i*Math.PI/4+.3,r=28+(i%3)*4;
+    const x=t.x+Math.cos(angle)*r,y=t.y+Math.sin(angle)*r;
+    const w=index===1?19:20,h=index===1?26:19;
+    rounded(x-w/2+3,y-h/2+5,w,h,3,'#9bae9f');
+    rounded(x-w/2,y-h/2,w,h,3,index===0?'#f5e0ad':index===1?'#c2b4d4':index===2?'#b4b7b6':'#f1d9a5');
+    ctx.fillStyle=index===1?'#8f78b5':index===2?'#b47d62':'#c9816a';
+    ctx.fillRect(x-w/2+3,y-h/2+3,w-6,4+floors);
+    if(index===2){ctx.fillStyle='#77929a';ctx.fillRect(x+w/2-5,y-h/2-9,4,10);}
+  }
+  ctx.beginPath();ctx.arc(t.x,t.y,17,0,Math.PI*2);ctx.fillStyle=t.color;ctx.fill();
+  ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font='bold 16px system-ui';ctx.fillText(index===0?'⌂':index===1?'▦':index===2?'⚙':'▤',t.x,t.y+1);
+  ctx.font='bold 16px system-ui';const w=Math.max(113,ctx.measureText(t.name).width+28);
+  rounded(t.x-w/2,t.y+83,w,34,10,'rgba(255,255,251,.96)');
+  ctx.fillStyle='#254b3b';ctx.fillText(t.name,t.x,t.y+100);
+  ctx.restore();
+}
+function drawSignals(){
+  for(const n of sim.nodes.values()){
+    if((sim.adj.get(n.id)||[]).length<3)continue;
+    const active=sim.lights.has(n.id);
+    ctx.beginPath();ctx.arc(n.x,n.y,active?10:5,0,Math.PI*2);
+    ctx.fillStyle=active?'#254943':'#a0b3ad';ctx.fill();
+    if(active){
+      ctx.beginPath();ctx.arc(n.x,n.y,4,0,Math.PI*2);
+      ctx.fillStyle=Math.floor(sim.tickTime/6)%2===0?'#8ceb9b':'#eebd62';ctx.fill();
+    }
+  }
+}
+function drawCar(c){
+  const p=sim.sampleCar(c),name=c.kind==='truck'?(Number(c.id.slice(1))%2?'truck':'truckdelivery'):
+    ['sedan','sedan-blue','taxi','rounded-green','suv','bus','van-small'][Number(c.id.slice(1))%7];
+  const img=sprites[name],isTruck=c.kind==='truck',w=isTruck?14:12,h=isTruck?26:21;
+  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle+Math.PI/2);
+  ctx.fillStyle='rgba(32,45,37,.28)';ctx.beginPath();ctx.ellipse(2,2,w/2+1,h/2,0,0,Math.PI*2);ctx.fill();
+  if(img&&img.complete&&img.naturalWidth){
+    ctx.imageSmoothingEnabled=false;ctx.drawImage(img,-w/2,-h/2,w,h);
+  }else{
+    rounded(-w/2,-h/2,w,h,3,isTruck?'#d9b576':'#f0e5d3');
+    rounded(-w/2+2,-h/2+4,w-4,5,1,'#8ca8b6');
+  }
+  ctx.restore();
+}
+function drawDraft(){
+  const pts=draft&&draft.length?draft:pending?[pending]:null;
+  if(!pts)return;
+  ctx.save();
+  if(pts.length>=2){
+    const cost=costOfRoad(pts,lanes),bad=cost>sim.budget;
+    drawPath(pts);ctx.strokeStyle=bad?'#bd605d':'#3eab8a';ctx.lineWidth=lanes*11+6;ctx.globalAlpha=.38;ctx.setLineDash([15,8]);ctx.stroke();ctx.setLineDash([]);
+    const last=pts.at(-1);rounded(last.x-36,last.y-54,72,27,7,bad?'#8d3f41':'#286850');
+    ctx.fillStyle='#fff';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('자재 '+cost,last.x,last.y-37);
+  }else{
+    ctx.beginPath();ctx.arc(pts[0].x,pts[0].y,16,0,Math.PI*2);ctx.strokeStyle='#25845e';ctx.lineWidth=4;ctx.stroke();
+  }
+  ctx.restore();
+}
+function render(){
+  if(!viewW||!viewH)return;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,viewW,viewH);
+  ctx.fillStyle='#d5e8cb';ctx.fillRect(0,0,viewW,viewH);
+  scale=currentScale();
+  ctx.save();ctx.translate(viewW/2,viewH/2);ctx.scale(scale,scale);ctx.translate(-cam.x,-cam.y);
+  drawGrass();
+  for(const old of sim.oldRoads)for(const e of old.edges)drawRoad({points:e.points,lanes:e.lanes},.12);
+  for(const r of sim.roads)drawRoad(r);
+  drawSignals();
+  sim.towns.forEach(drawCity);
+  for(const c of sim.cars)drawCar(c);
+  drawDraft();
+  ctx.restore();
+}
+function updateHud(now){
+  const hr=Math.floor(sim.minutes/60),min=Math.floor(sim.minutes%60);
+  $('clock').textContent=String(hr).padStart(2,'0')+':'+String(min).padStart(2,'0');
+  $('day').textContent=sim.day+'일째';
+  $('budget').textContent=sim.budget;
+  $('delivered').textContent=sim.delivered;
+  $('waiting').textContent=sim.waiting;
+  const peak=sim.peak;
+  $('timePhase').textContent=peak==='출근'?'출근':peak==='퇴근'?'퇴근':hr>=6&&hr<18?'낮':'밤';
+  $('timePhase').style.background=peak==='일상'?'#dbead9':'#f5dba3';
+  const canRoute=sim.route(sim.towns[0],sim.towns[1]);
+  let title='',description='',label='오늘의 설계';
+  if(!canRoute){title='두 도시를 이어 주세요.';description='햇살마을과 중앙업무지구를 도로로 연결하세요.';}
+  else if(sim.openTowns>=3&&!sim.route(sim.towns[0],sim.towns[2])){
+    title='새 공업지구가 등장했어요.';description='북쪽 공업지구와 기존 도로망을 연결해 주세요.';
+  }else if(sim.openTowns>=4&&!sim.route(sim.towns[0],sim.towns[3])){
+    title='상업지구에도 길이 필요해요.';description='남쪽 상업지구를 연결하고 저녁 교통을 살펴보세요.';
+  }else if(peak==='출근'){
+    title='출근길이 붐비고 있어요.';description='사무지구로 향하는 자동차의 줄을 살펴보세요.';
+  }else if(peak==='퇴근'){
+    title='집으로 돌아오는 시간이에요.';description='아침과 반대 방향에서 길이 막히지 않는지 확인해 보세요.';
+  }else{title='차량의 흐름을 살펴보세요.';description='도로를 추가하거나 차선을 넓혀 병목을 해결할 수 있어요.';}
+  const str=label+'|'+title+'|'+description;
+  if(guideCache!==str){$('guideLabel').textContent=label;$('guideTitle').textContent=title;$('guideText').textContent=description;guideCache=str;}
+  if(now>toastUntil)$('toast').classList.remove('show');
+}
+function loop(time){
+  const dt=Math.min(.08,Math.max(0,(time-lastFrame)/1000||0));lastFrame=time;
+  if(!paused&&$('intro').classList.contains('hidden')&&$('help').classList.contains('hidden')){
+    accumulator=Math.min(.15,accumulator+dt*speed);
+    while(accumulator>=1/30){sim.update(1/30);accumulator-=1/30;}
+    if(sim.announcements.length){for(const n of sim.announcements.splice(0))notice(n);save();}
+  }
+  if(time-lastUi>160){updateHud(time);lastUi=time;}
+  if(time-lastSave>6500&&!paused){save();lastSave=time;}
+  render();requestAnimationFrame(loop);
+}
+const stored=safeRead();saveAvailable=Boolean(stored&&stored.version===1);
+$('continueBtn').classList.toggle('hidden',!saveAvailable);
+resize();window.addEventListener('resize',resize,{passive:true});
+refreshButtons();requestAnimationFrame(loop);
