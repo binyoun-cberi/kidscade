@@ -1,0 +1,135 @@
+/* Muhanru Math Rain — responsive, bright falling-number board. */
+.rain-launch {
+  width:100%;padding:14px 18px;margin-top:12px;text-align:left;cursor:pointer;
+  border:1px solid rgba(158,227,255,.55);border-radius:18px;
+  background:linear-gradient(115deg,#214cba,#1689b5);color:#fff;
+  box-shadow:0 9px 22px rgba(17,83,156,.22);
+}
+.rain-launch strong{display:block;font-size:1.1rem;letter-spacing:-.025em}
+.rain-launch span{display:block;margin-top:4px;font-size:.77rem;line-height:1.5;color:#d7f7ff}
+.rain-launch:hover{filter:brightness(1.12)}
+.rain-screen{gap:11px}
+.rain-header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.rain-kicker{font-size:.7rem;letter-spacing:.16em;color:#89e9ff;font-weight:900}
+.rain-header h2{margin:4px 0;font-size:clamp(1.35rem,3vw,2rem);letter-spacing:-.04em}
+.rain-header p{margin:5px 0;color:#b7c9dc;font-size:.82rem;line-height:1.6}
+.rain-exit,.rain-helper button,.rain-secondary{
+  padding:10px 14px;background:#233451;border:1px solid #486485;border-radius:12px;cursor:pointer;font-weight:800
+}
+.rain-hud{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.rain-hud>div{padding:10px 12px;background:rgba(29,46,75,.83);border:1px solid #364b6a;border-radius:15px}
+.rain-hud small{display:block;color:#b5cadf;font-size:.69rem}
+.rain-hud strong{display:block;margin-top:3px;font-size:clamp(1.15rem,3vw,1.65rem);font-variant-numeric:tabular-nums}
+.rain-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:14px;align-items:start}
+.rain-board-wrap,.rain-controls{min-width:0}
+.rain-board{
+  position:relative;height:clamp(325px,57dvh,560px);overflow:hidden;border-radius:22px;
+  border:3px solid #92c8e6;isolation:isolate;
+  background:linear-gradient(180deg,#53a6dc 0%,#86c9eb 50%,#cbeced 82%,#edebba 100%);
+  box-shadow:inset 0 0 45px rgba(255,255,255,.22),0 12px 26px rgba(0,0,0,.18);
+}
+.rain-board.rain-impact{animation:rainImpact .24s ease-out}
+.rain-board .rain-sun{position:absolute;top:25px;right:33px;width:70px;height:70px;border-radius:50%;background:#fff8b7;box-shadow:0 0 55px 25px rgba(255,251,189,.44)}
+.rain-cloud{position:absolute;width:130px;height:30px;background:rgba(255,255,255,.45);border-radius:40px;filter:blur(3px)}
+.rain-cloud:before{content:"";position:absolute;left:26px;bottom:9px;width:55px;height:44px;border-radius:100%;background:inherit}
+.rain-cloud.cloud-a{left:14%;top:20%}.rain-cloud.cloud-b{right:3%;top:47%;transform:scale(.75)}
+.rain-floor{position:absolute;bottom:0;left:0;right:0;height:24px;background:linear-gradient(#81b46e,#3a8159);border-top:5px solid #d4e9a4}
+.rain-layer{position:absolute;inset:0;z-index:2;pointer-events:none}
+.rain-tile{
+  pointer-events:auto;position:absolute;top:0;left:0;width:94px;height:64px;padding:5px;
+  display:flex;align-items:center;justify-content:center;white-space:nowrap;
+  font-size:clamp(1.04rem,2.6vw,1.38rem);font-weight:1000;color:#15334f;
+  border:3px solid rgba(255,255,255,.85);border-bottom:6px solid rgba(10,58,95,.27);
+  border-radius:16px;cursor:pointer;box-shadow:0 8px 14px rgba(24,71,94,.22);
+  font-variant-numeric:tabular-nums;touch-action:manipulation;
+}
+.rain-tile.tone-0{background:#fce8a8}
+.rain-tile.tone-1{background:#f9b6c9}
+.rain-tile.tone-2{background:#9fead4}
+.rain-tile.tone-3{background:#bfcafd}
+.rain-tile.selected{outline:4px solid #194bfc;outline-offset:3px;z-index:5;box-shadow:0 0 0 7px rgba(255,255,255,.74),0 12px 22px rgba(23,79,174,.38)}
+.rain-tile.popping{pointer-events:none;animation:rainPop .38s var(--rain-delay,0ms) cubic-bezier(.2,.9,.3,1) forwards}
+.rain-tile.shaking{animation:rainShake .3s linear}
+.rain-message{
+  position:absolute;z-index:8;top:15%;left:50%;transform:translate(-50%,-10px);
+  white-space:nowrap;max-width:90%;padding:9px 17px;border-radius:99px;
+  font-size:1rem;font-weight:1000;opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;
+  color:#fff;background:rgba(18,46,81,.88)
+}
+.rain-message.show{opacity:1;transform:translate(-50%,0)}
+.rain-message.positive{background:#167655}.rain-message.negative{background:#a43f58}
+.rain-helper{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:.74rem;color:#d0e4f4;margin-top:8px}
+.rain-helper button:disabled{opacity:.4;cursor:default}
+.rain-controls{border:1px solid #384b68;border-radius:20px;background:#18263f;padding:16px;box-shadow:0 10px 24px rgba(0,0,0,.2)}
+.rain-target-label{font-size:.78rem;font-weight:900;color:#cceafc}
+.rain-target-label span{display:block;margin-top:3px;font-size:.7rem;font-weight:500;color:#9db5c9}
+.rain-expression{min-height:74px;display:flex;align-items:center;justify-content:center;margin-top:11px;
+  border-radius:13px;background:#d8edfa;color:#17375a;font-size:clamp(1.65rem,4vw,2.25rem);font-weight:1000}
+.rain-entry{min-height:53px;margin:9px 0 14px;padding:11px;border:2px solid #4c6885;border-radius:12px;
+  background:#0c192a;text-align:center;color:#8bafc9;font-weight:900;font-size:1.1rem}
+.rain-entry.filled{color:#ffdc86}
+.rain-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rain-pad button{min-height:58px;background:linear-gradient(#fff,#d4e4ee);border:2px solid #fff;border-bottom:5px solid #8398ae;
+  border-radius:12px;color:#142b45;font-size:1.4rem;font-weight:1000;cursor:pointer;touch-action:manipulation}
+.rain-pad button:active{transform:translateY(2px);border-bottom-width:2px}
+.rain-pad .rain-delete{background:#ffe4d0;border-color:#ffdcc4;font-size:.94rem}
+.rain-pad .rain-enter{background:#a3f3b9;border-color:#e0ffda;font-size:1rem}
+.rain-input-help{color:#9db5c9;font-size:.68rem;line-height:1.5;margin:11px 0 0}
+.rain-curtain{position:absolute;inset:0;z-index:12;background:rgba(13,38,66,.84);backdrop-filter:blur(4px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.rain-curtain.hidden{display:none}
+.rain-curtain h3{font-size:clamp(1.4rem,4vw,2.2rem);margin:0 0 6px}
+.rain-curtain p{font-size:.9rem;line-height:1.7;color:#e1edf5;margin:7px 0 17px}
+.rain-level-label{font-size:.8rem;font-weight:900;margin:4px 0 8px}
+.rain-curtain select{max-width:100%;width:min(340px,100%);padding:13px;border-radius:12px;background:#fff;color:#19334b;font-weight:900;font:inherit}
+.rain-primary{margin-top:13px;min-width:180px;min-height:52px;padding:10px 20px;
+  border-radius:13px;background:linear-gradient(120deg,#2469f6,#0fbbca);font-weight:1000;font-size:1.1rem;cursor:pointer}
+.rain-curtain .rain-secondary{margin-top:10px}
+.rain-exit:focus-visible,.rain-pad button:focus-visible,.rain-tile:focus-visible,.rain-primary:focus-visible{outline:3px solid #fff3a6;outline-offset:2px}
+@keyframes rainPop{0%{opacity:1;scale:1}30%{opacity:1;scale:1.3;filter:brightness(1.45)}100%{opacity:0;scale:.3;filter:brightness(1.6)}}
+@keyframes rainShake{0%,100%{margin-left:0}25%,75%{margin-left:-7px}50%{margin-left:7px}}
+@keyframes rainImpact{0%,100%{filter:brightness(1)}40%{filter:brightness(1.12)}}
+@media(max-width:760px){
+  .rain-layout{grid-template-columns:minmax(0,1fr)}
+  .rain-board{height:clamp(290px,46dvh,430px)}
+  .rain-controls{padding:12px}
+  .rain-expression{min-height:58px;margin-top:7px}
+  .rain-entry{min-height:42px;margin:6px 0 9px}
+  .rain-pad button{min-height:52px}
+}
+@media(max-width:430px){
+  .rain-header h2{font-size:1.35rem}
+  .rain-header p{font-size:.7rem}
+  .rain-exit{padding:7px;font-size:.75rem;white-space:nowrap}
+  .rain-hud{gap:4px}
+  .rain-hud>div{padding:8px 6px}
+  .rain-hud small{font-size:.62rem}
+  .rain-hud strong{font-size:1.12rem}
+  .rain-board{height:290px}
+  .rain-helper span{max-width:70%}
+  .rain-pad{gap:5px}
+  .rain-pad button{min-height:46px}
+}
+@media(prefers-reduced-motion:reduce){
+  .rain-board.rain-impact,.rain-tile.shaking{animation:none}
+  .rain-tile.popping{animation:rainPop .08s forwards}
+  .rain-message{transition:none}
+}
+/* Existing beam battle: readable floating impulse, no permanent layout motion. */
+.energy-number{
+  position:absolute;left:var(--clash-x);top:35%;z-index:21;pointer-events:none;
+  padding:4px 11px;border-radius:12px;border:1px solid rgba(255,255,255,.65);
+  background:rgba(6,14,28,.9);font-weight:1000;font-size:clamp(.83rem,2vw,1.15rem);
+  color:#fff3ab;white-space:nowrap;transform:translate(-50%,0);
+  animation:energyNumber .67s ease-out forwards;
+}
+.energy-number.p2{color:#ffb5ca}
+.energy-wave{
+  position:absolute;left:var(--clash-x);top:47%;z-index:6;pointer-events:none;
+  width:10px;height:10px;border:2px solid #fff5bd;border-radius:50%;
+  transform:translate(-50%,-50%) scale(1);box-shadow:0 0 20px #fff7c2;
+  animation:energyWave .46s ease-out forwards;
+}
+@keyframes energyNumber{0%{opacity:0;transform:translate(-50%,8px) scale(.75)}20%{opacity:1;transform:translate(-50%,-8px) scale(1.12)}100%{opacity:0;transform:translate(-50%,-46px) scale(.96)}}
+@keyframes energyWave{0%{opacity:.95;transform:translate(-50%,-50%) scale(.6)}100%{opacity:0;transform:translate(-50%,-50%) scale(15)}}
+@media(prefers-reduced-motion:reduce){.energy-number,.energy-wave{animation:none;display:none}}
