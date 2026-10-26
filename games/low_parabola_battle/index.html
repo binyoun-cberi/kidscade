@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#152b4b">
+<title>포물선 대작전 | 키즈케이드</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;color:#183047;background:#10233d;font-synthesis:none}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#10233d}button,select,input{font:inherit}
+button{cursor:pointer;border:0}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #ffd166;outline-offset:3px}
+#app{min-height:100dvh;display:flex;flex-direction:column;gap:10px;padding:12px max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));max-width:1480px;margin:auto}
+.top{display:flex;gap:12px;justify-content:space-between;align-items:center;color:white;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:9px}.brand-icon{background:#f9c553;color:#152b4b;border-radius:12px;padding:7px 10px;font-size:21px}.brand h1{font-size:clamp(18px,2.2vw,26px);margin:0;letter-spacing:-.06em}.brand small{display:block;opacity:.7;font-size:11px;letter-spacing:.03em}
+.top-actions{display:flex;gap:8px}.soft{color:#e5effb;background:#2c4666;border:1px solid #56718b;padding:10px 15px;border-radius:13px;font-weight:800}.soft:hover{background:#3e5d7c}
+.arena{position:relative;align-self:center;width:min(100%,calc((100dvh - 230px)*1200/650));min-width:0;max-height:calc(100dvh - 230px);aspect-ratio:1200/650;overflow:hidden;border-radius:22px;background:#9bd8ff;box-shadow:0 22px 56px #020e2199;border:4px solid #38577b}
+canvas{display:block;width:100%;height:100%;touch-action:none;image-rendering:auto}
+.hud{position:absolute;top:10px;left:12px;right:12px;display:flex;justify-content:space-between;gap:6px;pointer-events:none}
+.hud-box{border:1px solid #ffffff55;border-radius:14px;background:#102a46ca;color:white;backdrop-filter:blur(8px);padding:9px 13px;min-width:136px}
+.hud-box strong{display:block;font-size:15px;line-height:1.3}.hud-box small{font-size:11px;color:#d0e2f5}
+.hud-box.right{text-align:right}.hud-box.center{text-align:center;min-width:180px}
+.notice{position:absolute;top:76px;left:50%;transform:translateX(-50%);background:#fff9e9f2;border:2px solid #e6cf92;color:#294660;border-radius:16px;padding:9px 16px;max-width:83%;font-size:clamp(12px,1.5vw,16px);font-weight:900;text-align:center;pointer-events:none;box-shadow:0 8px 22px #0002}
+.legend{position:absolute;left:12px;bottom:12px;background:#102a46b0;border-radius:12px;color:#fff;padding:7px 12px;font-size:12px;font-weight:800;pointer-events:none}
+.legend span{display:inline-block;width:25px;border-top:3px dashed #fff3a2;vertical-align:middle;margin-right:4px}
+.aim-tip{position:absolute;right:12px;bottom:12px;background:#173e66bd;color:white;font-size:11px;font-weight:850;padding:7px 10px;border-radius:12px;pointer-events:none}
+.finish-overlay{position:absolute;z-index:8;inset:0;display:flex;align-items:center;justify-content:center;background:#102b47a8;backdrop-filter:blur(4px);padding:16px}
+.finish-card{width:min(480px,94%);max-height:95%;overflow:auto;background:#fff8e7;border:4px solid #ffda75;border-radius:25px;padding:clamp(13px,2.7vw,24px);box-shadow:0 18px 52px #152d4d8c;text-align:center}
+.finish-star{font-size:clamp(25px,5vw,46px);line-height:1.15}.finish-card h2{margin:6px 0;font-size:clamp(24px,4vw,37px);color:#173951;letter-spacing:-.05em}
+.finish-card p{margin:3px 0 12px;color:#486379;line-height:1.5;font-size:clamp(12px,1.7vw,15px)}
+.finish-actions{display:flex;gap:8px}.finish-actions button{flex:1;padding:12px 9px;border-radius:13px;font-weight:950;color:#1c3550;background:#dbe9f7}.finish-actions button:first-child{background:#ffd36a}
+
+.controls{background:#f5f8fb;border-radius:22px;padding:14px 18px;display:grid;grid-template-columns:minmax(160px,.65fr) minmax(110px,1fr) minmax(110px,1fr) minmax(134px,.7fr) auto;align-items:center;gap:12px;box-shadow:0 9px 28px #0003}
+.turn{min-width:0}.eyebrow{font-size:11px;font-weight:900;letter-spacing:.07em;color:#63819f}.turn b{display:block;font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.turn small{display:block;color:#546779;font-size:12px;margin-top:2px}
+.control-field{display:grid;grid-template-columns:1fr auto;gap:5px 12px;align-items:center;color:#385273;font-size:13px;font-weight:800}
+.control-field output{background:#e1ecf6;min-width:56px;text-align:center;padding:4px 6px;border-radius:8px;color:#15304f;font-weight:1000}
+.control-field input{grid-column:1/-1;width:100%;accent-color:#147ac8;cursor:pointer;min-height:25px}
+.ammo-control{display:grid;gap:5px;font-size:12px;font-weight:850;color:#385273}
+.ammo-control select{padding:9px 8px;width:100%;border:2px solid #cadae7;border-radius:11px;background:#fff;color:#15304f;font-weight:900;cursor:pointer}
+.ammo-control small{font-size:10px;color:#62829a}
+#fire{border-radius:17px;background:linear-gradient(180deg,#ffdb66,#ff9d39);color:#4b2808;padding:17px 27px;min-width:119px;font-size:21px;font-weight:1000;box-shadow:inset 0 -4px #ce742b,0 7px 18px #c47a4533;touch-action:manipulation}
+#fire:disabled{opacity:.4;filter:grayscale(.7);cursor:not-allowed}
+.footer{display:flex;justify-content:space-between;align-items:center;gap:12px;color:#bfd0e3;font-size:12px;padding:0 8px;flex-wrap:wrap}
+.footer button{color:#badaff;background:none;border:0;text-decoration:underline;padding:4px}
+.dialog-back{position:fixed;z-index:20;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:#0b1d35d9;backdrop-filter:blur(8px)}
+.hidden{display:none!important}
+.dialog{width:min(730px,96vw);max-height:95dvh;overflow-y:auto;border-radius:28px;padding:clamp(20px,4vw,36px);background:#fbfaf1;color:#1c354c;box-shadow:0 28px 90px #0008}
+.dialog h2{font-size:clamp(29px,4vw,43px);margin:0 0 7px;letter-spacing:-.07em}.dialog p{color:#557089;line-height:1.55;margin:0 0 17px}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.mode{background:#eaf1f6;border:2px solid #d4e0e8;border-radius:17px;text-align:left;padding:14px 12px;color:#294660;min-height:126px}
+.mode.selected{border-color:#1787dc;background:#dcf3ff;box-shadow:inset 0 0 0 1px #1787dc}.mode .big{font-size:27px;display:block;margin-bottom:5px}.mode b{display:block;font-size:16px}.mode small{display:block;margin-top:6px;color:#577289;line-height:1.4}
+.game-options{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}
+.game-options label{flex:1;min-width:145px;color:#47647e;font-size:13px;font-weight:850}
+.game-options select{width:100%;display:block;padding:12px;border:2px solid #d4e1ed;background:white;border-radius:12px;color:#1c354c;margin-top:7px;font-weight:800}
+.start{display:block;width:100%;border-radius:16px;background:#ffc955;color:#3b2d17;font-size:21px;font-weight:1000;padding:15px}
+.explain{background:#e7f4e8;color:#31573b;border-radius:14px;padding:13px 16px;font-size:13px;line-height:1.65;margin-bottom:17px}
+.guide strong{color:#153959}
+@media(max-width:700px){
+#app{gap:7px;padding:8px max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}.brand small{display:none}.soft{padding:8px 10px}.arena{width:100%;max-height:none;border-width:2px;border-radius:14px}
+.hud{top:5px;left:5px;right:5px}.hud-box{padding:5px 7px;min-width:0;border-radius:8px}.hud-box strong{font-size:clamp(10px,2vw,14px)}.hud-box small{font-size:10px}.hud-box.center{min-width:110px}
+.notice{top:44px;font-size:11px;padding:5px 9px;border-radius:9px}.legend{font-size:10px;bottom:4px;left:4px;padding:3px 5px}.aim-tip{font-size:9px;bottom:4px;right:4px;padding:3px 6px}
+.controls{grid-template-columns:1fr 1fr auto;border-radius:14px;padding:10px;gap:7px}.ammo-control{grid-column:1/-1;display:flex;align-items:center;gap:10px}.ammo-control select{width:auto;flex:1;min-width:0;padding:7px}.ammo-control small{flex:1;text-align:right}.turn{grid-column:1/-1}.turn b{display:inline;font-size:15px}.turn small{display:inline;margin-left:8px}.control-field{font-size:11px;gap:2px 5px}.control-field output{min-width:39px;font-size:12px}.control-field input{min-width:0}#fire{min-width:78px;font-size:17px;padding:16px 8px;border-radius:12px}
+.modes{grid-template-columns:1fr}.mode{min-height:0;padding:10px 13px}.mode .big{display:inline;font-size:20px;margin-right:6px}.mode b{display:inline}.mode small{margin:3px 0 0}
+}
+@media(max-height:540px) and (min-width:600px){
+#app{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:6px;padding-top:6px;padding-bottom:max(6px,env(safe-area-inset-bottom))}
+.top{grid-column:1/-1;min-height:34px}.brand small{display:none}.brand-icon{padding:3px 7px}.soft{padding:7px 10px}
+.arena{width:min(100%,calc((100dvh - 72px)*1200/650));max-height:none;border-width:2px;border-radius:14px}
+.hud{top:4px;left:4px;right:4px;gap:3px}.hud-box{padding:4px 6px;min-width:0;border-radius:8px}.hud-box.center{min-width:0}.hud-box strong{font-size:11px}.hud-box small{font-size:10px}
+.notice{top:43px;font-size:11px;padding:4px 7px;max-width:88%}.legend{font-size:9px;bottom:4px;left:4px;padding:3px 5px}.aim-tip{display:none}
+.controls{align-self:center;grid-template-columns:1fr 1fr;padding:9px;gap:7px;border-radius:14px}
+.turn,.control-field,.ammo-control,#fire{grid-column:1/-1}.turn b{font-size:15px}.turn small{font-size:11px}.control-field{font-size:12px;gap:2px 6px}.control-field input{min-height:28px}
+.ammo-control{display:grid;gap:2px}.ammo-control select{width:100%;padding:6px;font-size:11px}.ammo-control small{text-align:left;font-size:10px}
+#fire{padding:10px;min-height:44px;font-size:18px}.footer{display:none}
+}
+
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand"><span class="brand-icon" aria-hidden="true">◉</span><div><h1>포물선 대작전</h1><small>조준하고, 비교하고, 다시 도전!</small></div></div>
+    <div class="top-actions"><button id="help" class="soft" type="button">도움말</button><button id="reset" class="soft" type="button">다시 시작</button><button id="menu" class="soft" type="button">게임 선택</button></div>
+  </header>
+  <main class="arena" aria-label="포물선 대작전 게임 장면">
+    <canvas id="scene" width="1200" height="650" role="img" aria-label="좌우 대포, 지형, 포탄 궤적이 표시되는 전장"></canvas>
+    <div class="hud" aria-live="off">
+      <div class="hud-box"><small id="leftLabel">나의 대포</small><strong id="leftScore">준비 완료</strong></div>
+      <div class="hud-box center"><small id="modeLabel">표적 연습</small><strong id="stageLabel">1단계 · 들판</strong></div>
+      <div class="hud-box right"><small id="rightLabel">표적</small><strong id="rightScore">노란 과녁</strong></div>
+    </div>
+    <div id="notice" class="notice" role="status" aria-live="polite">각도와 세기를 조절해서 노란 과녁을 맞혀 보세요!</div>
+    <div id="legend" class="legend"><span></span>직전 발사 궤적</div>
+    <div id="aimTip" class="aim-tip">대포 근처를 드래그해서 조준 가능</div>
+    <div id="finishOverlay" class="finish-overlay hidden" aria-live="polite">
+      <div class="finish-card" role="group" aria-labelledby="finishTitle">
+        <div id="finishStar" class="finish-star" aria-hidden="true">★ ★ ★</div>
+        <h2 id="finishTitle">도전 완료!</h2>
+        <p id="finishText">다시 도전해 볼까요?</p>
+        <div class="finish-actions"><button id="playAgain" type="button">다시 한 판</button><button id="chooseMode" type="button">다른 모드</button></div>
+      </div>
+    </div>
+  </main>
+  <section class="controls" aria-label="대포 조종">
+    <div class="turn"><div class="eyebrow">현재 차례</div><b id="turnLabel">파란 대포</b><small id="windLabel">바람 없음</small></div>
+    <label class="control-field" for="angle">발사 각도 <output id="angleValue" for="angle">45°</output><input id="angle" type="range" min="5" max="85" step="1" value="45"></label>
+    <label class="control-field" for="power">발사 세기 <output id="powerValue" for="power">70</output><input id="power" type="range" min="10" max="100" step="1" value="70"></label>
+    <label class="ammo-control" for="ammo">포탄 종류
+      <select id="ammo"><option value="basic">기본탄 · 정확히 맞히기</option><option value="burst">펑펑탄 · 주변까지 폭발</option></select>
+      <small id="ammoCount">연습에서는 기본탄 사용</small>
+    </label>
+    <button id="fire" type="button">발사!</button>
+  </section>
+  <footer class="footer"><span id="lastShot" aria-live="polite">각도와 세기를 한 가지씩 바꾸면 차이를 더 잘 알 수 있어요.</span><span>키보드: ← → 각도 · ↑ ↓ 세기 · Space 발사</span></footer>
+</div>
+<div id="startOverlay" class="dialog-back">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+    <div class="eyebrow">키즈케이드 · 수학과 과학을 게임으로</div>
+    <h2 id="welcomeTitle">포물선 대작전</h2>
+    <p>대포의 <strong>각도</strong>와 <strong>세기</strong>를 바꿔 보세요. 빗나간 궤적을 보고 다시 쏘면 어느새 명사수가 될 거예요. 대포 주변을 손가락으로 끌어도 조준할 수 있어요.</p>
+    <div class="modes" role="group" aria-label="게임 방식">
+      <button class="mode selected" type="button" data-mode="practice"><span class="big">◎</span><b>표적 연습</b><small>지형이 바뀌는 6단계 도전</small></button>
+      <button class="mode" type="button" data-mode="cpu"><span class="big">◈</span><b>컴퓨터 대전</b><small>상대 대포와 3점 승부</small></button>
+      <button class="mode" type="button" data-mode="local2"><span class="big">⇄</span><b>친구와 대전</b><small>한 기기로 번갈아 발사</small></button>
+    </div>
+    <div class="game-options">
+      <label>도움 수준
+        <select id="difficulty"><option value="easy">쉬움 · 예상 궤적 보이기</option><option value="normal" selected>보통 · 이전 궤적만 보기</option><option value="hard">도전 · 궤적 힌트 없음</option></select>
+      </label>
+      <label>바람
+        <select id="windOption"><option value="off" selected>끄기 · 기본 학습</option><option value="on">켜기 · 도전 학습</option></select>
+      </label>
+    </div>
+    <div class="explain">첫 번째 발사는 마음껏! 다음 발사에서도 설정이 유지되니 <strong>각도 또는 세기 하나만 바꾸어</strong> 비교하세요. 대전에서는 포탄이 떨어진 땅에 구덩이가 생겨요. <strong>펑펑탄은 한쪽당 2발</strong>만 사용할 수 있어요.</div>
+    <button id="start" type="button" class="start">게임 시작</button>
+  </div>
+</div>
+<div id="helpOverlay" class="dialog-back hidden">
+ <div class="dialog guide" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <h2 id="helpTitle">이렇게 해 봐요</h2>
+  <p><strong>1.</strong> 각도 슬라이더를 움직이거나 대포 근처에서 드래그해 조준해요.<br><strong>2.</strong> 발사 세기를 높이면 포탄이 더 빠르게 날아가요.<br><strong>3.</strong> 지난 각도와 세기를 보며 하나씩 바꿔 봐요.<br><strong>4.</strong> 친구 대전에서는 기본탄이나 펑펑탄으로 명중해 3점을 먼저 얻어요. 포탄이 땅을 파서 다음 차례 지형도 바뀌어요!</p>
+  <div class="explain">같은 높이에서 출발하고 떨어질 때, 바람이 없고 발사 세기가 같다면 45°에서 가장 멀리 날아가요. 높은 곳에 있는 과녁, 언덕, 바람은 결과를 바꿀 수 있어요.</div>
+  <button id="closeHelp" type="button" class="start">게임으로 돌아가기</button>
+ </div>
+</div>
+<script src="../../kidscade-game-sdk.js" data-game-id="low_parabola_battle" data-title="포물선 대작전" data-shell="true" data-orientation="landscape"></script>
+<script src="physics.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

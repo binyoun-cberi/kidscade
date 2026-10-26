@@ -133,6 +133,7 @@
       'tod_emoji_pang','high_emergency_escape','tod_heaven_stairs'
     ]),
     stage:Object.freeze([
+      'low_parabola_battle',
       'squid_redlight',
       'squid_tug',
       'squid_marbles',
