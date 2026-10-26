@@ -81,7 +81,7 @@ function landOn(animal){
  return true;
 }
 function findLanding(){
- if(!g||g.status!=='air'||!g.held)return false;
+ if(!g||g.status!=='air'||!g.held||g.airTimer>1.14)return false;
  let target=null,best=Infinity;
  for(const a of g.animals){
   const delta=Math.abs(a.x-g.aimX);
