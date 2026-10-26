@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#dbe6bd"><meta name="description" content="동물 등에 올라타고, 손을 떼어 점프하고, 다시 눌러 새로운 동물로 갈아타는 서부 로데오 질주 게임">
+<title>달려라 로데오 | 키즈케이드</title>
+<link rel="stylesheet" href="stampede.css">
+<script src="../../kidscade-game-sdk.js" data-game-id="western_quickdraw" data-title="달려라 로데오" data-shell="true" data-orientation="any"></script>
+<script defer src="stampede.js"></script>
+</head><body>
+<main id="app">
+ <canvas id="scene" tabindex="0" aria-label="달려라 로데오 게임 화면. 터치해서 달리고 끌어서 방향을 바꾸고, 손을 떼 점프하고, 공중에서 다시 눌러 다른 동물에 올라타세요."></canvas>
+ <header id="hud" class="hidden" aria-live="off">
+   <div><b id="distance">0m</b><span id="rideCount">갈아타기 0회</span></div>
+   <div id="speciesLabel">말</div>
+   <button type="button" id="pauseBtn" aria-label="일시정지">Ⅱ</button>
+ </header>
+ <div id="meter" class="hidden" aria-label="동물 기분"><span id="meterFill"></span></div>
+ <div id="instruction" class="hidden" aria-live="polite"></div>
+ <section id="menu" class="overlay">
+  <div class="panel">
+   <p class="eyebrow">KIDSCADE · WESTERN RUNNER</p>
+   <h1>달려라 로데오!</h1>
+   <p class="lead">동물 등에 올라타서 질주하고, 다음 동물로 갈아타세요!</p>
+   <div class="banner" aria-hidden="true"><span>🌾</span><strong>잡고 → 뛰고 → 다시 잡기!</strong><span>🐎</span></div>
+   <div class="guide">
+    <p><strong>① 누르고 끌기</strong> 동물을 타고 좌우로 이동해요.</p>
+    <p><strong>② 손 떼기</strong> 뛰어올라 다음 동물을 노려요.</p>
+    <p><strong>③ 공중에서 다시 누르기</strong> 올가미를 던져 갈아타요.</p>
+    <p><strong>④ 동물 기분 살피기</strong> 성질을 내기 전에 갈아타요!</p>
+   </div>
+   <p class="desktop">PC: 스페이스 누르기·떼기·다시 누르기 / ← → 방향키</p>
+   <div class="record"><span id="best">최고 거리 —</span><span id="collection">동물 도감 0/6</span></div>
+   <button type="button" class="primary" id="startBtn">로데오 시작</button>
+   <a href="arcade.html" class="back">서부 놀이터로 돌아가기</a>
+  </div>
+ </section>
+ <section id="result" class="overlay hidden" aria-live="polite">
+  <div class="panel"><p class="eyebrow">로데오 결과</p><h2 id="resultTitle">멋진 질주!</h2>
+   <p id="resultReason"></p>
+   <div class="result-stats"><div><small>이번 거리</small><b id="resultDistance">0m</b></div><div><small>갈아탄 횟수</small><b id="resultTransfers">0회</b></div></div>
+   <p id="resultAnimals"></p>
+   <button type="button" id="retryBtn" class="primary">다시 도전</button>
+   <button type="button" id="homeBtn" class="secondary">메뉴로</button>
+  </div>
+ </section>
+ <section id="paused" class="overlay hidden"><div class="panel">
+  <h2>잠깐 쉬어가요</h2><p>다시 시작해도 질주했던 기록은 그대로예요.</p>
+  <button type="button" id="resumeBtn" class="primary">계속하기</button>
+  <button type="button" id="pauseHomeBtn" class="secondary">메뉴로</button>
+ </div></section>
+</main></body></html>

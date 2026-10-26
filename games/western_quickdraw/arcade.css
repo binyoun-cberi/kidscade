@@ -38,3 +38,10 @@ h1{font-weight:950;letter-spacing:-.06em;font-size:clamp(28px,6vw,42px);margin:7
 #soundBtn{pointer-events:auto;width:44px;height:44px;border:0;border-radius:50%;background:#e8e4db;color:#59524c;font-weight:950;font-size:19px}
 #soundBtn[aria-pressed="true"]{background:#d9d2c8;color:#817a70}
 @media(max-width:450px){#sessionHud{padding-left:10px;padding-right:10px}.hud-right{gap:3px}#soundBtn,#pauseBtn{width:42px;height:42px}#gameName{max-width:115px}}
+
+.rodeo-feature{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px;margin:5px 0 12px;background:linear-gradient(120deg,#dfe6c9,#f2e9d4);border:2px solid #9dac83;border-radius:14px;text-align:left;text-decoration:none;color:#3f6044}
+.rodeo-feature span{font-size:11px;font-weight:900;color:#6b7c51}
+.rodeo-feature strong{font-size:22px;font-weight:950}
+.rodeo-feature small{font-size:12px;line-height:1.5;color:#526a50}
+.rodeo-feature:hover,.rodeo-feature:focus-visible{background:#d4e3c2}
+@media(max-height:610px){.rodeo-feature{padding:8px 11px;margin:2px 0 7px}.rodeo-feature strong{font-size:17px}}
