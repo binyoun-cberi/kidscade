@@ -9,6 +9,7 @@
     people:{title:'역사 인물',detail:'업적을 보고 이름 맞히기'},
     heritage:{title:'문화유산',detail:'특징을 보고 이름 맞히기'},
     'choice-short':{title:'직접 답하기',detail:'객관식 + 주관식 섞기'},
+    short:{title:'단답형',detail:'정답을 키보드로 직접 입력'},
     'figure-sort':{title:'시대별 인물 모으기',detail:'인물 카드를 시대별로 끌어다 놓기'}
   };
   const SETTINGS=[
@@ -108,7 +109,14 @@
       if(scoreField)fields.append(scoreField);
     }
     node.querySelectorAll(':scope > .grid').forEach(unused=>{if(!unused.children.length)unused.remove();});
-    select.addEventListener('change',refresh);
+    select.addEventListener('change',()=>{
+      if(select.value==='short'){
+        const secondsId=section.section==='hostSetup'?'seconds':section.section==='soloSetup'?'soloSeconds':'roundSeconds';
+        const time=byId(secondsId);
+        if(time&&Number(time.value)<20)time.value='20';
+      }
+      refresh();
+    });
     byId(section.count)?.addEventListener('change',refresh);
     panels.push({section,select,buttons,eraFold,advanced});
     node.classList.add('enhanced');

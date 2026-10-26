@@ -59,6 +59,7 @@
     aquariumSave: 'kidscade_aquarium_v1',
     byeokrandoSave: 'kidscade_byeokrando_v1',
     byeokrandoTutorialV2: 'kidscade_byeokrando_tutorial_v2',
+    byeokrandoTradeIntelV1: 'kidscade_byeokrando_trade_intel_v1',
     musicStudioSave: 'kidscade_music_studio_v2',
     timingExact10Local: 'kidscade_timing_exact10_local_v1',
     omokArenaSave: 'kidscade_omok_arena_v1',
@@ -73,6 +74,8 @@
     gugudanSettings: 'kidscade_gugudan_settings_v1',
     gugudanWins: 'kidscade_gugudan_wins_v1',
     gugudanHighScore: 'kidscade_gugudan_high_score_v1',
+    labWaterSortBestMoves: 'kidscade_labWaterSortBestMoves',
+    labWaterSortMarkers: 'kidscade_labWaterSortMarkers',
     topKingRecord: 'kidscade_top_king_record_v1',
     metroPlannerSave: 'kidscade_metro_planner_v1',
     disasterCityBestSeconds: 'kidscade_disaster_city_best_seconds',
@@ -128,7 +131,8 @@
   const PREFIXES = Object.freeze({
     languageV3: 'kidscade_language_v3_',
     gameSdkV1: 'kidscade_game_v1:',
-    gameSdkV2: 'kidscade_game_v2:'
+    gameSdkV2: 'kidscade_game_v2:',
+    muhanruRainBest: 'kidscade_muhanru_rain_best_'
   });
 
   function getStorage() {

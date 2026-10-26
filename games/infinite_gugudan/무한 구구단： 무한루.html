@@ -359,6 +359,8 @@
     @keyframes impactBurst{0%{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(0)}32%{opacity:1;transform:translate(-50%,-50%) scale(1.08) rotate(12deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.52) rotate(25deg)}}
 
   </style>
+  <link rel="stylesheet" href="math-rain.css?v=1">
+  <link rel="stylesheet" href="shrine-night.css?v=1">
 <script src="../../app/features/avatar/game-avatar-bridge.js?v=1"></script>
 </head>
 <body>
@@ -465,7 +467,14 @@
         </div>
       </div>
 
-      <div class="arena" id="arena">
+      <div class="arena shrine-theme" id="arena">
+        <div class="shrine-atmosphere" aria-hidden="true">
+          <div class="shrine-fog fog-back"></div>
+          <div class="shrine-fog fog-front"></div>
+          <i class="shrine-ghostlight light-left"></i>
+          <i class="shrine-ghostlight light-right"></i>
+          <i class="shrine-ghostlight light-far"></i>
+        </div>
         <div class="speed-lines"></div>
         <div class="status-float" id="battleStatus">준비!</div>
         <div class="cpu-question" id="cpuQuestion">CPU 계산 중...</div>
@@ -757,6 +766,20 @@
     }
     function comboTier(combo){
       return combo>=12?4:combo>=8?3:combo>=5?2:combo>=3?1:0;
+    }
+    // A short impulse marks every answer; the existing combo tiers remain the long-term reward.
+    function showEnergyFeedback(side,amount,grade){
+      if(!els.arena||window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+      var number=document.createElement("span");
+      number.className="energy-number"+(side===1?" p2":"");
+      number.textContent=grade+"  +"+Math.round(amount);
+      number.setAttribute("aria-hidden","true");
+      var wave=document.createElement("span");
+      wave.className="energy-wave";
+      wave.setAttribute("aria-hidden","true");
+      els.arena.appendChild(wave);
+      els.arena.appendChild(number);
+      setTimeout(function(){number.remove();wave.remove()},730);
     }
     function showImpact(side){
       var burst=$("impactBurst");if(!burst)return;
@@ -1176,6 +1199,7 @@
         f.correct++;f.answered++;f.totalMs+=elapsed;f.combo++;f.maxCombo=Math.max(f.maxCombo,f.combo);
         var p=powerFor(elapsed,f.combo,f)*result.bonus;
         applyForce(side,p);
+        showEnergyFeedback(side,p,speedWord(elapsed,f));
         var msg=speedWord(elapsed,f)+"  +"+Math.round(p)+" 출력";
         if(f.kind==="fraction")msg=result.reduced?"⚡ 약분 완성!  +"+Math.round(p)+" 출력":"정답! 기약분수면 출력 +25%";
         feedback(side,msg,true);
@@ -1183,7 +1207,8 @@
         showImpact(side);
         sfxCorrect(side,f.combo);
         boostBeam(side);
-        setTimeout(function(){if(state.active)newQuestion(side)},110);
+        // Do not let a pending answer replace the first question of a new round.
+        setTimeout(function(){if(state.active&&state.fighters[side]===f)newQuestion(side)},110);
       }else{
         f.wrong++;f.combo=0;
         applyPenalty(side,5.5);
@@ -1243,7 +1268,7 @@
           var elapsed=performance.now()-f.started;
           f.correct++;f.answered++;f.totalMs+=elapsed;f.combo++;f.maxCombo=Math.max(f.maxCombo,f.combo);
           var p=powerFor(elapsed,f.combo,f);
-          applyForce(1,p);feedback(1,"CPU "+speedWord(elapsed,f),true);pulseState(1,"fire",210,"idle");showImpact(1);sfxCorrect(1,f.combo);boostBeam(1);
+          applyForce(1,p);showEnergyFeedback(1,p,speedWord(elapsed,f));feedback(1,"CPU "+speedWord(elapsed,f),true);pulseState(1,"fire",210,"idle");showImpact(1);sfxCorrect(1,f.combo);boostBeam(1);
         }
         updateCombo();
         if(state.active){newQuestion(1);scheduleCpu()}
@@ -1422,8 +1447,11 @@
       o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+duration+.02);
     }
     function sfxCorrect(side,combo){
-      var base=side===0?430:300;tone(base+Math.min(combo,8)*28,.09,"triangle");
-      setTimeout(function(){tone(base*1.45,.08,"sine")},45);
+      var base=side===0?440:340;
+      var note=base*Math.pow(2,Math.min(combo-1,7)/12);
+      tone(note,.09,"triangle");
+      setTimeout(function(){if(state.sound)tone(note*1.5,.075,"sine")},55);
+      if(combo>=3&&combo%3===0)setTimeout(function(){if(state.sound)tone(note*2,.1,"sine")},110);
     }
     function sfxWrong(){tone(145,.2,"sawtooth")}
 
@@ -1433,5 +1461,7 @@
 <script>
 (()=>{const L=document.getElementById('leftSprite');if(!L)return;function sync(){const f=document.getElementById('leftFighter'),st=f?.dataset.state||'idle';if(window.KidscadeGameAvatar?.applyImg(L,st)){L.classList.add('kidscade-player-avatar')}requestAnimationFrame(sync)}requestAnimationFrame(sync)})();
 </script>
+<script src="math-rain-engine.js?v=1"></script>
+<script src="math-rain.js?v=1"></script>
 </body>
 </html>

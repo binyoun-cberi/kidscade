@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#e9f0e5">
+<title>로타리클럽 — 키즈케이드</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main id="app">
+  <canvas id="map" aria-label="도시와 도로를 그리는 2D 교통 지도. 도로 건설을 선택해 도시 사이를 드래그하세요."></canvas>
+  <header class="hud surface" aria-label="도시 운영 현황">
+    <div class="hud-title"><span class="eyebrow">ROTARY CLUB</span><strong>로타리클럽</strong></div>
+    <div class="metric clock"><span id="timePhase" class="phase">아침</span><strong id="clock">05:30</strong><small id="day">1일째</small></div>
+    <div class="metric"><span>도로 자재</span><strong id="budget">445</strong></div>
+    <div class="metric delivered"><span>교통 흐름</span><strong id="flow">연결 전</strong></div>
+    <div class="metric waiting"><span>도로 상태</span><strong id="queueState">한산</strong></div>
+  </header>
+  <nav class="actions surface" aria-label="게임 설정">
+    <button id="pauseBtn" type="button" aria-label="일시정지 또는 재개" title="일시정지">Ⅱ</button>
+    <button id="speedBtn" type="button" aria-label="게임 속도 바꾸기" title="게임 속도">×1</button>
+    <button id="zoomIn" type="button" aria-label="확대" title="확대">＋</button>
+    <button id="zoomOut" type="button" aria-label="축소" title="축소">−</button>
+    <button id="resetView" type="button" aria-label="지도 전체 보기" title="전체 보기">⛶</button>
+    <button id="helpBtn" type="button" aria-label="도움말" title="도움말">?</button>
+  </nav>
+  <section id="guide" class="guide surface" aria-live="polite">
+    <span id="guideLabel" class="eyebrow">오늘의 설계</span>
+    <strong id="guideTitle">두 도시를 이어 주세요.</strong>
+    <p id="guideText">햇살마을에서 중앙업무지구까지 손가락이나 마우스로 도로를 그려 보세요.</p>
+  </section>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div class="bottom-wrap">
+    <section class="toolbar surface" aria-label="도로 건설 도구">
+      <div class="mode-group">
+        <button class="tool selected" data-mode="road" type="button"><span class="symbol">〰</span><b>도로 그리기</b></button>
+        <button class="tool" data-mode="widen" type="button"><span class="symbol">⇔</span><b>차선 확장</b></button>
+        <button class="tool" data-mode="light" type="button"><span class="symbol">🚦</span><b>신호등</b></button>
+        <button class="tool" data-mode="roundabout" type="button"><span class="symbol">◉</span><b>회전교차로</b></button>
+        <button class="tool" data-mode="island" type="button"><span class="symbol">⤵</span><b>교통섬</b></button>
+        <button class="tool" data-mode="overpass" type="button"><span class="symbol">⌒</span><b>고가도로</b></button>
+        <button class="tool" data-mode="ramp" type="button"><span class="symbol">⤴</span><b>진출입로</b></button>
+        <button class="tool" data-mode="pan" type="button"><span class="symbol">✥</span><b>지도 이동</b></button>
+      </div>
+      <div class="toolbar-divider" aria-hidden="true"></div>
+      <div class="lane-group" role="group" aria-label="새 도로의 차로 수">
+        <span class="lane-label">도로 폭</span>
+        <button class="lane selected" type="button" data-lanes="2">2차로</button>
+        <button class="lane" type="button" data-lanes="4">4차로</button>
+        <button class="lane" type="button" data-lanes="6">6차로</button>
+      </div>
+      <button id="undoBtn" class="undo" type="button" aria-label="마지막 작업 되돌리기" title="되돌리기">↶ <span>되돌리기</span></button>
+    </section>
+    <p class="bottom-hint" id="editHint">시작점부터 끝점까지 드래그하거나, 시작과 끝을 차례로 누르세요.</p>
+  </div>
+  <div id="intro" class="overlay">
+    <div class="intro-card">
+      <span class="eyebrow">KIDSCade · 2D 교통 설계 게임</span>
+      <h1>로타리클럽<span class="road-mark">〰</span></h1>
+      <p>햇살마을에서 일터로, 다시 집으로. 모두가 오가는 길을 직접 만들어 주세요. 아침과 저녁에는 차들이 몰려요.</p>
+      <div class="instruction">
+        <div><span>01</span><b>도로를 그려요</b><small>도시에서 도시로 손가락을 끌어 보세요.</small></div>
+        <div><span>02</span><b>자동차를 살펴봐요</b><small>막히는 곳을 보면 해결책이 보여요.</small></div>
+        <div><span>03</span><b>도시가 성장해요</b><small>일터와 상점이 늘어나면 새로운 길이 필요해요.</small></div>
+      </div>
+      <p id="overwriteWarning" class="overwrite-warning hidden" role="status">이어서 만들 수 있는 도시가 있어요. 새로 시작하면 이전 도시의 저장 기록이 바뀌어요.</p>
+      <button id="startBtn" class="primary" type="button">새 도시 시작하기</button>
+      <button id="continueBtn" class="secondary hidden" type="button">이어서 설계하기</button>
+    </div>
+  </div>
+  <div id="help" class="overlay hidden">
+    <div class="intro-card help-card">
+      <span class="eyebrow">로타리클럽 · 안내</span>
+      <h2>길을 그리는 작은 요령</h2>
+      <p>도로 그리기에서 도시 사이를 드래그해요. 두 곳을 차례로 눌러 직선으로 연결해도 돼요. 기존 도로 중간에 새 도로를 이으면 교차로가 생겨요.</p>
+      <div class="help-list">
+        <p><b>2·4·6차로</b> 넓은 길은 더 많은 차량을 보낼 수 있지만 자재가 더 들어요.</p>
+        <p><b>차선 확장</b> 도로를 누르면 기존 도로의 차선이 두 개씩 늘어나요.</p>
+        <p><b>신호등</b> 교차로를 누르면 설치하거나 철거할 수 있어요.</p>
+        <p><b>회전교차로</b> 지상 교차로를 눌러 회전하는 일방통행 차로로 바꿔요. 들어오는 차는 돌고 있는 차에 양보해요.</p>
+        <p><b>교통섬</b> 교차로에서 우회전할 모퉁이를 누르면 차량이 중앙을 통과하지 않고 지나가는 일방통행 차로가 생겨요.</p>
+        <p><b>고가도로</b> 다른 높이의 길을 그려요. 지상 도로와 겹쳐도 바로 연결되지 않아요.</p>
+        <p><b>진출입로</b> 먼저 지상 도로에서 시작해 고가도로까지 연결하세요. 내려오는 차량도 이 길을 거꾸로 이용할 수 있어요.</p>
+        <p><b>지도 이동</b> 화면을 드래그해 움직이거나 손가락 두 개로 확대·축소할 수 있어요.</p>
+        <p><b>성장과 보상</b> 차들이 목적지에 잘 도착하도록 길을 개선하면 다음 날 도로 자재도 받을 수 있어요. 도시가 연결되면 새 지역도 등장해요.</p>
+      </div>
+      <button id="closeHelp" class="primary" type="button">이해했어요</button>
+    </div>
+  </div>
+</main>
+<script type="module" src="./game.js"></script>
+</body>
+</html>

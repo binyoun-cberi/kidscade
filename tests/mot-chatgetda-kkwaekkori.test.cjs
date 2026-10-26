@@ -26,7 +26,7 @@ test('game loads local Three.js and has touch controls, audio clues, and hints',
   assert.match(html,/three-r160\/three\.module\.js/);
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="tod_mot_chatgetda_kkwaekkori"/);
-  for(const id of ['town','targetPreview','rotateLeft','rotateRight','seeThrough','hintBtn','zoomIn','zoomOut','finish','start']) assert.match(html,new RegExp(`id="${id}"`));
+  for(const id of ['town','targetPreview','rotateLeft','rotateRight','seeThrough','hintBtn','zoomIn','zoomOut','finish','start','challengeStart','challengeHud','challengeTimer','compactMission']) assert.match(html,new RegExp(`id="${id}"`));
   for(const control of ['pointerdown','pointermove','pointerup','pointercancel','wheel','speechSynthesis','localStorage','GLTFLoader','SkeletonUtils']) assert.ok(code.includes(control),control);
   assert.match(css,/touch-action:none/);
 });
@@ -62,7 +62,7 @@ test('residents stay on visible sidewalk routes during life simulation',async()=
     for(const person of town.people){
       const at=getRoutePosition(person,town.config),center=getBlockCenter(person.block,town.config);
       assert.ok(Number.isFinite(at.x)&&Number.isFinite(at.z));
-      assert.ok(Math.abs(at.x-center.x)<=1.72 && Math.abs(at.z-center.z)<=2.151);
+      assert.ok(Math.abs(at.x-center.x)<=2.25 && Math.abs(at.z-center.z)<=2.75);
       assert.ok(person.elapsed>=0);
     }
   }
@@ -116,4 +116,64 @@ test('hard clues include a visible prop and near-matches differ in a meaningful 
     assert.ok(foils.length>0);
     for(const foil of foils){const target=town.people.find(p=>p.id===foil.foilFor);assert.equal(foil.modelVariant,target.modelVariant);assert.equal(foil.activity,target.activity);assert.notEqual(foil.propVariant,target.propVariant);}
   }
+});
+
+test('Critter-inspired challenge ramps its crowd and clamps movement difficulty',async()=>{
+  const {getChallengeSettings,CHALLENGE,makeTown}=await simPromise;
+  assert.deepEqual([1,2,3,14,99].map(i=>getChallengeSettings(i).residents),[11,14,17,50,51]);
+  assert.deepEqual([1,2,3,14,99].map(i=>getChallengeSettings(i).distractors),[10,13,16,49,50]);
+  assert.equal(getChallengeSettings(1).speed,1);
+  assert.ok(getChallengeSettings(11).speed>getChallengeSettings(10).speed);
+  assert.equal(getChallengeSettings(9999).speed,2.3);
+  assert.equal(CHALLENGE.seconds,20);
+  assert.equal(CHALLENGE.wrongPenalty,2);
+  for(let level=1;level<=25;level++){
+    const config=getChallengeSettings(level);
+    const a=makeTown(config.stageName,292+level,'easy',true,config);
+    assert.equal(a.people.length,config.residents);
+    assert.equal(a.order.length,1);
+    assert.ok(a.people.every(p=>Number.isFinite(p.phase)&&p.challengeSpeed>=1));
+    assert.ok(a.people.every(p=>p.slot<3),'each district accommodates no more than 3 residents');
+  }
+});
+
+test('moving neighbors use a separate unobstructed lane and never teleport',async()=>{
+  const {makeTown,getRoutePosition,movePeople}=await simPromise;
+  for(const size of ['small','medium','large']){
+    const town=makeTown(size,812);
+    let previous=new Map(town.people.map(p=>[p.id,getRoutePosition(p,town.config)]));
+    let moving=0;
+    for(let i=0;i<800;i++){
+      movePeople(town,.1);
+      for(const p of town.people){
+        const at=getRoutePosition(p,town.config),before=previous.get(p.id);
+        const dist=Math.hypot(at.x-before.x,at.z-before.z);
+        assert.ok(dist<.6,`teleportation: ${size}/${p.id} moved ${dist}`);
+        if(dist>.004)moving++;
+        previous.set(p.id,at);
+      }
+    }
+    assert.ok(moving>100,'the town should not look like a collection of statues');
+    for(const block of town.blocks){
+      const occupants=town.people.filter(p=>p.block.id===block.id);
+      for(let i=0;i<occupants.length;i++)for(let j=i+1;j<occupants.length;j++){
+        const a=getRoutePosition(occupants[i],town.config),b=getRoutePosition(occupants[j],town.config);
+        assert.ok(Math.hypot(a.x-b.x,a.z-b.z)>.45,'characters should not occupy the same standing position');
+      }
+    }
+  }
+});
+
+test('3D picking, honest prop fallbacks and rotated-camera ground dragging are present',()=>{
+  assert.match(code,/intersectObjects\(citizens\.children,true\)/);
+  assert.match(code,/intersectPlane\(new THREE\.Plane/);
+  assert.match(code,/seeThrough=false;[\s\S]*?'seeThrough'\)\.setAttribute\('aria-pressed','false'\)/);
+  assert.match(code,/smallFallback\(url\)/);
+  assert.match(code,/removeOccluder\(fallback\)/);
+  assert.match(code,/challengeLevel\+1/);
+  assert.match(code,/finishChallenge\(/);
+  assert.match(html,/20초 연속 찾기 도전/);
+  assert.match(code,/sim\.mjs\?v=4/);
+  assert.match(code,/pinchCenter/);
+  assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
 });

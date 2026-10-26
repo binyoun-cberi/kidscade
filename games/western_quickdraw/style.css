@@ -35,3 +35,8 @@ h1,h2{margin:7px 0;font-weight:950;letter-spacing:-.065em}h1{font-size:clamp(29p
 @media(max-height:670px){.panel{padding:12px 20px}.hero{height:58px;transform:scale(.68);margin:-16px auto -9px}.modes{margin:9px 0}.mode{min-height:59px;padding:7px 3px}.options{margin-bottom:6px}.help{margin:6px 0 10px}.lead{margin-bottom:7px}h1{font-size:30px}}
 @media(max-width:370px){.score{left:9px}.score strong{font-size:21px}.score small{font-size:11px}.mode strong{font-size:11px}.mode span{font-size:9px}.panel{padding:14px}}
 @media(prefers-reduced-motion:reduce){#centerSignal{transition:none}.main-button:active{transform:none}}
+
+.arcade-link{display:block;margin:9px auto 1px;width:100%;padding:12px 8px;border:1px solid #aaa49a;border-radius:12px;background:#f6f2ea;text-decoration:none;color:#51453f;font-size:14px;font-weight:900;text-align:center}
+.arcade-link:hover,.arcade-link:focus-visible{background:#e9e1d6;border-color:#7e6c5d}
+
+.rodeo-link{display:block;margin:10px auto 0;width:100%;padding:13px 7px;border:0;border-radius:12px;background:#587150;color:#fff;text-decoration:none;text-align:center;font-size:15px;font-weight:900}.rodeo-link:hover,.rodeo-link:focus-visible{background:#425b3f}

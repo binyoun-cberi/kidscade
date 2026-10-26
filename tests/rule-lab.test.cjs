@@ -120,7 +120,7 @@ test('내 말 좀 들어 loads the SDK after the body content so startup cannot 
   const html=read('games/high_rule_lab/index.html');
   const bodyIndex=html.indexOf('<body>');
   const sdkIndex=html.indexOf('kidscade-game-sdk.js');
-  const gameIndex=html.indexOf('./game.js?v=5');
+  const gameIndex=html.indexOf('./game.js?v=7');
   assert.ok(bodyIndex>=0);
   assert.ok(sdkIndex>bodyIndex,'SDK must load after <body>');
   assert.ok(gameIndex>sdkIndex,'game runtime must load after SDK');

@@ -10,7 +10,9 @@ const SAVE_KEY='kidscade_game_v1:high_rule_lab:progress_v3';
 const LEGACY_SAVE_KEY='kidscade_game_v1:high_rule_lab:progress_v2';
 const ASSETS={hero:'../../assets/game/characters/people/kenney-platformer-characters/player/poses/player-stand.png',rock:'../../assets/game/2d/racing/kenney-racing-pack/objects/rock3.png'};
 const renderer=new UI.Renderer(board,activeRules,DATA,ASSETS);
-let levelIndex=0,state=null,history=null,hintStep=0,clearedLock=false,touchStart=null,audioCtx=null,lastDiff={added:[],removed:[]};
+const explorationFog=new UI.Fog(board);
+let fogPreference=true;
+let levelIndex=0,state=null,history=null,hintStep=0,clearedLock=false,winPending=false,pendingClear=null,touchStart=null,audioCtx=null,lastKeyMove=0,lastDiff={added:[],removed:[]};
 
 function clone(v){return JSON.parse(JSON.stringify(v))}
 function safeLoad(){
@@ -44,39 +46,71 @@ function flashDiff(diff,parsed){
 }
 function updateMoveLabel(){$('moveLabel').textContent=(state?state.moves:0)+'수'}
 function render(diff){
- const rules=Engine.Rules.parse(state);lastDiff=diff||{added:[],removed:[]};renderer.render(state,rules,lastDiff);updateMoveLabel();return rules;
+ const rules=Engine.Rules.parse(state);lastDiff=diff||{added:[],removed:[]};renderer.render(state,rules,lastDiff);explorationFog.render(state,rules);updateMoveLabel();$('undoBtn').disabled=!history?.canUndo();$('redoBtn').disabled=!history?.canRedo();return rules;
 }
 function loadLevel(index){
+ clearTimeout(pendingClear);pendingClear=null;winPending=false;
  levelIndex=Math.max(0,Math.min(DATA.levels.length-1,index));
  const src=DATA.levels[levelIndex];
  state=Engine.State.fromLevel(src);history=new Engine.History(state);hintStep=0;clearedLock=false;lastDiff={added:[],removed:[]};
  document.documentElement.style.setProperty('--cols',src.w);document.documentElement.style.setProperty('--rows',src.h);
+ const available=Boolean(src.mazeReworked&&levelIndex>=6);
+ $('fogBtn').hidden=!available;explorationFog.reset(src.w,src.h,available&&fogPreference);
+ $('fogBtn').textContent=fogPreference?'안개 끄기':'안개 켜기';
+ $('fogBtn').setAttribute('aria-pressed',String(fogPreference));
  $('stageLabel').textContent=(levelIndex+1)+' / '+DATA.levels.length;$('stageTitle').textContent=src.title;$('stageKicker').textContent=src.chapter;$('chapterPill').textContent=src.chapter;$('labNote').textContent=src.note||'문장을 밀어 세상의 법칙을 바꿔 보세요.';
  window.KidscadeGame?.start?.({stage:levelIndex+1});render();board.focus({preventScroll:true});announce((levelIndex+1)+'단계 '+src.title);
 }
 function move(dx,dy){
- if(clearedLock||clearDialog.open||levelDialog.open)return;
+ if(clearedLock||winPending||clearDialog.open||levelDialog.open)return;
  const beforeRules=Engine.Rules.parse(state);
  const you=state.entities.filter(e=>e.kind==='object'&&Engine.Rules.hasProp(e.type,'YOU',beforeRules));
  if(!you.length){toast('지금은 "나"인 물체가 없어요. 되돌려 볼까요?');tone(160,.08,'square');return}
  const result=Engine.Turn.step(state,{dx,dy});
  if(!result.moved){tone(135,.04,'square');return}
  state=result.state;history.push(state);render(result.diff);flashDiff(result.diff,result.rules);
- if(result.won)setTimeout(clearLevel,180);
+ if(result.won){winPending=true;pendingClear=setTimeout(()=>{pendingClear=null;if(state.status==='won')clearLevel()},190)}
 }
 function undo(){
+ clearTimeout(pendingClear);pendingClear=null;winPending=false;
  const prev=history&&history.undo();
  if(!prev){toast('더 되돌릴 수 없어요.');return}
  state=prev;clearedLock=false;render();tone(280,.05,'sine');announce('한 수 되돌렸어요.');
 }
+function redo(){
+ clearTimeout(pendingClear);pendingClear=null;winPending=false;
+ const next=history&&history.redo();if(!next){toast('다시 실행할 움직임이 없어요.');return}
+ state=next;render();tone(430,.045,'sine');announce('한 수 다시 실행했어요.');
+ if(state.status==='won'){winPending=true;pendingClear=setTimeout(()=>{pendingClear=null;if(state.status==='won')clearLevel()},190)}
+}
 function restart(){loadLevel(levelIndex);toast('처음 상태로 돌아왔어요.')}
 function clearLevel(){
- if(clearedLock)return;clearedLock=true;tone(660,.09,'sine');setTimeout(()=>tone(880,.13,'sine'),80);
+ if(clearedLock||state.status!=='won')return;winPending=false;clearedLock=true;tone(660,.09,'sine');setTimeout(()=>tone(880,.13,'sine'),80);
  const save=safeLoad(),key=String(levelIndex);save.cleared[key]=true;save.unlocked=Math.max(save.unlocked,Math.min(DATA.levels.length,levelIndex+2));const best=Number(save.best[key]);if(!best||state.moves<best)save.best[key]=state.moves;saveProgress(save);
  const clearedCount=Object.keys(save.cleared).length;window.KidscadeGame?.result?.({scope:'stage',status:'completed',outcome:'clear',score:clearedCount,scoreOptions:{unit:'단계',higherIsBetter:true},stage:levelIndex+1,completedCount:clearedCount,completed:true,moves:state.moves});
  $('clearChapter').textContent=DATA.levels[levelIndex].chapter;$('clearTitle').textContent=levelIndex===DATA.levels.length-1?'내 말 좀 들어 완주!':'실험 성공!';$('clearText').textContent=levelIndex===DATA.levels.length-1?'세상의 법칙을 읽고, 부수고, 다시 만드는 법을 익혔어요.':'세상의 법칙을 이용해 길을 만들었어요.';$('clearMoves').textContent=state.moves+'수';$('clearBest').textContent='최고 기록 '+save.best[key]+'수';$('nextBtn').textContent=levelIndex===DATA.levels.length-1?'처음으로':'다음 실험';if(!clearDialog.open)clearDialog.showModal();renderLevelGrid();announce('실험 성공. '+state.moves+'수');
 }
-function showHint(){const l=DATA.levels[levelIndex],hints=l.hints||[];if(!hints.length){toast('이 단계에는 힌트가 없어요.');return}const text=hints[Math.min(hintStep,hints.length-1)];hintStep++;toast(text);$('labNote').textContent=text;tone(420,.05,'sine');announce('힌트. '+text)}
+function toggleFog(){
+ fogPreference=!fogPreference;
+ explorationFog.toggle(fogPreference);
+ if(fogPreference)explorationFog.render(state,Engine.Rules.parse(state));
+ $('fogBtn').textContent=fogPreference?'안개 끄기':'안개 켜기';
+ $('fogBtn').setAttribute('aria-pressed',String(fogPreference));
+ announce(fogPreference?'탐험 안개를 켰어요.':'전체 지도를 볼 수 있어요.');
+}
+function showHint(){
+ const l=DATA.levels[levelIndex],hints=l.hints||[];
+ if(!hints.length){toast('이 단계에는 힌트가 없어요.');return}
+ let text;
+ if(l.mazeReworked&&hintStep===0){
+  text='먼저 갈림길을 둘러보세요. 위쪽 방과 아래쪽 방에 서로 다른 길이 있어요.';
+ }else{
+  const pos=l.mazeReworked?hintStep-1:hintStep;
+  text=hints[Math.min(Math.max(0,pos),hints.length-1)];
+ }
+ hintStep++;toast(text);$('labNote').textContent=text;
+ tone(420,.05,'sine');announce('힌트. '+text);
+}
 function renderLevelGrid(){
  const save=safeLoad();$('levelGrid').innerHTML='';let lastChapter='';
  DATA.levels.forEach((l,i)=>{if(l.chapter!==lastChapter){lastChapter=l.chapter;const h=document.createElement('div');h.className='chapter-row';const total=DATA.levels.filter(x=>x.chapter===l.chapter).length;const done=DATA.levels.reduce((n,x,j)=>n+(x.chapter===l.chapter&&save.cleared[String(j)]?1:0),0);h.innerHTML='<b>'+l.chapter+'</b><span>'+done+' / '+total+'</span>';$('levelGrid').appendChild(h)}
@@ -84,10 +118,28 @@ function renderLevelGrid(){
 }
 function openLevels(){renderLevelGrid();if(!levelDialog.open)levelDialog.showModal()}
 function bind(){
- addEventListener('keydown',e=>{if(e.repeat||levelDialog.open||clearDialog.open)return;const k=e.key.toLowerCase();const dirs={arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0],arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1]};if(dirs[k]){e.preventDefault();move(dirs[k][0],dirs[k][1]);return}if(k==='z'){e.preventDefault();undo()}else if(k==='r'){e.preventDefault();restart()}});
- document.querySelectorAll('[data-dir]').forEach(b=>b.addEventListener('click',()=>{const m={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[b.dataset.dir];move(m[0],m[1])}));
+ addEventListener('keydown',e=>{if(levelDialog.open||clearDialog.open||['INPUT','TEXTAREA','SELECT'].includes(e.target?.tagName||''))return;const k=e.key.toLowerCase();const dirs={arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0],arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1]};if(dirs[k]){e.preventDefault();const now=Date.now();if(e.repeat&&now-lastKeyMove<115)return;lastKeyMove=now;move(dirs[k][0],dirs[k][1]);return}if(e.repeat)return;if(k==='z'){e.preventDefault();e.shiftKey?redo():undo()}else if(k==='y'){e.preventDefault();redo()}else if(k==='r'){e.preventDefault();restart()}});
+ document.querySelectorAll('[data-dir]').forEach(b=>{
+  const m={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[b.dataset.dir];
+  let interval=null,delay=null;
+  const stop=()=>{clearTimeout(delay);clearInterval(interval);delay=null;interval=null};
+  b.addEventListener('pointerdown',e=>{e.preventDefault();stop();b.setPointerCapture(e.pointerId);move(m[0],m[1]);delay=setTimeout(()=>{interval=setInterval(()=>move(m[0],m[1]),125)},240)});
+  b.addEventListener('pointerup',stop);b.addEventListener('pointercancel',stop);b.addEventListener('lostpointercapture',stop);
+  b.addEventListener('click',e=>{if(e.detail===0)move(m[0],m[1])});
+ });
+ board.addEventListener('click',e=>{
+  const cell=e.target.closest('.entity');if(!cell)return;
+  const ent=state.entities.find(v=>v.id===cell.dataset.entityId);if(!ent)return;
+  let message='';
+  if(ent.kind==='word'){const info=renderer.tokenInfo(ent.token);message='글자 '+info.label+' · 밀어서 문장을 만들어 보세요.'}
+  else{
+   const rules=Engine.Rules.parse(state),properties=rules.props[ent.type]?[...rules.props[ent.type]]:[];
+   message=(DATA.N[ent.type]||ent.type)+(properties.length?' · '+properties.map(v=>DATA.P[v]||v).join(', '):' · 아직 정해진 성질이 없어요.');
+  }
+  toast(message);announce(message);
+ });
  board.addEventListener('touchstart',e=>{const t=e.changedTouches[0];touchStart={x:t.clientX,y:t.clientY}},{passive:true});board.addEventListener('touchend',e=>{if(!touchStart)return;const t=e.changedTouches[0],dx=t.clientX-touchStart.x,dy=t.clientY-touchStart.y;touchStart=null;if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;if(Math.abs(dx)>Math.abs(dy))move(Math.sign(dx),0);else move(0,Math.sign(dy))},{passive:true});
- $('undoBtn').onclick=undo;$('restartBtn').onclick=restart;$('levelBtn').onclick=openLevels;$('hintBtn').onclick=showHint;$('closeLevels').onclick=()=>levelDialog.close();$('retryBtn').onclick=()=>{clearDialog.close();loadLevel(levelIndex)};$('nextBtn').onclick=()=>{clearDialog.close();loadLevel(levelIndex===DATA.levels.length-1?0:levelIndex+1)};levelDialog.addEventListener('click',e=>{if(e.target===levelDialog)levelDialog.close()});
+ $('undoBtn').onclick=undo;$('redoBtn').onclick=redo;$('restartBtn').onclick=restart;$('levelBtn').onclick=openLevels;$('hintBtn').onclick=showHint;$('fogBtn').onclick=toggleFog;$('closeLevels').onclick=()=>levelDialog.close();$('retryBtn').onclick=()=>{clearDialog.close();loadLevel(levelIndex)};$('nextBtn').onclick=()=>{clearDialog.close();loadLevel(levelIndex===DATA.levels.length-1?0:levelIndex+1)};levelDialog.addEventListener('click',e=>{if(e.target===levelDialog)levelDialog.close()});
 }
 window.KidscadeGame?.registerPauseHandlers?.({pause(){},resume(){board.focus({preventScroll:true})}});
 // v2 regression vocabulary retained in the v3 engine: hasProp(e.type,'MOVE' hasProp(e.type,'WEAK' progress_v2

@@ -1,0 +1,126 @@
+:root{color-scheme:light;font-family:ui-sans-serif,system-ui,-apple-system,"Malgun Gothic","Segoe UI",sans-serif;color:#223831;background:#d4e9cb}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+button{font:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:3px solid #226756;outline-offset:2px}
+#app{position:relative;width:100%;height:100%;height:100dvh;overflow:hidden;isolation:isolate}
+#map{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;background:#d4e9cb}
+.surface{background:rgba(249,251,243,.93);border:1px solid rgba(53,84,69,.19);box-shadow:0 9px 29px rgba(25,54,34,.12);backdrop-filter:blur(10px)}
+.hud{position:absolute;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));z-index:3;display:flex;align-items:center;gap:0;border-radius:17px;padding:10px 12px;max-width:calc(100vw - 350px)}
+.hud-title{display:flex;flex-direction:column;padding:0 17px 0 4px;border-right:1px solid #c9d5cc}
+.eyebrow{color:#5b8070;font-size:10px;letter-spacing:.12em;font-weight:900}
+.hud-title strong{font-size:19px;letter-spacing:-.06em;white-space:nowrap}
+.metric{padding:0 15px;display:flex;flex-direction:column;min-width:93px;border-right:1px solid #e1e6e0}
+.metric:last-child{border:0}
+.metric>span:not(.phase){font-size:10px;color:#627768;font-weight:800;white-space:nowrap}
+.metric strong{font-size:21px;line-height:1.25;font-variant-numeric:tabular-nums}
+.metric small{font-size:10px;color:#627768}
+.metric.clock{flex-direction:row;align-items:center;gap:8px}
+.phase{display:inline-grid;place-items:center;min-width:31px;height:31px;padding:0 5px;border-radius:9px;background:#f5db9f;color:#755019;font-size:10px;font-weight:900}
+.metric.clock strong{font-size:20px}
+.actions{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:4;display:flex;gap:5px;padding:7px;border-radius:16px}
+.actions button{width:37px;height:36px;display:grid;place-items:center;border:1px solid #d9e0d8;background:#fffdf7;border-radius:10px;color:#274e41;font-size:19px;font-weight:900}
+.actions button:hover,.actions button:active{background:#e1f2e4}
+.guide{position:absolute;top:94px;left:max(12px,env(safe-area-inset-left));z-index:3;border-radius:14px;width:min(320px,calc(100vw - 24px));padding:12px 15px;pointer-events:none}
+.guide strong{display:block;font-size:15px;margin-top:4px}
+.guide p{margin:5px 0 0;font-size:12px;line-height:1.55;color:#566d5b}
+#toast{position:absolute;z-index:8;left:50%;top:85px;transform:translate(-50%,-8px);padding:10px 16px;border-radius:12px;background:#214e3d;color:#fff;font-weight:800;font-size:12px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;text-align:center;max-width:min(85vw,520px)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.bottom-wrap{position:absolute;z-index:5;bottom:max(10px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 18px)}
+.toolbar{display:flex;gap:11px;align-items:stretch;padding:8px;border-radius:18px;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.toolbar::-webkit-scrollbar{display:none}
+.mode-group,.lane-group{display:flex;align-items:stretch;gap:5px;flex:0 0 auto}
+.tool{width:71px;min-height:59px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;border:1px solid transparent;border-radius:12px;background:transparent;color:#36534a}
+.tool .symbol{font-size:21px;line-height:1}
+.tool b{font-size:10px;white-space:nowrap}
+.tool.selected,.lane.selected{background:#d4ead7;color:#165a46;border-color:#8dbca0}
+.tool:hover,.lane:hover{background:#e7f2e7}
+.toolbar-divider{width:1px;background:#cbd7cb;flex:0 0 auto}
+.lane-group{align-items:center}
+.lane-label{font-size:10px;color:#587260;font-weight:900;white-space:nowrap;align-self:center;margin-right:4px}
+.lane{background:#fff;border:1px solid #d8e2d8;color:#466452;border-radius:11px;padding:0 11px;font-weight:900;font-size:11px;white-space:nowrap}
+.undo{border:1px solid #d8e2d8;border-radius:11px;background:#fff;color:#466452;font-size:20px;font-weight:900;white-space:nowrap;padding:0 12px}
+.undo span{font-size:10px}
+.bottom-hint{font-size:11px;color:#2e5845;background:rgba(248,251,243,.87);width:fit-content;margin:5px auto 0;padding:5px 10px;border-radius:9px;text-align:center}
+.overlay{position:absolute;inset:0;z-index:10;display:grid;place-items:center;background:rgba(27,48,42,.62);padding:18px;overflow:auto}
+.hidden{display:none!important}
+.intro-card{width:min(520px,100%);max-height:90dvh;overflow-y:auto;background:#fffdf7;border:1px solid #e6eee1;border-radius:25px;padding:30px;box-shadow:0 25px 90px rgba(11,34,25,.3)}
+.intro-card h1{font-size:clamp(36px,7vw,53px);margin:6px 0 12px;letter-spacing:-.08em;line-height:1.1}
+.road-mark{font-size:35px;color:#82ba9c;margin-left:13px}
+.intro-card>p{font-size:14px;line-height:1.8;color:#597061}
+.instruction{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:20px 0}
+.instruction>div{background:#eef5e9;border:1px solid #dde9db;padding:12px;border-radius:12px}
+.instruction span{display:block;font-size:14px;color:#4e9873;font-weight:950;margin-bottom:8px}
+.instruction b{display:block;font-size:12px}
+.instruction small{display:block;color:#677f6b;font-size:10px;line-height:1.6;margin-top:5px}
+.overwrite-warning{margin:15px 0 5px!important;border-radius:10px;padding:11px 13px;background:#fff3df;color:#8c4f2a!important;font-weight:800;font-size:12px!important;line-height:1.65!important}
+.primary,.secondary{width:100%;border-radius:12px;padding:14px;border:0;font-weight:900;font-size:14px;margin-top:8px}
+.primary{background:#246c50;color:#fff}
+.secondary{background:#e8f1e7;color:#26513d}
+.help-card h2{font-size:29px}
+.help-list{background:#f0f6ed;border-radius:15px;padding:9px 17px;margin:18px 0}
+.help-list p{font-size:13px;color:#486351;line-height:1.7}
+.help-list b{color:#185c42;margin-right:7px}
+@media(max-width:900px){
+.hud{max-width:calc(100vw - 160px);padding:7px 8px}
+.hud-title{display:none}
+.metric{min-width:62px;padding:0 9px}
+.metric strong,.metric.clock strong{font-size:15px}
+.metric.clock{gap:4px}
+.metric>span:not(.phase){font-size:9px}
+.actions{gap:3px;padding:5px}
+.actions button{width:30px;height:29px;font-size:15px}
+.guide{top:72px;width:min(278px,70vw);padding:9px 11px}
+.guide strong{font-size:12px}.guide p{font-size:10px}
+.bottom-hint{font-size:9px}
+}
+@media(max-width:600px){
+.hud{left:7px;top:max(7px,env(safe-area-inset-top));max-width:calc(100vw - 83px);overflow:hidden;border-radius:12px}
+.metric{padding:0 7px;min-width:48px}
+.metric.waiting{display:none}
+.metric.clock strong{font-size:14px}.metric small{font-size:9px}
+.phase{min-width:24px;padding:0 3px;font-size:8px;height:24px}
+.actions{right:7px;top:max(7px,env(safe-area-inset-top));display:grid;grid-template-columns:repeat(2,25px);padding:3px;gap:2px;border-radius:11px}
+.actions button{width:25px;height:26px;font-size:13px;border-radius:6px}
+.guide{top:83px;left:7px;width:min(244px,72vw)}
+.bottom-wrap{width:calc(100vw - 12px);bottom:max(5px,env(safe-area-inset-bottom))}
+.toolbar{gap:6px;border-radius:14px;padding:5px}
+.mode-group{gap:2px}.tool{width:55px;min-height:49px;gap:2px}.tool b{font-size:8px}.tool .symbol{font-size:17px}
+.lane-group{gap:3px}.lane-label{display:none}.lane{font-size:9px;padding:0 6px}
+.undo{padding:0 7px;font-size:17px}.undo span{display:none}
+.bottom-hint{max-width:100%;font-size:9px}
+.intro-card{padding:20px;border-radius:19px}
+.instruction{grid-template-columns:1fr}.instruction>div{padding:8px 10px}
+.instruction span,.instruction b,.instruction small{display:inline}.instruction span{margin-right:8px}.instruction small{margin-left:6px}
+#toast{top:143px}
+}
+/* 작은 화면에서는 도구 선택과 도로 폭·되돌리기를 분리해 항상 접근할 수 있게 한다. */
+@media(max-width:600px){
+.hud{width:calc(100vw - 83px);max-width:calc(100vw - 83px);padding:6px 5px}
+.metric{min-width:0;padding:0 5px}
+.metric.clock{flex:1 1 auto;min-width:85px;flex-direction:column;align-items:flex-start;gap:0}
+.metric.clock .phase{display:none}
+.metric.clock strong{font-size:16px}
+.metric.clock small{white-space:nowrap;font-size:9px}
+.metric:not(.clock){flex:0 0 auto;min-width:58px}
+.metric.delivered{min-width:85px}
+.metric.delivered strong{font-size:13px;white-space:nowrap}
+.toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;padding:6px;overflow:visible;align-items:center}
+.mode-group{grid-column:1/-1;min-width:0;width:100%;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#87ae91 transparent;scroll-snap-type:x proximity;overscroll-behavior-x:contain;touch-action:pan-x;padding-bottom:5px}
+.mode-group::-webkit-scrollbar{height:4px}
+.mode-group::-webkit-scrollbar-thumb{border-radius:8px;background:#8ead9b}
+.mode-group .tool{flex:0 0 57px;scroll-snap-align:start}
+.toolbar-divider{display:none}
+.lane-group{grid-column:1;min-width:0;height:35px;display:flex;justify-content:flex-start}
+.lane{min-width:60px;min-height:32px}
+.undo{grid-column:2;min-width:48px;min-height:35px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* 작은 화면에서는 가로로 숨겨진 건설 도구가 있다는 사실을 명확히 알린다. */
+@media(max-width:600px){
+  .toolbar::before{content:'도구를 옆으로 밀어 더 보기';grid-column:1/-1;display:block;font-size:10px;font-weight:800;color:#4f7760;padding:0 4px 1px;letter-spacing:-.015em}
+  .mode-group{scroll-padding-inline:8px}
+  .guide{max-height:20dvh;overflow:hidden}
+  .guide p{line-height:1.45}
+}

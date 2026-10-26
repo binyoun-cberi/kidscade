@@ -122,6 +122,7 @@
       'korean_vocab','swipe_spelling','language_arcade','hanja_test','high_body_muscle_lab','math_pi_memory','science_periodic_memory','kor_hand_twist_typing'
     ]),
     run:Object.freeze([
+      'physics_lab',
       'high_one_life','yi_sun_sin','dialect_tour',
       'squid_survival_versus',
       'squid_survival',
@@ -151,7 +152,7 @@
       'job_nail_artist','job_takoyaki_simulator','job_steak_master','job_bogle_bunsik',
       'math_icecream_division','math_stationery_boss','job_maratang_simulator','math_base10_blocks',
       'alien_pizza','alien_sandwich','burger_master','job_teacher_classroom',
-      'high_folklore_night_guard','low_juice_maker','high_midnight_diner'
+      'high_folklore_night_guard','low_juice_maker','high_midnight_diner','high_air_traffic_control'
     ]),
     mission:Object.freeze([
       'high_weathercaster_simulator','job_police_car','job_drone_pilot','job_driver_license',
@@ -162,7 +163,7 @@
       'trivia_drift_survival','high_outbreak_korea','korea_marble','high_history_map'
     ]),
     progression:Object.freeze([
-      'high_human_history_cards','high_metro_planner','trivia_blockraft','high_star_hoppers',
+      'high_human_history_cards','high_metro_planner','high_road_weaver','trivia_blockraft','high_star_hoppers',
       'high_ecopolis','high_micro_evolution','science_cosmic_growth','korean_farm'
     ]),
     sandbox:Object.freeze([

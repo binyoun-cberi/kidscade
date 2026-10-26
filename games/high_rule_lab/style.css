@@ -162,3 +162,27 @@ kbd{display:inline-block;min-width:24px;padding:3px 6px;margin-right:5px;border-
 .rule-chip .and{font-size:10px;color:#728094;font-weight:800}
 .rule-chip.negated{background:#fff1ef;border-color:#efb6af}
 .rule-chip.negated .eq{color:#c94d43;font-size:16px}
+
+
+/* 두 놀이의 연결과 조작 편의 개선 */
+.top-actions .mode-link{display:inline-flex;align-items:center;justify-content:center;min-width:90px;text-decoration:none;background:#2e6b63;color:#fff;box-shadow:0 3px 0 #12413a}
+.top-actions .mode-link:hover{background:#388376}
+.top-actions .mode-link:focus-visible{outline:3px solid #ffcf4a;outline-offset:3px}
+.top-actions .icon-btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+.inspect-note{font-size:11px;color:#6b7888;line-height:1.45;margin:8px 0 0}
+@media(max-width:980px){.top-actions{flex-wrap:wrap;justify-content:flex-end}.top-actions .mode-link{min-width:80px}}
+@media(max-width:640px){.topbar{flex-wrap:wrap}.stage-meta{order:3;flex:0 0 100%;min-height:24px;justify-content:center}.top-actions .mode-link{font-size:11px;min-width:73px;padding:0 7px}.top-actions .mode-link:before{content:none}.top-actions .icon-btn{min-width:34px;padding:0 6px}}
+
+
+/* Exploration fog: discovered cells remain faintly visible, current vicinity stays readable. */
+.exploration-fog{position:absolute;inset:0;z-index:8;pointer-events:none}
+.exploration-fog[hidden]{display:none}
+.fog-cell{position:absolute;left:0;top:0;width:calc(100% / var(--cols));height:calc(100% / var(--rows));
+ transform:translate(calc(var(--x) * 100%),calc(var(--y) * 100%));pointer-events:none;transition:background .16s}
+.fog-cell.unseen{background:rgba(7,21,37,.88)}
+.fog-cell.seen{background:rgba(7,21,37,.32)}
+.fog-cell.visible{background:transparent}
+#fogBtn{background:#34566f}
+#fogBtn[aria-pressed="true"]{background:#1d7469}
+@media(max-width:640px){#fogBtn:before{content:"◉"}}
+@media(prefers-reduced-motion:reduce){.fog-cell{transition:none}}

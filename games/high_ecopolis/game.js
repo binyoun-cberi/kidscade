@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { shared3DPath, shared3DIsApproved } from '../../assets/game/manifest/shared-community-3d.js';
+import { habitatMaturity, habitatTier, effectiveHabitatArea, advanceHabitatGrowth, constructionVisualAt, findArrivalRoutes } from './eco-world-evolution.mjs';
 
 const $=id=>document.getElementById(id);
 const ui={
@@ -104,6 +105,7 @@ let rng=Math.random,tutorialIndex=-1,tutorialMode=false;
 let drag={active:false,id:null,x:0,y:0,moved:false},pointers=new Map();
 let toastTimer=0,saveTimer=0,elapsed=0,builtCount=0,ecologyClock=0,economyClock=0,visitorSpawnClock=0;
 let simSpeed=1,lastGuideKey='',activeToolCategory='restore';
+let constructionQueue=[],natureDirty=true,natureInstances=null;
 let ecosystem=makeEcosystem();
 const sharedLoader=new GLTFLoader(),sharedCache=new Map(),sharedPending=new Map();
 const SHARED=id=>shared3DPath(id,'../../');
@@ -174,7 +176,7 @@ function biomeVigor(t){
   const biomeBoost=t.biome==='wetland'?water:t.biome==='forest'?habitat:(habitat+water)*.5;
   return clamp(local*.62+biomeBoost*.38,0,1);
 }
-function vigorBand(t){const v=biomeVigor(t);return v>.72?2:v>.42?1:0}
+function vigorBand(t){return habitatTier(t,biomeVigor(t))}
 function refreshLivingDecor(){
   if(analysisMode!=='none')return;
   for(const t of tiles){
@@ -186,6 +188,8 @@ function refreshLivingDecor(){
 }
 function addSharedBiomeVisual(t){
   if(analysisMode!=='none')return;
+  // Instanced low-poly flora fills the landscape; detailed GLBs are selected sparingly.
+  if(['forest','wetland','meadow'].includes(t.biome)&&(habitatMaturity(t)<.55||noise(t.x+97,t.z+41)>.34))return;
   const rev=t.decor.userData.rev,valid=biome=>t.decor.userData.rev===rev&&analysisMode==='none'&&t.biome===biome;
   if(t.kind==='rock'){
     const id=noise(t.x,t.z)>.5?'nature.mossyRockA':'nature.rock';
@@ -302,10 +306,100 @@ const mat={
   flower:new THREE.MeshStandardMaterial({color:0xf0d96a}),pink:new THREE.MeshStandardMaterial({color:0xf08ba1}),animal:new THREE.MeshStandardMaterial({color:0xc99562,roughness:.8})
 };
 
+// Low-poly nature is batched by material, following Hexkingdom's instancing strategy.
+// Detailed 3D assets still appear at selected sites once the habitat has matured.
+const natureDummy=new THREE.Object3D();
+function initNatureInstances(){
+  // Recreating a region must release the old instance buffers, not only detach them.
+  if(natureInstances)for(const mesh of Object.values(natureInstances))mesh.dispose?.();
+  natureInstances={};
+  const types={trunk:[geo.trunk,mat.trunk],crown:[geo.crown,mat.leaf],reed:[geo.reed,mat.leaf],stem:[geo.reed,mat.leaf],flower:[geo.flower,mat.pink]};
+  for(const [kind,[geometry,material]] of Object.entries(types)){
+    const mesh=new THREE.InstancedMesh(geometry,material,COLS*ROWS*8);
+    mesh.count=0;mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    decorGroup.add(mesh);natureInstances[kind]=mesh;
+  }
+  natureDirty=true;
+}
+function updateNatureInstances(){
+  if(!natureDirty||!natureInstances)return;
+  natureDirty=false;
+  const counts=Object.fromEntries(Object.keys(natureInstances).map(k=>[k,0]));
+  const reduced=viewSize>=25;
+  const add=(kind,x,y,z,scale,rotation=0)=>{
+    const mesh=natureInstances[kind],i=counts[kind];
+    if(i>=mesh.instanceMatrix.count)return;
+    natureDummy.position.set(x,y,z);natureDummy.rotation.set(0,rotation,0);
+    natureDummy.scale.setScalar(scale);natureDummy.updateMatrix();
+    mesh.setMatrixAt(i,natureDummy.matrix);counts[kind]=i+1;
+  };
+  if(analysisMode==='none')for(const t of tiles){
+    if(t.kind!=='land'||!['forest','wetland','meadow'].includes(t.biome))continue;
+    const p=worldPos(t),g=habitatMaturity(t),v=biomeVigor(t),stage=habitatTier(t,v);
+    const n=t.biome==='forest'?(reduced?Math.min(2,1+stage):1+stage):(reduced?2+stage:3+stage*2);
+    for(let i=0;i<n;i++){
+      const angle=noise(t.x*13+i*7,t.z*17+23)*Math.PI*2;
+      const radius=Math.sqrt(noise(t.x*29+i*3,t.z*11+i*19))*(t.biome==='forest'?.32:.36);
+      const x=p.x+Math.cos(angle)*radius,z=p.z+Math.sin(angle)*radius;
+      const variation=.7+.55*noise(t.x+i*47,t.z+i*31);
+      if(t.biome==='forest'){
+        const size=(.22+.42*g)*(.65+.35*v)*variation;
+        add('trunk',x,.12+.2*size,z,size,angle);
+        add('crown',x,.12+.68*size,z,size,angle);
+      }else if(t.biome==='wetland'){
+        const size=(.35+.5*g)*variation;
+        add('reed',x,.12+.19*size,z,size,angle);
+      }else{
+        const size=(.32+.5*g)*variation;
+        add('stem',x,.12+.19*size,z,size,angle);
+        add('flower',x,.12+.41*size,z,size*1.1,angle);
+      }
+    }
+  }
+  for(const [kind,mesh] of Object.entries(natureInstances)){
+    mesh.count=counts[kind];mesh.visible=analysisMode==='none';
+    mesh.instanceMatrix.needsUpdate=true;
+  }
+}
+const constructionRingGeometry=new THREE.RingGeometry(.27,.43,24);
+function startConstruction(building){
+  const site=new THREE.Mesh(constructionRingGeometry,new THREE.MeshBasicMaterial({
+    color:0xf0d364,transparent:true,opacity:.8,side:THREE.DoubleSide,depthWrite:false
+  }));
+  site.rotation.x=-Math.PI/2;site.position.copy(building.mesh.position);site.position.y=.27;
+  buildingGroup.add(site);building.mesh.scale.setScalar(.015);
+  constructionQueue.push({building,site,age:0});
+}
+function finishConstruction(building){
+  constructionQueue=constructionQueue.filter(rec=>{
+    if(rec.building!==building)return true;
+    rec.site.removeFromParent();rec.site.material.dispose();building.mesh.scale.setScalar(1);
+    return false;
+  });
+}
+function clearConstructions(){
+  for(const rec of constructionQueue){
+    rec.site.removeFromParent();rec.site.material.dispose();rec.building.mesh.scale.setScalar(1);
+  }
+  constructionQueue=[];
+}
+function tickConstruction(dt){
+  if(!dt||!constructionQueue.length)return;
+  for(const rec of [...constructionQueue]){
+    if(!rec.building.mesh.parent){finishConstruction(rec.building);continue}
+    rec.age+=dt;const frame=constructionVisualAt(rec.age);
+    rec.building.mesh.scale.set(frame.scaleXZ,frame.scaleY,frame.scaleXZ);
+    rec.site.material.opacity=frame.foundationOpacity;
+    if(frame.done)finishConstruction(rec.building);
+  }
+}
+
 function clearGroup(g){while(g.children.length)g.remove(g.children[0])}
 function generateWorld(worldSeed=Math.floor(Math.random()*1e9)){
+  clearConstructions();
   seed=worldSeed;rng=mulberry32(seed);tiles=[];tileMeshes=[];buildings=[];animals=[];visitors=[];windRotors.length=0;
   clearGroup(groundGroup);clearGroup(decorGroup);clearGroup(pathGroup);clearGroup(buildingGroup);clearGroup(animalGroup);clearGroup(visitorGroup);clearGroup(effectGroup);
+  initNatureInstances();
   const sc=SCENARIOS[selectedScenario]||SCENARIOS.valley;
   const riverPhase=rng()*Math.PI*2;
   for(let z=0;z<ROWS;z++)for(let x=0;x<COLS;x++){
@@ -325,7 +419,7 @@ function generateWorld(worldSeed=Math.floor(Math.random()*1e9)){
     }
     const edgeChance=selectedScenario==='dust'?.38:selectedScenario==='valley'?.31:.18;
     const edgeRock=!water&&(x<2||x>COLS-3||z<2||z>ROWS-3)&&rng()<edgeChance;
-    const t={x,z,kind:water?'water':edgeRock?'rock':'land',biome:water?'water':'barren',pollution:water?clamp(sc.waterPollution+(rng()-.5)*.16,0,1):edgeRock?0:clamp(sc.landPollution+(rng()-.5)*.25,0,1),moisture:water?1:0,path:null,mesh:null,decor:new THREE.Group(),pathVisual:new THREE.Group()};
+    const t={x,z,kind:water?'water':edgeRock?'rock':'land',biome:water?'water':'barren',pollution:water?clamp(sc.waterPollution+(rng()-.5)*.16,0,1):edgeRock?0:clamp(sc.landPollution+(rng()-.5)*.25,0,1),moisture:water?1:0,growth:0,path:null,mesh:null,decor:new THREE.Group(),pathVisual:new THREE.Group()};
     tiles.push(t);
   }
   for(const t of tiles)if(t.kind==='land')t.moisture=nearWater(t,false,1.8)?.8:clamp(.25+rng()*.25,0,1);
@@ -352,7 +446,9 @@ function refreshTileVisual(t){
   else if(t.kind==='rock')hex=0x77786e;
   else {
     const base=t.biome==='grass'?0x69a95f:t.biome==='wetland'?0x729e67:t.biome==='forest'?0x3d8154:t.biome==='meadow'?0x8dbf64:t.biome==='lawn'?0x76b95b:t.biome==='plantation'?0x4f8c50:t.biome==='paved'?0x686d70:0x81725a;
-    const c=new THREE.Color(base),dirty=new THREE.Color(0x6d5f4f);c.lerp(dirty,t.pollution*.48);hex=c.getHex();
+    const c=new THREE.Color(base),dirty=new THREE.Color(0x6d5f4f);
+    if(['forest','wetland','meadow'].includes(t.biome))c.lerp(new THREE.Color(0x69a95f),1-habitatMaturity(t));
+    c.lerp(dirty,t.pollution*.48);hex=c.getHex();
   }
   if(analysisMode==='wind'&&t.kind!=='water'){
     const c=new THREE.Color(0x273d5a).lerp(new THREE.Color(0xa8efff),windAt(t));hex=c.getHex();
@@ -370,23 +466,17 @@ function refreshTileVisual(t){
   rebuildDecor(t);
 }
 function rebuildDecor(t){
-  clearGroup(t.decor);t.decor.userData.rev=(t.decor.userData.rev||0)+1;t.decor.userData.vigorBand=vigorBand(t);const p=worldPos(t);t.decor.position.set(p.x,.12,p.z);
+  natureDirty=true;clearGroup(t.decor);t.decor.userData.rev=(t.decor.userData.rev||0)+1;t.decor.userData.vigorBand=vigorBand(t);const p=worldPos(t);t.decor.position.set(p.x,.12,p.z);
   if(analysisMode!=='none')return;
   if(t.kind==='land'&&t.biome==='barren'&&t.pollution>.55){
     const stick=new THREE.Mesh(new THREE.CylinderGeometry(.025,.04,.38,5),mat.dead);stick.rotation.z=.45;stick.position.set((noise(t.x,t.z)-.5)*.45,.18,(noise(t.z,t.x)-.5)*.45);t.decor.add(stick);
   }
-  if(t.biome==='forest'){
-    const g=treeModel();g.scale.setScalar(.52);g.position.set(-.12,0,.08);t.decor.add(g);
-  }else if(t.biome==='plantation'){
+  if(t.biome==='plantation'){
     for(let i=-1;i<=1;i++){const g=treeModel();g.scale.setScalar(.42);g.position.set(i*.25,0,0);t.decor.add(g)}
   }else if(t.biome==='lawn'){
     for(let i=0;i<3;i++){const blade=new THREE.Mesh(new THREE.BoxGeometry(.03,.13,.03),mat.leaf);blade.position.set((i-1)*.18,.06,0);t.decor.add(blade)}
   }else if(t.biome==='paved'){
     const slab=new THREE.Mesh(new THREE.BoxGeometry(.82,.035,.82),mat.dark);slab.position.y=.04;t.decor.add(slab);
-  }else if(t.biome==='meadow'){
-    for(let i=0;i<3;i++){const stem=new THREE.Mesh(geo.reed,mat.leaf);stem.scale.y=.35;stem.position.set((noise(t.x+i,t.z)-.5)*.65,.08,(noise(t.z+i,t.x)-.5)*.65);const f=new THREE.Mesh(geo.flower,i%2?mat.flower:mat.pink);f.position.set(stem.position.x,.18,stem.position.z);t.decor.add(stem,f)}
-  }else if(t.biome==='wetland'){
-    for(let i=0;i<3;i++){const r=new THREE.Mesh(geo.reed,mat.leaf);r.position.set((noise(t.x+i,t.z)-.5)*.55,.18,(noise(t.z,t.x+i)-.5)*.55);r.scale.y=.58;t.decor.add(r)}
   }
   addSharedBiomeVisual(t);
 }
@@ -570,6 +660,7 @@ function placeTool(type,t,loading=false){
   }
   if(!loading){ecoPoints-=def.cost;builtCount++;lastAction=before}
   const b={type,x:t.x,z:t.z,mesh:buildModel(type,t)};buildings.push(b);
+  if(!loading)startConstruction(b);
   if(!loading){
     if(type==='purifier')purifyLand(t,def.radius);
     if(type==='waterfilter')purifyWater(t,def.radius);
@@ -607,15 +698,15 @@ function seedBiome(center,biome,r){
   tiles.forEach(t=>{if(t.kind==='land'&&t.biome==='grass'&&t.pollution<.25&&dist(t,center)<=r){
     if(biome==='wetland'&&!nearWater(t,true,1.75))return;
     if(biome==='forest'&&nearWater(t,true,.95))return;
-    t.biome=biome;t.pollution=Math.min(t.pollution,.05);changed++;refreshTileVisual(t)
+    t.biome=biome;t.growth=.12;t.pollution=Math.min(t.pollution,.05);changed++;refreshTileVisual(t)
   }});
   ecoPoints+=changed;toast((biome==='forest'?'숲':biome==='wetland'?'습지':'꽃초원')+' '+changed+'칸이 생겼어요 · +'+changed+'P','good');
 }
 function scarLand(center,r){
-  tiles.forEach(t=>{if(t.kind!=='land'||dist(t,center)>r)return;t.biome='barren';t.pollution=clamp(t.pollution+.08,0,1);refreshTileVisual(t)});
+  tiles.forEach(t=>{if(t.kind!=='land'||dist(t,center)>r)return;t.biome='barren';t.growth=0;t.pollution=clamp(t.pollution+.08,0,1);refreshTileVisual(t)});
 }
 function paveLand(center,r){
-  tiles.forEach(t=>{if(t.kind!=='land'||dist(t,center)>r)return;t.biome='paved';t.pollution=clamp(t.pollution+.04,0,1);t.moisture=Math.max(0,t.moisture-.45);refreshTileVisual(t)});
+  tiles.forEach(t=>{if(t.kind!=='land'||dist(t,center)>r)return;t.biome='paved';t.growth=0;t.pollution=clamp(t.pollution+.04,0,1);t.moisture=Math.max(0,t.moisture-.45);refreshTileVisual(t)});
 }
 function quickGreen(center,biome,r){
   tiles.forEach(t=>{if(t.kind!=='land'||dist(t,center)>r||t.pollution>=.35)return;t.biome=biome;refreshTileVisual(t)});
@@ -632,8 +723,8 @@ function concreteChannel(center,r){
 function polluteAround(center,r,amount){
   tiles.forEach(t=>{const d=dist(t,center);if(d>r||t.kind==='rock')return;const factor=1-d/r;
     t.pollution=clamp(t.pollution+amount*factor,0,1);
-    if(t.kind==='land'&&t.pollution>.55&&['forest','wetland','meadow'].includes(t.biome))t.biome='grass';
-    if(t.kind==='land'&&t.pollution>.78)t.biome='barren';
+    if(t.kind==='land'&&t.pollution>.55&&['forest','wetland','meadow'].includes(t.biome)){t.biome='grass';t.growth=0;}
+    if(t.kind==='land'&&t.pollution>.78){t.biome='barren';t.growth=0;}
     refreshTileVisual(t);
   });
 }
@@ -681,13 +772,18 @@ function targetVisitorCount(){
   const c=counts(),attractions=buildings.filter(b=>['visitorcenter','observatory','researchstation','ecocafe','bench','signpost'].includes(b.type)).length;
   return clamp(Math.round(3+ecosystem.reputation*.16+c.restorePct*.045+returnedSpeciesCount()*2.2+attractions*1.7+cityDiversityScore()*.05-ecosystem.habitatStress*.05),0,42);
 }
+function visitorArrivalRoutes(type){
+  const entries=visitorEntryTiles(),goals=visitorDestinations(type);
+  const centerPaths=buildings.filter(b=>b.type==='visitorcenter').flatMap(facilityAccessTiles);
+  return findArrivalRoutes(entries,goals,centerPaths,adjacentPathTiles,length=>rng()*length);
+}
 function spawnVisitor(){
-  const entries=visitorEntryTiles();if(!entries.length)return;
-  const type=pickVisitorType(),start=entries[Math.floor(rng()*entries.length)],destinations=visitorDestinations(type);
-  if(!destinations.length)return;
-  const dest=destinations[Math.floor(rng()*destinations.length)],path=findVisitorPath(start,dest);if(!path.length)return;
+  const type=pickVisitorType(),routes=visitorArrivalRoutes(type);
+  if(!routes.length)return;
+  const {start,path}=routes[Math.floor(rng()*routes.length)];
   const mesh=visitorModel(type),p=worldPos(start);mesh.position.set(p.x,.34,p.z);visitorGroup.add(mesh);
-  const v={type,mesh,tile:start,path,pathIndex:0,happiness:60,targetHappiness:60,age:0,maxAge:38+rng()*34,thoughtCooldown:2+rng()*5,mixer:null};visitors.push(v);attachVisitorAsset(v);
+  const v={type,mesh,tile:start,path,pathIndex:0,happiness:60,targetHappiness:60,age:0,maxAge:38+rng()*34,thoughtCooldown:2+rng()*5,mixer:null};
+  visitors.push(v);attachVisitorAsset(v);
 }
 function removeVisitor(v,served=true){
   visitorGroup.remove(v.mesh);visitors=visitors.filter(x=>x!==v);if(served)ecosystem.visitorsServed++;
@@ -730,14 +826,15 @@ function evaluateVisitor(v,t){
 }
 function chooseNextVisitorPath(v){
   const destinations=visitorDestinations(v.type);if(!destinations.length){removeVisitor(v);return}
-  const dest=destinations[Math.floor(rng()*destinations.length)],path=findVisitorPath(v.tile,dest);
-  if(path.length){v.path=path;v.pathIndex=0}else removeVisitor(v);
+  const paths=destinations.map(dest=>findVisitorPath(v.tile,dest)).filter(path=>path.length);
+  if(paths.length){v.path=paths[Math.floor(rng()*paths.length)];v.pathIndex=0}else removeVisitor(v);
 }
 function animateVisitors(dt){
   for(const v of [...visitors]){
     v.age+=dt;v.thoughtCooldown-=dt;v.happiness+=(v.targetHappiness-v.happiness)*Math.min(1,dt*.5);v.mixer?.update(dt);
     if(v.age>v.maxAge){removeVisitor(v);continue}
-    const next=v.path[v.pathIndex];if(!next){evaluateVisitor(v,v.tile);chooseNextVisitorPath(v);continue}
+    const next=v.path[v.pathIndex];if(next&&!visitorWalkable(next)){chooseNextVisitorPath(v);continue}
+    if(!next){evaluateVisitor(v,v.tile);chooseNextVisitorPath(v);continue}
     const p=worldPos(next),dx=p.x-v.mesh.position.x,dz=p.z-v.mesh.position.z,d=Math.hypot(dx,dz),step=(VISITOR_TYPES[v.type]?.speed||.75)*pathTravelFactor(next)*dt;
     if(d<=step+.02){v.mesh.position.x=p.x;v.mesh.position.z=p.z;v.tile=next;v.pathIndex++;if(v.thoughtCooldown<=0){evaluateVisitor(v,next);v.thoughtCooldown=5+rng()*7}}
     else{v.mesh.position.x+=dx/d*step;v.mesh.position.z+=dz/d*step;v.mesh.rotation.y=Math.atan2(dx,dz)}
@@ -804,9 +901,21 @@ function ecologyTick(){
   byType('lawn').forEach(()=>{ecosystem.waterStress+=.85;ecosystem.habitatStress+=.28});
   byType('plantation').forEach(()=>{ecosystem.carbon=Math.max(0,ecosystem.carbon-.22);ecosystem.habitatStress+=.32});
   ecosystem.waste+=byType('nuclear').length*.06;
-  const forest=tiles.filter(t=>t.biome==='forest'&&t.pollution<.25).length;
-  const wetland=tiles.filter(t=>t.biome==='wetland'&&t.pollution<.25).length;
-  const meadow=tiles.filter(t=>t.biome==='meadow'&&t.pollution<.25).length;
+  let anyGrowth=false;
+  for(const t of tiles){
+    if(!advanceHabitatGrowth(t,ecosystem.habitatStress,ecosystem.waterStress))continue;
+    anyGrowth=true;
+    if(analysisMode==='none'){
+      const target=t.biome==='forest'?0x3d8154:t.biome==='wetland'?0x729e67:0x8dbf64;
+      const c=new THREE.Color(0x69a95f).lerp(new THREE.Color(target),habitatMaturity(t));
+      c.lerp(new THREE.Color(0x6d5f4f),t.pollution*.48);t.mesh.material.color.copy(c);
+    }
+  }
+  if(anyGrowth)natureDirty=true;
+  const healthy=tiles.filter(t=>t.pollution<.25);
+  const forest=effectiveHabitatArea(healthy,'forest');
+  const wetland=effectiveHabitatArea(healthy,'wetland');
+  const meadow=effectiveHabitatArea(healthy,'meadow');
   ecosystem.carbon=Math.max(0,ecosystem.carbon-forest*.035);
   ecosystem.habitatStress=Math.max(0,ecosystem.habitatStress-forest*.012-wetland*.018-meadow*.008);
   ecosystem.waterStress=Math.max(0,ecosystem.waterStress-wetland*.025);
@@ -818,7 +927,7 @@ function launchRecycler(t){
   const before=snapshot();lastAction=before;const p=worldPos(t);pulse(t,0x72d9ff,TOOL.recycler.radius);
   const caught=buildings.filter(b=>Math.hypot(b.x-t.x,b.z-t.z)<=TOOL.recycler.radius),caughtPaths=tiles.filter(o=>o.path&&Math.hypot(o.x-t.x,o.z-t.z)<=TOOL.recycler.radius);
   if(!caught.length&&!caughtPaths.length){toast('이곳에서는 회수할 시설이나 길이 없어요. 다른 강 구간을 골라보세요.','bad');return false}
-  caught.forEach(b=>{buildingGroup.remove(b.mesh);const idx=windRotors.findIndex(r=>b.mesh.children.includes(r));if(idx>=0)windRotors.splice(idx,1)});
+  caught.forEach(b=>{finishConstruction(b);buildingGroup.remove(b.mesh);const idx=windRotors.findIndex(r=>b.mesh.children.includes(r));if(idx>=0)windRotors.splice(idx,1)});
   buildings=buildings.filter(b=>!caught.includes(b));
   const pathRefund=caughtPaths.reduce((s,o)=>s+(TOOL[o.path]?.cost||0),0);caughtPaths.forEach(o=>{o.path=null;refreshPathNeighborhood(o)});
   const refund=Math.round((caught.reduce((s,b)=>s+(TOOL[b.type]?.cost||0),0)+pathRefund)*COST_REFUND);ecoPoints+=refund;
@@ -833,7 +942,7 @@ function pulse(t,color,r){
 function counts(){
   const land=tiles.filter(t=>t.kind==='land'),water=tiles.filter(t=>t.kind==='water');
   const restored=land.filter(t=>t.pollution<.25&&!['barren','paved'].includes(t.biome)).length,clean=water.filter(t=>t.pollution<.25).length;
-  const forest=land.filter(t=>t.biome==='forest').length,wetland=land.filter(t=>t.biome==='wetland').length,meadow=land.filter(t=>t.biome==='meadow').length;
+  const forest=effectiveHabitatArea(land,'forest'),wetland=effectiveHabitatArea(land,'wetland'),meadow=effectiveHabitatArea(land,'meadow');
   return {land:land.length,water:water.length,restored,clean,restorePct:pct(restored,land.length),waterPct:pct(clean,water.length),forestPct:pct(forest,land.length),wetlandPct:pct(wetland,land.length),meadowPct:pct(meadow,land.length)};
 }
 function returnedSpeciesCount(){
@@ -992,7 +1101,8 @@ function showTileInfo(t){
   if(!t){ui.tileInfo.classList.add('hidden');return}
   const wind=Math.round(windAt(t)*100),sun=Math.round(sunAt(t)*100),geo=Math.round(geothermalAt(t)*100),bld=buildings.find(b=>b.x===t.x&&b.z===t.z);
   const biome=t.kind==='water'?(t.pollution<.25?'깨끗한 강':'오염된 강'):t.kind==='rock'?'바위':({barren:'메마른 땅',grass:'초원',wetland:'습지',forest:'숲',meadow:'꽃초원',lawn:'잔디밭',plantation:'단일수종 조림지',paved:'포장지'}[t.biome]||t.biome);
-  ui.tileInfo.innerHTML='<b>'+biome+'</b><br>오염 '+Math.round(t.pollution*100)+'% · 바람 '+wind+'% · 햇빛 '+sun+'% · 지열 '+geo+'%'+(t.path?'<br>길: '+TOOL[t.path].label+' · 혼잡 '+pathCrowd(t)+'/'+(PATH_CAPACITY[t.path]||2):'')+(bld?'<br>시설: '+TOOL[bld.type].label:'')+(powered(t)?'<br>⚡ 전력 범위 안':'');
+  const age=['forest','wetland','meadow'].includes(t.biome)?'<br>서식지 성장 '+Math.round(habitatMaturity(t)*100)+'% · '+(habitatMaturity(t)<.32?'어린 서식지':habitatMaturity(t)<.75?'자라는 중':'안정된 서식지'):'';
+  ui.tileInfo.innerHTML='<b>'+biome+'</b>'+age+'<br>오염 '+Math.round(t.pollution*100)+'% · 바람 '+wind+'% · 햇빛 '+sun+'% · 지열 '+geo+'%'+(t.path?'<br>길: '+TOOL[t.path].label+' · 혼잡 '+pathCrowd(t)+'/'+(PATH_CAPACITY[t.path]||2):'')+(bld?'<br>시설: '+TOOL[bld.type].label:'')+(powered(t)?'<br>⚡ 전력 범위 안':'');
   ui.tileInfo.classList.remove('hidden');
 }
 function selectTool(type){
@@ -1011,7 +1121,7 @@ function updatePreview(){
   previewRing.material.color.setHex(placementReason(selectedTool,hoverTile)?0xff806d:0xbfffb4);
 }
 
-function resetCamera(){cameraTarget.set(0,0,0);viewSize=22;applyCamera()}
+function resetCamera(){cameraTarget.set(0,0,0);viewSize=22;natureDirty=true;applyCamera()}
 function applyCamera(){
   camera.position.set(cameraTarget.x+13,cameraTarget.y+16,cameraTarget.z+14);camera.lookAt(cameraTarget);resize();
 }
@@ -1037,28 +1147,28 @@ function bindRendererEvents(){
   });
   canvas.addEventListener('pointerup',e=>{const wasTap=drag.active&&e.pointerId===drag.id&&!drag.moved;if(wasTap)handleTap(e.clientX,e.clientY);pointers.delete(e.pointerId);canvas._pinch=null;if(e.pointerId===drag.id)drag.active=false;});
   canvas.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);drag.active=false;canvas._pinch=null});
-  canvas.addEventListener('wheel',e=>{e.preventDefault();viewSize=clamp(viewSize+Math.sign(e.deltaY)*1.1,11,30);resize()},{passive:false});
+  canvas.addEventListener('wheel',e=>{e.preventDefault();viewSize=clamp(viewSize+Math.sign(e.deltaY)*1.1,11,30);natureDirty=true;resize()},{passive:false});
   canvas.addEventListener('pointerleave',()=>{hoverTile=null;previewRing.visible=false;if(selectedTool==='inspect')ui.tileInfo.classList.add('hidden')});
 }
 
 function toast(msg,type='good',ms=2400){clearTimeout(toastTimer);ui.toast.textContent=msg;ui.toast.style.borderColor=type==='bad'?'rgba(255,122,110,.6)':'rgba(129,230,164,.5)';ui.toast.classList.add('showToast');toastTimer=setTimeout(()=>ui.toast.classList.remove('showToast'),ms)}
 function sdkSound(name){try{window.KidscadeGame?.sound?.(name)}catch(e){}}
 function sdkStart(){try{window.KidscadeGame?.start?.()}catch(e){}}
-function snapshot(){return {phase,ecoPoints,builtCount,ecosystem:{...ecosystem,populations:{...ecosystem.populations},discovered:{...ecosystem.discovered}},tiles:tiles.map(t=>({x:t.x,z:t.z,kind:t.kind,biome:t.biome,pollution:t.pollution,moisture:t.moisture,path:t.path})),buildings:buildings.map(b=>({type:b.type,x:b.x,z:b.z})),animals:animals.map(a=>({species:a.species,x:a.x,z:a.z}))}}
+function snapshot(){return {phase,ecoPoints,builtCount,ecosystem:{...ecosystem,populations:{...ecosystem.populations},discovered:{...ecosystem.discovered}},tiles:tiles.map(t=>({x:t.x,z:t.z,kind:t.kind,biome:t.biome,pollution:t.pollution,moisture:t.moisture,growth:t.growth,path:t.path})),buildings:buildings.map(b=>({type:b.type,x:b.x,z:b.z})),animals:animals.map(a=>({species:a.species,x:a.x,z:a.z}))}}
 function restoreSnapshot(s){
-  if(!s)return;phase=s.phase||1;ecoPoints=s.ecoPoints??130;builtCount=s.builtCount||0;ecosystem=makeEcosystem(s.ecosystem);clearGroup(visitorGroup);visitors=[];
-  if(Array.isArray(s.tiles)&&s.tiles.length===tiles.length)s.tiles.forEach((d,i)=>{tiles[i].biome=d.biome;tiles[i].pollution=d.pollution;tiles[i].moisture=d.moisture;tiles[i].path=d.path||null;refreshTileVisual(tiles[i]);renderPathTile(tiles[i])});
+  if(!s)return;clearConstructions();phase=s.phase||1;ecoPoints=s.ecoPoints??130;builtCount=s.builtCount||0;ecosystem=makeEcosystem(s.ecosystem);clearGroup(visitorGroup);visitors=[];
+  if(Array.isArray(s.tiles)&&s.tiles.length===tiles.length)s.tiles.forEach((d,i)=>{tiles[i].biome=d.biome;tiles[i].pollution=d.pollution;tiles[i].moisture=d.moisture;tiles[i].growth=d.growth??1;tiles[i].path=d.path||null;refreshTileVisual(tiles[i]);renderPathTile(tiles[i])});
   buildings.slice().forEach(b=>buildingGroup.remove(b.mesh));buildings=[];windRotors.length=0;(s.buildings||[]).forEach(b=>{const t=tileAt(b.x,b.z);if(t)placeTool(b.type,t,true)});
   clearGroup(animalGroup);animals=[];(s.animals||[]).forEach(a=>spawnAnimal(a.species,{x:a.x,z:a.z}));updateUI();
 }
-function serialize(){return {version:3,scenario:selectedScenario,seed,phase,ecoPoints,builtCount,elapsed,simSpeed,ecosystem:{...ecosystem,populations:{...ecosystem.populations},discovered:{...ecosystem.discovered}},camera:{x:cameraTarget.x,z:cameraTarget.z,view:viewSize},tiles:tiles.map(t=>({biome:t.biome,pollution:+t.pollution.toFixed(3),moisture:+t.moisture.toFixed(3),path:t.path||null})),buildings:buildings.map(b=>({type:b.type,x:b.x,z:b.z})),animals:animals.map(a=>({species:a.species,x:a.x,z:a.z})),savedAt:Date.now()}}
+function serialize(){return {version:4,scenario:selectedScenario,seed,phase,ecoPoints,builtCount,elapsed,simSpeed,ecosystem:{...ecosystem,populations:{...ecosystem.populations},discovered:{...ecosystem.discovered}},camera:{x:cameraTarget.x,z:cameraTarget.z,view:viewSize},tiles:tiles.map(t=>({biome:t.biome,pollution:+t.pollution.toFixed(3),moisture:+t.moisture.toFixed(3),growth:+(t.growth??1).toFixed(3),path:t.path||null})),buildings:buildings.map(b=>({type:b.type,x:b.x,z:b.z})),animals:animals.map(a=>({species:a.species,x:a.x,z:a.z})),savedAt:Date.now()}}
 function saveGame(){
   if(!running||completed)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(serialize()));ui.saveBtn.textContent='저장됨';setTimeout(()=>ui.saveBtn.textContent='저장',900)}catch(e){}
 }
 function loadGame(){
-  let s;try{s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null')}catch(e){}if(!s||![1,2,3].includes(s.version))return false;
+  let s;try{s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null')}catch(e){}if(!s||![1,2,3,4].includes(s.version))return false;
   selectedScenario=SCENARIOS[s.scenario]?s.scenario:'valley';phase=s.phase||1;ecoPoints=s.ecoPoints??130;builtCount=s.builtCount||0;elapsed=s.elapsed||0;simSpeed=Number.isFinite(s.simSpeed)?s.simSpeed:1;ecosystem=makeEcosystem(s.ecosystem);generateWorld(s.seed||1);
-  if(Array.isArray(s.tiles)&&s.tiles.length===tiles.length)s.tiles.forEach((d,i)=>{tiles[i].biome=d.biome;tiles[i].pollution=d.pollution;tiles[i].moisture=d.moisture;tiles[i].path=d.path||null;refreshTileVisual(tiles[i]);renderPathTile(tiles[i])});
+  if(Array.isArray(s.tiles)&&s.tiles.length===tiles.length)s.tiles.forEach((d,i)=>{tiles[i].biome=d.biome;tiles[i].pollution=d.pollution;tiles[i].moisture=d.moisture;tiles[i].growth=d.growth??1;tiles[i].path=d.path||null;refreshTileVisual(tiles[i]);renderPathTile(tiles[i])});
   (s.buildings||[]).forEach(b=>{const t=tileAt(b.x,b.z);if(t)placeTool(b.type,t,true)});
   (s.animals||[]).forEach(a=>spawnAnimal(a.species,{x:a.x,z:a.z}));updateSpecies();
   if(s.camera){cameraTarget.x=s.camera.x||0;cameraTarget.z=s.camera.z||0;viewSize=s.camera.view||17;applyCamera()}
@@ -1122,6 +1232,8 @@ function animate(now){
     if(ecologyClock>3){ecologyClock=0;ecologyTick();if(tutorialMode&&phase===4&&humanFootprintCount()===0)tryCompleteGame()}
     if(economyClock>5){economyClock=0;if(phase>=3)economyTick();checkProgress(true);updateUI()}
     if(saveTimer>20){saveTimer=0;saveGame()}}
+  tickConstruction(simDt);
+  updateNatureInstances();
   windRotors.forEach((r,i)=>r.rotation.z+=dt*(2.2+i%3*.18)*simSpeed);
   animals.forEach((a,i)=>{a.phase+=simDt*(1+i*.08);a.mesh.position.y=.46+Math.sin(a.phase*2)*.035;a.mesh.rotation.y=Math.sin(a.phase*.45)*.25});
   animateVisitors(simDt);

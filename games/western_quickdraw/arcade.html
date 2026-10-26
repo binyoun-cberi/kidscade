@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f3ed">
+<meta name="description" content="사격장, 목마 허들, 동전 명사수, 우당탕 소몰이, 춤추는 카우보이. 다섯 가지 서부 미니게임을 즐겨요.">
+<title>서부 놀이터 | 정오의 결투 · 키즈케이드</title>
+<link rel="stylesheet" href="arcade.css">
+<script src="../../kidscade-game-sdk.js" data-game-id="western_quickdraw" data-title="정오의 결투" data-shell="true" data-orientation="any"></script>
+<script defer src="arcade.js"></script>
+</head>
+<body>
+<main id="arcadeApp">
+<section id="arcadeMenu" class="overlay">
+  <div class="menu-card">
+    <p class="eyebrow">정오의 결투 · WESTERN ARCADE</p>
+    <h1>서부 놀이터</h1>
+    <p class="subtitle">다섯 가지 놀이, 다섯 가지 손맛! 기록을 세워 보세요.</p>
+    <a class="rodeo-feature" href="stampede.html"><span>새로운 대표 놀이</span><strong>달려라 로데오!</strong><small>동물 등에 올라타서 질주 → 손을 떼 점프 → 다시 눌러 다음 동물 잡기</small></a>
+    <div id="gameChoices" class="choices" role="group" aria-label="미니게임 선택">
+      <button type="button" class="choice" data-arcade="gallery"><span class="number">01</span><strong>서부 사격장</strong><small>표적을 찾아 6발 쏘고 장전!</small><span class="best" data-best="gallery">최고 기록 —</span></button>
+      <button type="button" class="choice" data-arcade="hurdles"><span class="number">02</span><strong>목마 허들</strong><small>점프하고 장애물을 뛰어넘어요</small><span class="best" data-best="hurdles">최고 기록 —</span></button>
+      <button type="button" class="choice" data-arcade="coins"><span class="number">03</span><strong>동전 명사수</strong><small>동전이 떨어지기 전에 튕겨요</small><span class="best" data-best="coins">최고 기록 —</span></button>
+      <button type="button" class="choice" data-arcade="cattle"><span class="number">04</span><strong>우당탕 소몰이</strong><small>소가 갈 곳을 예상해 올가미!</small><span class="best" data-best="cattle">최고 기록 —</span></button>
+      <button type="button" class="choice" data-arcade="disco"><span class="number">05</span><strong>춤추는 카우보이</strong><small>박자를 맞추고 완벽한 장전!</small><span class="best" data-best="disco">최고 기록 —</span></button>
+    </div>
+    <p class="tip">모바일은 터치, PC는 마우스와 키보드로 플레이할 수 있어요.</p>
+    <a class="backlink" href="index.html">← 현상범 결투로 돌아가기</a>
+  </div>
+</section>
+<section id="session" class="hidden" aria-label="미니게임 플레이">
+  <canvas id="playfield" aria-label="게임 화면. 터치 또는 방향키와 스페이스로 조작할 수 있습니다." tabindex="0"></canvas>
+  <header id="sessionHud">
+    <div class="hud-left"><span id="gameName">서부 사격장</span><b id="points">0점</b></div>
+    <div class="hud-right"><span id="clock">0초</span><span id="lives"></span><button id="soundBtn" type="button" aria-label="소리 끄기" aria-pressed="false">♪</button><button id="pauseBtn" type="button" aria-label="일시정지">Ⅱ</button></div>
+  </header>
+  <p id="hint" class="hint" aria-live="polite"></p>
+  <div class="controls">
+    <button id="actionBtn" type="button" class="action hidden">장전 <kbd>R</kbd></button>
+    <button id="extraBtn" type="button" class="action secondary hidden">부스터 <kbd>B</kbd></button>
+  </div>
+</section>
+<section id="finishScreen" class="overlay hidden" aria-live="polite">
+  <div class="end-card">
+    <p class="eyebrow" id="endKicker">서부 놀이터</p>
+    <h2 id="endTitle">도전 완료!</h2>
+    <p id="endText"></p>
+    <div class="score-panel"><div><small>이번 점수</small><strong id="endPoints">0점</strong></div><div><small>개인 최고</small><strong id="endBest">0점</strong></div></div>
+    <button id="retryBtn" type="button" class="primary">한 번 더!</button>
+    <button id="menuBtn" type="button" class="secondary-link">다른 놀이 고르기</button>
+  </div>
+</section>
+<section id="pauseScreen" class="overlay hidden">
+  <div class="end-card"><p class="eyebrow">잠깐 쉬어가요</p><h2>일시정지</h2><p>계속하기를 누르면 그 자리에서 이어져요.</p>
+    <button id="resumeBtn" type="button" class="primary">계속하기</button>
+    <button id="pauseMenuBtn" type="button" class="secondary-link">놀이터 메뉴로</button>
+  </div>
+</section>
+</main>
+</body>
+</html>

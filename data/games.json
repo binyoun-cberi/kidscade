@@ -31,6 +31,61 @@
       "classroom": true
     },
     {
+      "id": "physics_lab",
+      "addedAt": "2026-10-25T18:00:00+09:00",
+      "title": "와르르! 물리 연구소",
+      "href": "games/physics_lab/index.html",
+      "category": "trivia",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🧪",
+      "description": "물건을 집고 던지며 방향·마찰·질량·충돌을 발견하는 2D 과학 액션! 24단계 연구소와 와르르 무한 챌린지.",
+      "subject": "science",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
+      "id": "high_air_traffic_control",
+      "addedAt": "2026-10-25T17:52:00+09:00",
+      "title": "관제탑 시뮬레이터",
+      "href": "games/high_air_traffic_control/index.html",
+      "category": "job",
+      "age": "high",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "✈️",
+      "cover": "assets/gate-image/high_air_traffic_control_cover.svg",
+      "description": "항공기마다 경유점과 고도를 지시하고, 악천후와 활주로 이용 상황을 살피며 안전하게 착륙을 유도하는 실시간 관제 게임이에요. 하늘빛·해안·도시 관제구역에 도전해요.",
+      "subject": "career",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 4,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "western_quickdraw",
       "addedAt": "2026-10-23T22:27:00+09:00",
       "title": "정오의 결투",
@@ -43,11 +98,11 @@
       ],
       "icon": "🤠",
       "cover": "assets/gate-image/western_quickdraw_cover.png",
-      "description": "준비, 기다려, 탕! 무작위 신호에 반응해 10명의 현상범을 물리치거나 친구와 한 기기에서 결투해요. 너무 일찍 누르면 실격! 반응속도를 기록해요.",
+      "description": "준비, 기다려, 탕! 현상범 도장깨기와 한 기기 2인 결투에 더해 서부 사격장·목마 허들·동전 명사수·우당탕 소몰이·리듬 카우보이까지 5가지 아케이드 놀이를 즐겨요.",
       "subject": "thinking",
       "genre": "action",
       "difficulty": "easy",
-      "sessionMinutes": 3,
+      "sessionMinutes": 5,
       "players": [
         "solo",
         "local2"
@@ -838,7 +893,7 @@
     {
       "id": "high_history_timebattle_live",
       "title": "역사 타임배틀 LIVE",
-      "href": "games/high_history_timebattle/history_timebattle.html?v=16",
+      "href": "games/high_history_timebattle/history_timebattle.html?v=17",
       "category": "trivia",
       "age": "high",
       "icon": "⏳",
@@ -3808,7 +3863,7 @@
       "id": "high_ecopolis",
       "addedAt": "2026-09-29T16:13:00+09:00",
       "title": "에코폴리스",
-      "href": "games/high_ecopolis/index.html?v=10",
+      "href": "games/high_ecopolis/index.html?v=11",
       "category": "trivia",
       "age": "high",
       "icon": "🌱",
@@ -3933,6 +3988,33 @@
       "qualityStatus": "standard",
       "classroom": false,
       "cover": "assets/gate-image/high_one_life.png"
+    },
+    {
+      "id": "high_road_weaver",
+      "addedAt": "2026-10-25T10:10:00+09:00",
+      "title": "로타리클럽",
+      "href": "games/high_road_weaver/index.html",
+      "category": "trivia",
+      "age": "high",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🚗",
+      "description": "2D 도로를 그려 도시의 출퇴근길과 물류를 연결해요. 회전교차로·교통섬·고가도로·진출입로와 차선을 설계하고, 농업지구의 새벽 배송·주말 관광객·퇴근길 대형마트 교통을 실제 자동차 움직임으로 관찰하세요.",
+      "subject": "social",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     }
   ],
   "taxonomy": {
