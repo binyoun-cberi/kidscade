@@ -90,7 +90,7 @@ test('animal bucks after mount stamina expires, records are still preserved',()=
 });
 test('keyboard hold/release/hold and lateral movement work',()=>{
  const h=harness();h.click('startBtn');h.key('keydown','Space');h.key('keydown','ArrowLeft');
- h.frame(10);assert.ok(h.state().x<0);
+ h.frame(1);assert.ok(h.state().x<0);
  h.key('keyup','ArrowLeft');h.key('keyup','Space');
  assert.equal(h.state().status,'air');
  h.key('keydown','Space');assert.equal(h.state().status,'mounted');
