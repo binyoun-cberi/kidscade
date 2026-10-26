@@ -71,7 +71,7 @@ test('starts mounted, advances automatically and persists pause',()=>{
 test('press, release, press catches a new animal with preserved hold state',()=>{
  const h=harness();h.click('startBtn');
  h.down(-.12);h.frame(8);h.up();assert.equal(h.state().status,'air');
- h.down(-.12);assert.equal(h.state().status,'mounted');
+ h.down(-.12);h.frame(5);assert.equal(h.state().status,'mounted');
  assert.equal(h.state().mount,'buffalo');assert.equal(h.state().transfers,1);
  assert.equal(h.state().held,true);
 });
@@ -93,7 +93,7 @@ test('keyboard hold/release/hold and lateral movement work',()=>{
  h.frame(1);assert.ok(h.state().x<0);
  h.key('keyup','ArrowLeft');h.key('keyup','Space');
  assert.equal(h.state().status,'air');
- h.key('keydown','Space');assert.equal(h.state().status,'mounted');
+ h.key('keydown','Space');h.frame(5);assert.equal(h.state().status,'mounted');
 });
 test('existing progress is loaded without mixing old cattle or duel records',()=>{
  const h=harness({stored:{best:610,tamed:['horse','cow']}});assert.equal(h.state().best,610);
