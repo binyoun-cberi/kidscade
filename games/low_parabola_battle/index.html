@@ -55,13 +55,24 @@ canvas{display:block;width:100%;height:100%;touch-action:none;image-rendering:au
 .explain{background:#e7f4e8;color:#31573b;border-radius:14px;padding:13px 16px;font-size:13px;line-height:1.65;margin-bottom:17px}
 .guide strong{color:#153959}
 @media(max-width:700px){
-#app{gap:7px;padding:8px}.brand small{display:none}.soft{padding:8px 10px}.arena{width:100%;max-height:none;border-width:2px;border-radius:14px}
+#app{gap:7px;padding:8px max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}.brand small{display:none}.soft{padding:8px 10px}.arena{width:100%;max-height:none;border-width:2px;border-radius:14px}
 .hud{top:5px;left:5px;right:5px}.hud-box{padding:5px 7px;min-width:0;border-radius:8px}.hud-box strong{font-size:clamp(10px,2vw,14px)}.hud-box small{font-size:10px}.hud-box.center{min-width:110px}
 .notice{top:44px;font-size:11px;padding:5px 9px;border-radius:9px}.legend{font-size:10px;bottom:4px;left:4px;padding:3px 5px}.aim-tip{font-size:9px;bottom:4px;right:4px;padding:3px 6px}
 .controls{grid-template-columns:1fr 1fr auto;border-radius:14px;padding:10px;gap:7px}.ammo-control{grid-column:1/-1;display:flex;align-items:center;gap:10px}.ammo-control select{width:auto;flex:1;min-width:0;padding:7px}.ammo-control small{flex:1;text-align:right}.turn{grid-column:1/-1}.turn b{display:inline;font-size:15px}.turn small{display:inline;margin-left:8px}.control-field{font-size:11px;gap:2px 5px}.control-field output{min-width:39px;font-size:12px}.control-field input{min-width:0}#fire{min-width:78px;font-size:17px;padding:16px 8px;border-radius:12px}
 .modes{grid-template-columns:1fr}.mode{min-height:0;padding:10px 13px}.mode .big{display:inline;font-size:20px;margin-right:6px}.mode b{display:inline}.mode small{margin:3px 0 0}
 }
-@media(max-height:540px) and (min-width:740px){#app{gap:6px}.top{min-height:34px}.arena{max-height:calc(100dvh - 160px)}.controls{padding:8px 12px}#fire{padding:10px 20px}.footer{display:none}}
+@media(max-height:540px) and (min-width:600px){
+#app{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:6px;padding-top:6px;padding-bottom:max(6px,env(safe-area-inset-bottom))}
+.top{grid-column:1/-1;min-height:34px}.brand small{display:none}.brand-icon{padding:3px 7px}.soft{padding:7px 10px}
+.arena{width:min(100%,calc((100dvh - 72px)*1200/650));max-height:none;border-width:2px;border-radius:14px}
+.hud{top:4px;left:4px;right:4px;gap:3px}.hud-box{padding:4px 6px;min-width:0;border-radius:8px}.hud-box.center{min-width:0}.hud-box strong{font-size:11px}.hud-box small{font-size:10px}
+.notice{top:43px;font-size:11px;padding:4px 7px;max-width:88%}.legend{font-size:9px;bottom:4px;left:4px;padding:3px 5px}.aim-tip{display:none}
+.controls{align-self:center;grid-template-columns:1fr 1fr;padding:9px;gap:7px;border-radius:14px}
+.turn,.control-field,.ammo-control,#fire{grid-column:1/-1}.turn b{font-size:15px}.turn small{font-size:11px}.control-field{font-size:12px;gap:2px 6px}.control-field input{min-height:28px}
+.ammo-control{display:grid;gap:2px}.ammo-control select{width:100%;padding:6px;font-size:11px}.ammo-control small{text-align:left;font-size:10px}
+#fire{padding:10px;min-height:44px;font-size:18px}.footer{display:none}
+}
+
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
@@ -69,7 +80,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;image-rendering:au
 <div id="app">
   <header class="top">
     <div class="brand"><span class="brand-icon" aria-hidden="true">◉</span><div><h1>포물선 대작전</h1><small>조준하고, 비교하고, 다시 도전!</small></div></div>
-    <div class="top-actions"><button id="reset" class="soft" type="button">다시 시작</button><button id="menu" class="soft" type="button">게임 선택</button></div>
+    <div class="top-actions"><button id="help" class="soft" type="button">도움말</button><button id="reset" class="soft" type="button">다시 시작</button><button id="menu" class="soft" type="button">게임 선택</button></div>
   </header>
   <main class="arena" aria-label="포물선 대작전 게임 장면">
     <canvas id="scene" width="1200" height="650" role="img" aria-label="좌우 대포, 지형, 포탄 궤적이 표시되는 전장"></canvas>
@@ -100,7 +111,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;image-rendering:au
     </label>
     <button id="fire" type="button">발사!</button>
   </section>
-  <footer class="footer"><span id="lastShot" aria-live="polite">각도와 세기를 한 가지씩 바꾸면 차이를 더 잘 알 수 있어요.</span><span>키보드: ← → 각도 · ↑ ↓ 세기 · Space 발사</span><button id="help" type="button">도움말</button></footer>
+  <footer class="footer"><span id="lastShot" aria-live="polite">각도와 세기를 한 가지씩 바꾸면 차이를 더 잘 알 수 있어요.</span><span>키보드: ← → 각도 · ↑ ↓ 세기 · Space 발사</span></footer>
 </div>
 <div id="startOverlay" class="dialog-back">
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">

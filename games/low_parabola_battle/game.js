@@ -509,6 +509,7 @@
   }
   canvas.addEventListener('pointerdown',event=>{
     if(state.phase!=='aim'||(state.mode==='cpu'&&state.turn===1))return;
+    if(state.movingPointer!==null)return;
     const point=canvasPoint(event),p=tank(state.turn);
     if(!point||Math.hypot(point.x-p.x,point.y-p.y)>255)return;
     state.movingPointer=event.pointerId;

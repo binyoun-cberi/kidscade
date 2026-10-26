@@ -104,3 +104,57 @@ test('finishing six practice targets displays a meaningful replay panel',()=>{
   assert.equal(a.el('finishOverlay').classList.contains('hidden'),true);
   assert.equal(a.el('fire').disabled,false);
 });
+
+test('rapid fire cannot create extra shots during a flight or after victory',()=>{
+  const a=fakeGame();a.el('start').click();
+  a.el('angle').value='11';a.el('power').value='98';a.el('angle').input();
+  for(let i=0;i<8;i++)a.el('fire').click();
+  a.frames();a.flush();
+  assert.match(a.el('stageLabel').textContent,/2 \/ 6/);
+  assert.match(a.el('leftScore').textContent,/1발/);
+});
+test('second finger cannot steal a drag and cancellation stops further aiming',()=>{
+  const a=fakeGame();a.el('start').click();const s=a.el('scene');
+  s.pointerdown({clientX:205,clientY:330,pointerId:1});
+  const angle=a.el('angle').value;
+  s.pointerdown({clientX:300,clientY:470,pointerId:2});
+  s.pointermove({clientX:300,clientY:470,pointerId:2});
+  assert.equal(a.el('angle').value,angle);
+  s.pointercancel({pointerId:1});
+  s.pointermove({clientX:300,clientY:470,pointerId:1});
+  assert.equal(a.el('angle').value,angle);
+  s.pointerdown({clientX:300,clientY:470,pointerId:3});
+  assert.notEqual(a.el('angle').value,angle);
+});
+test('reset invalidates pending CPU timers and old turn changes',()=>{
+  const a=fakeGame('cpu');a.el('start').click();
+  a.el('fire').click();a.frames();a.flush();
+  assert.match(a.el('turnLabel').textContent,/컴퓨터/);
+  a.el('reset').click();
+  a.flush();a.flush();a.frames();
+  assert.match(a.el('turnLabel').textContent,/파란/);
+  assert.equal(a.el('fire').disabled,false);
+  assert.match(a.el('leftScore').textContent,/0 \/ 3점/);
+  assert.equal(a.events.filter(e=>e.type==='result').length,0);
+});
+test('both local players can win a three-point match with one final result',()=>{
+  for(const winner of [0,1]){
+    const a=fakeGame('local2');a.el('start').click();
+    for(let i=0;i<(winner===0?5:6);i++){
+      const side=i%2,hit=side===winner;
+      a.el('angle').value=hit?'21':'5';a.el('power').value=hit?'100':'10';
+      a.el('angle').input();a.el('fire').click();a.frames();a.flush();
+    }
+    assert.equal(a.el('finishOverlay').classList.contains('hidden'),false);
+    assert.match(a.el('finishTitle').textContent,winner===0?/파란/:/주황/);
+    for(let i=0;i<4;i++)a.el('fire').click();
+    a.frames();a.flush();
+    const result=a.events.filter(e=>e.type==='result'&&e.value.scope==='match');
+    assert.equal(result.length,1);
+    assert.equal(result[0].value.winner,winner===0?'blue':'orange');
+    a.el('playAgain').click();
+    assert.equal(a.el('finishOverlay').classList.contains('hidden'),true);
+    assert.match(a.el('ammoCount').textContent,/2발/);
+    assert.match(a.el('leftScore').textContent,/0 \/ 3점/);
+  }
+});
