@@ -1765,10 +1765,8 @@ window.Gulliver = window.Gulliver || {
             slot.occupiedCount = (slot.occupiedCount || 0) + 1;
 
             if (useOneMarblePerSlot) {
-                if (useOneMarblePerSlot) {
-                    slot.occupied = true;
-                    slot.occupiedBy = marble.name;
-                }
+                slot.occupied = true;
+                slot.occupiedBy = marble.name;
                 Body.setVelocity(marble.body, { x: 0, y: 0 });
                 Body.setAngularVelocity(marble.body, 0);
                 Body.setPosition(marble.body, { x: slot.centerX, y: slot.captureY });
