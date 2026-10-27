@@ -17,14 +17,14 @@ const ui = {
 };
 
 const DIFFICULTY = {
-  easy:{label:'초급',seconds:30,noteCount:5,passCents:110,perfectCents:36,speed:112,spawnMs:2450,gapPx:112},
-  normal:{label:'보통',seconds:45,noteCount:8,passCents:78,perfectCents:28,speed:132,spawnMs:2150,gapPx:92},
-  hard:{label:'도전',seconds:60,noteCount:8,passCents:52,perfectCents:20,speed:154,spawnMs:1850,gapPx:76}
+  easy:{label:'초급',seconds:30,noteCount:5,passCents:48,perfectCents:36,speed:112,spawnMs:2450,gapPx:112},
+  normal:{label:'보통',seconds:45,noteCount:8,passCents:42,perfectCents:28,speed:132,spawnMs:2150,gapPx:92},
+  hard:{label:'도전',seconds:60,noteCount:8,passCents:35,perfectCents:20,speed:154,spawnMs:1850,gapPx:76}
 };
 const NOTE_NAMES = ['도','레','미','파','솔','라','시','높은 도'];
 const SCALE = [0,2,4,5,7,9,11,12];
 const MAJOR_SCALE = [0,2,4,5,7,9,11];
-const STAIR = {passCents:88,perfectCents:32,holdMs:390,stepMs:7500,restEvery:7,restMs:2600,maxHz:900};
+const STAIR = {passCents:42,perfectCents:28,holdMs:390,stepMs:7500,restEvery:7,restMs:2600,maxHz:900};
 const CLASSIC = {
   countdownMs:2400,feverMs:5200,starEvery:5,
   chapters:[
@@ -244,7 +244,7 @@ function calibrationLoop(now){
     if(eightieth<.8){
       // High-note stair starts on the note actually sung during calibration;
       // the melody mode puts 'do' slightly below the comfortable note.
-      state.rootMidi=Math.round(m-(state.gameMode==='stair'?0:4));
+      state.rootMidi=m-(state.gameMode==='stair'?0:4);
       state.calibrated=true;
       ui.calHint.textContent='좋아요! 이 목소리를 기준으로 음역을 맞췄어요.';
       setTimeout(()=>{if(state.phase==='calibration')startGame()},360);
@@ -281,8 +281,8 @@ function laneYBySemitone(semi){
   return h-margin-(semi/12)*(h-margin*2);
 }
 function pitchY(){
-  if(!state.smoothHz)return state.viewH*.72;
-  const semi=hzToMidi(state.smoothHz)-state.rootMidi;
+  if(!state.pitchHz)return state.viewH*.72;
+  const semi=hzToMidi(state.pitchHz)-state.rootMidi;
   const clamped=Math.max(-1,Math.min(13,semi));
   return laneYBySemitone(clamped);
 }
@@ -315,7 +315,7 @@ function spawnGate(initial=false){
   const target=nextTargetIndex(),w=state.viewW||900;
   state.gateCount++;
   const star=!initial&&(state.gateCount%CLASSIC.starEvery===0||(state.chapterIndex===2&&state.gateCount%3===0));
-  state.gates.push({x:initial?w*.70:w+70,target,judged:false,grade:null,bestError:null,flash:0,kind:star?'star':'note'});
+  state.gates.push({x:initial?w*.70:w+70,target,judged:false,grade:null,errors:[],lastSampleAt:0,flash:0,kind:star?'star':'note'});
   updateTargetHud();
 }
 function classicChapterFor(now){
@@ -382,8 +382,8 @@ function updateHud(){
 }
 
 function stairTolerance(){
-  if(state.difficulty==='easy')return {pass:118,perfect:42};
-  if(state.difficulty==='hard')return {pass:62,perfect:24};
+  if(state.difficulty==='easy')return {pass:48,perfect:36};
+  if(state.difficulty==='hard')return {pass:35,perfect:20};
   return {pass:STAIR.passCents,perfect:STAIR.perfectCents};
 }
 function startStairGame(){
@@ -532,7 +532,7 @@ function popGrade(text,kind){
 function judgeGate(g){
   if(g.judged)return;
   g.judged=true;
-  const err=g.bestError??noteErrorCents(g.target),c=cfg(),now=performance.now(),fever=state.feverUntil>now,bonus=g.kind==='star';
+  const err=g.errors.length>=2?median(g.errors.map(Math.abs)):null,c=cfg(),now=performance.now(),fever=state.feverUntil>now,bonus=g.kind==='star';
   const mult=fever?1.5:1;
   if(err!==null&&Math.abs(err)<=c.perfectCents){
     g.grade='perfect';state.perfect++;state.combo++;state.passedGates++;
@@ -576,7 +576,7 @@ function gameLoop(now){
        const windowPx=Math.max(24,c.speed*0.16);
        if(Math.abs(g.x-px)<=windowPx){
          const err=noteErrorCents(g.target);
-         if(err!==null&&(g.bestError===null||Math.abs(err)<Math.abs(g.bestError)))g.bestError=err;
+         if(err!==null && state.lastPitchAt!==g.lastSampleAt && now-state.lastReliablePitchAt<65){g.errors.push(err);g.lastSampleAt=state.lastPitchAt;}
        }
        if(g.x<=px-windowPx)judgeGate(g);
      }
