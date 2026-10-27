@@ -33,8 +33,8 @@ test('winner and assignment modes retain setup, race, and saved preferences', ()
 });
 
 test('bumper roulette inline JavaScript parses', () => {
-  const scripts = [...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)]
-    .map(match => match[1].trim())
+  const scripts = html.split(/<script[^>]*>/).slice(1)
+    .map(piece => piece.split('</script>')[0].trim())
     .filter(Boolean);
   assert.ok(scripts.length > 0, 'Expected inline game script');
   for (const script of scripts) assert.doesNotThrow(() => new vm.Script(script));
