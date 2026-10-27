@@ -266,6 +266,7 @@ const TEST_FILES = [
   "tests/korean-farm-navigation-hud.test.mjs",
   "tests/korean-farm-rice-transplant.test.mjs",
   "tests/korean-farm-manual-work-v2.test.mjs",
+  "tests/bumper-roulette-fair-play.test.cjs",
   "tests/main-architecture.test.cjs"
 ];
 
