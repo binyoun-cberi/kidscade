@@ -1320,11 +1320,6 @@
             text-shadow: 0 4px 15px rgba(0,0,0,0.8);
         }
         
-        #debug-panel {
-            display: none;
-            border-color: #ef4444;
-        }
-
         #setup-panel { overscroll-behavior: contain; }
         .setting-option { min-height: 112px; }
         .option-check {
@@ -1357,8 +1352,6 @@
         .mode-card label{display:block;font-size:12px;font-weight:800;color:#cbd5e1;margin-bottom:6px}
         .mode-card select{width:100%;border:1px solid #475569;background:#1f2937;color:#fff;border-radius:9px;padding:9px}
         .probability-hint{font-size:11px;color:#94a3b8;margin-top:6px;line-height:1.45}
-        .teacher-tools-btn{border:1px solid rgba(248,113,113,.4);background:rgba(127,29,29,.18);color:#fca5a5;border-radius:9px;padding:7px 10px;font-size:12px;font-weight:800}
-        #debug-panel.open{display:block}
         @media (max-width: 640px) {
             .setting-option { min-height: auto; }
         }
@@ -1414,12 +1407,6 @@
 
             <div class="student-hidden" aria-hidden="true">
                 <button type="button" id="load-classroom-btn">우리 반 불러오기</button>
-                <button type="button" id="open-debug-btn">교사 지정 결과</button>
-                <div id="debug-panel">
-                    <button id="close-debug-btn">닫기</button>
-                    <div id="cheat-list"><div class="cheat-row"><input class="cheat-name"><input class="cheat-result"></div></div>
-                    <button id="add-cheat-btn">추가</button>
-                </div>
                 <input type="checkbox" id="close-race" checked>
                 <input type="checkbox" id="use-countdown" checked>
                 <input id="countdown-seconds" type="number" value="3">
@@ -1476,36 +1463,6 @@ window.Gulliver = window.Gulliver || {
 
     <script src="vendor/matter.min.js"></script>
     <script>
-        // --- 교사 지정 결과 관련 로직 ---
-        let cheatData = {}; 
-        
-        const titleEl = document.getElementById('main-title');
-        const debugPanel = document.getElementById('debug-panel');
-        
-        document.getElementById('open-debug-btn').addEventListener('click', () => {
-            debugPanel.classList.add('open');
-        });
-        document.getElementById('close-debug-btn').addEventListener('click', () => {
-            debugPanel.classList.remove('open');
-        });
-
-        document.getElementById('add-cheat-btn').addEventListener('click', () => {
-            const list = document.getElementById('cheat-list');
-            const newRow = document.createElement('div');
-            newRow.className = 'flex gap-2 cheat-row mt-2';
-            newRow.innerHTML = `
-                <input type="text" placeholder="학생 이름" class="cheat-name flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none">
-                <span class="text-white self-center">👉</span>
-                <input type="text" placeholder="강제 결과" class="cheat-result flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none">
-            `;
-            list.appendChild(newRow);
-        });
-
-        function parseCheatData() {
-            // Kidscade 학생판에서는 결과 지정/조작 기능을 사용하지 않습니다.
-            cheatData = {};
-        }
-
         // --- 오디오 시스템 ---
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         const audioCtx = AudioContextClass ? new AudioContextClass() : null;
@@ -1687,10 +1644,6 @@ window.Gulliver = window.Gulliver || {
 
         function saveGameConfig() {
             try {
-                const rows = [...document.querySelectorAll('.cheat-row')].map(row => ({
-                    name: row.querySelector('.cheat-name')?.value || '',
-                    result: row.querySelector('.cheat-result')?.value || ''
-                }));
                 const payload = {
                     names: document.getElementById('names-input').value,
                     slots: document.getElementById('slots-input').value,
@@ -1698,29 +1651,10 @@ window.Gulliver = window.Gulliver || {
                     closeRace: document.getElementById('close-race').checked,
                     useCountdown: document.getElementById('use-countdown').checked,
                     countdown: getCountdownSeconds(),
-                    uniqueSlot: document.getElementById('one-marble-per-slot').checked,
-                    teacherResults: rows
+                    uniqueSlot: document.getElementById('one-marble-per-slot').checked
                 };
                 localStorage.setItem(CONFIG_KEY, JSON.stringify(payload));
             } catch (e) { console.warn('범퍼 룰렛 설정 저장 실패', e); }
-        }
-
-        function restoreTeacherRows(rows) {
-            const list = document.getElementById('cheat-list');
-            list.innerHTML = '';
-            const source = Array.isArray(rows) && rows.length ? rows : [{name:'', result:''}];
-            source.forEach(item => {
-                const row = document.createElement('div');
-                row.className = 'flex gap-2 cheat-row mt-2';
-                row.innerHTML = `
-                    <input type="text" placeholder="학생 이름" class="cheat-name flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none">
-                    <span class="text-white self-center">👉</span>
-                    <input type="text" placeholder="지정 결과" class="cheat-result flex-1 bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white focus:outline-none">
-                `;
-                row.querySelector('.cheat-name').value = item.name || '';
-                row.querySelector('.cheat-result').value = item.result || '';
-                list.appendChild(row);
-            });
         }
 
         function loadGameConfig() {
@@ -1734,7 +1668,6 @@ window.Gulliver = window.Gulliver || {
             document.getElementById('use-countdown').checked = saved.useCountdown !== false;
             if (saved.countdown) document.getElementById('countdown-seconds').value = saved.countdown;
             document.getElementById('one-marble-per-slot').checked = Boolean(saved.uniqueSlot);
-            restoreTeacherRows(saved.teacherResults);
         }
 
         function syncPurposeUI() {
@@ -1807,18 +1740,7 @@ window.Gulliver = window.Gulliver || {
         }
 
         function getFreeSlotZones() {
-            return slotZones.filter(zone => !zone.occupied && (!useOneMarblePerSlot || !zone.reservedFor));
-        }
-
-        function reserveTeacherSlots() {
-            slotZones.forEach(zone => { zone.reservedFor = null; });
-            if (!useOneMarblePerSlot) return true;
-            for (const [name, result] of Object.entries(cheatData)) {
-                const zone = slotZones.find(z => z.text === result && !z.reservedFor);
-                if (!zone) return false;
-                zone.reservedFor = name;
-            }
-            return true;
+            return slotZones.filter(zone => !zone.occupied);
         }
 
         function getNearestFreeSlot(x) {
@@ -1829,14 +1751,6 @@ window.Gulliver = window.Gulliver || {
 
         function getPreferredSlotForMarble(marble, fallbackX = null) {
             if (!slotZones.length) return null;
-
-            const targetText = cheatData[marble.name];
-            if (targetText) {
-                const forced = useOneMarblePerSlot
-                    ? slotZones.find(z => z.reservedFor === marble.name && !z.occupied)
-                    : slotZones.find(z => z.text === targetText);
-                if (forced) return forced;
-            }
 
             const x = fallbackX ?? marble.body.position.x;
             const physical = getSlotByX(x);
@@ -1850,13 +1764,9 @@ window.Gulliver = window.Gulliver || {
 
             slot.occupiedCount = (slot.occupiedCount || 0) + 1;
 
-            const isTeacherDirected = Boolean(cheatData[marble.name]);
-            if (useOneMarblePerSlot || isTeacherDirected) {
-                if (useOneMarblePerSlot) {
-                    slot.occupied = true;
-                    slot.occupiedBy = marble.name;
-                    slot.reservedFor = null;
-                }
+            if (useOneMarblePerSlot) {
+                slot.occupied = true;
+                slot.occupiedBy = marble.name;
                 Body.setVelocity(marble.body, { x: 0, y: 0 });
                 Body.setAngularVelocity(marble.body, 0);
                 Body.setPosition(marble.body, { x: slot.centerX, y: slot.captureY });
@@ -1991,14 +1901,13 @@ window.Gulliver = window.Gulliver || {
                 marbles.forEach(m => {
                     if (m.finished) return;
 
-                    // --- 교사 지정 결과 또는 결과 중복 금지에서만 보조 유도 ---
-                    const needsSlotGuide = Boolean(cheatData[m.name]) || useOneMarblePerSlot;
-                    if (needsSlotGuide && m.body.position.y > finishLineY - 1500) {
+                    // 결과 중복 금지를 사용할 때에만 남은 빈 칸으로 이동을 보조합니다.
+                    if (useOneMarblePerSlot && m.body.position.y > finishLineY - 1500) {
                         const preferredSlot = getPreferredSlotForMarble(m, m.body.position.x);
                         if (preferredSlot) {
                             const diffX = preferredSlot.centerX - m.body.position.x;
                             if (Math.abs(diffX) > 10) {
-                                const pullForce = Math.sign(diffX) * (cheatData[m.name] ? 0.0008 : 0.00035);
+                                const pullForce = Math.sign(diffX) * 0.00035;
                                 Body.applyForce(m.body, m.body.position, { x: pullForce, y: 0 });
                             }
                         }
@@ -2401,8 +2310,7 @@ window.Gulliver = window.Gulliver || {
                     captureY: currentY + slotDepth - 155,
                     occupied: false,
                     occupiedBy: null,
-                    occupiedCount: 0,
-                    reservedFor: null
+                    occupiedCount: 0
                 });
             }
 
@@ -2479,7 +2387,6 @@ window.Gulliver = window.Gulliver || {
 
         function startGame() {
             if (gameState === 'playing') return;
-            parseCheatData();
 
             gamePurpose = document.getElementById('game-purpose').value;
             useCountdown = gamePurpose === 'winner' && document.getElementById('use-countdown').checked;
@@ -2504,31 +2411,6 @@ window.Gulliver = window.Gulliver || {
                 alert(`결과 중복 금지에서는 결과 슬롯 수가 학생 수 이상이어야 합니다.\n현재 학생 ${namesInput.length}명, 슬롯 ${slotsInput.length}개입니다.`);
                 return;
             }
-            const nameSet = new Set(namesInput.map(x=>x.trim()));
-            const slotSet = new Set(slotsInput.map(x=>x.trim()));
-            const directedCounts = {};
-            const slotCounts = {};
-            slotsInput.forEach(result => slotCounts[result.trim()] = (slotCounts[result.trim()] || 0) + 1);
-            for (const [name,result] of Object.entries(cheatData)) {
-                if (!nameSet.has(name)) {
-                    alert(`교사 지정 결과의 학생 '${name}'이 현재 명단에 없습니다.`);
-                    return;
-                }
-                if (!slotSet.has(result)) {
-                    alert(`'${name}' 학생에게 지정한 결과 '${result}'가 결과 슬롯에 없습니다.`);
-                    return;
-                }
-                directedCounts[result] = (directedCounts[result] || 0) + 1;
-            }
-            if (useOneMarblePerSlot) {
-                for (const [result,count] of Object.entries(directedCounts)) {
-                    if (count > (slotCounts[result] || 0)) {
-                        alert(`결과 중복 금지에서는 '${result}' 함이 ${slotCounts[result] || 0}개뿐인데 ${count}명이 지정되어 있습니다.`);
-                        return;
-                    }
-                }
-            }
-
             for (let i = namesInput.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [namesInput[i], namesInput[j]] = [namesInput[j], namesInput[i]];
@@ -2552,11 +2434,6 @@ window.Gulliver = window.Gulliver || {
             }, 300);
 
             createMap(slotsInput);
-            if (!reserveTeacherSlots()) {
-                alert('교사 지정 결과용 슬롯을 예약하지 못했습니다. 결과 슬롯 설정을 확인해 주세요.');
-                resetGame();
-                return;
-            }
             createMarbles(namesInput);
 
             runner = Runner.create();
@@ -2794,7 +2671,7 @@ window.Gulliver = window.Gulliver || {
                 if (useOneMarblePerSlot) {
                     ctx.font = 'bold 18px Pretendard';
                     ctx.fillStyle = slot.occupied ? '#34D399' : '#FDE68A';
-                    ctx.fillText(slot.occupied ? '사용됨' : (slot.reservedFor ? '예약 함' : '빈 함'), slot.centerX, slot.y + 138);
+                    ctx.fillText(slot.occupied ? '사용됨' : '빈 함', slot.centerX, slot.y + 138);
                 }
             });
 
@@ -3062,7 +2939,6 @@ window.Gulliver = window.Gulliver || {
             document.getElementById('slots-input').value='A팀\nA팀\nB팀\nB팀';
             saveGameConfig();
         });
-        document.getElementById('debug-panel').addEventListener('input',saveGameConfig);
         syncPurposeUI();
         resetCountdownDisplay();
         setHudVisible(false);
