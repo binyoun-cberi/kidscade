@@ -50,6 +50,17 @@
       if(best<0||bestValue>0.25)return {hz:null,rms,clarity:Math.max(0,1-bestValue)};
       selected=best;
     }
+    // A strong second harmonic may cross the YIN threshold before the true
+    // period. Prefer its double only when that period is substantially clearer.
+    // A pure sine has equally clear periods and must stay at its actual pitch.
+    const doubled=Math.round(selected*2);
+    if(doubled<=maxTau && cmnd[selected]>0.003){
+      let longer=doubled;
+      for(let t=Math.max(minTau,doubled-2);t<=Math.min(maxTau,doubled+2);t++){
+        if(cmnd[t]<cmnd[longer])longer=t;
+      }
+      if(cmnd[longer]<cmnd[selected]*0.3 && cmnd[longer]<0.025)selected=longer;
+    }
     let tau=selected;
     if(selected>1&&selected<maxTau){
       const left=cmnd[selected-1],center=cmnd[selected],right=cmnd[selected+1];
