@@ -4,6 +4,8 @@
 const { spawnSync } = require('node:child_process');
 
 const TEST_FILES = [
+  "tests/settlement-preview.test.cjs",
+  "tests/settlement-preview-ui.test.cjs",
   "tests/parabola-battle.test.cjs",
   "tests/parabola-battle-flow.test.cjs",
   "tests/lab-water-sort.test.cjs",
