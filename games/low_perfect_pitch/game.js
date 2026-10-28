@@ -105,7 +105,7 @@ async function requestMic(){
   const ctx=new AC();
   if(ctx.state==='suspended')await ctx.resume();
   const analyser=ctx.createAnalyser();
-  analyser.fftSize=4096;
+  analyser.fftSize=2048;
   analyser.smoothingTimeConstant=0;
   const source=ctx.createMediaStreamSource(stream);
   source.connect(analyser);
@@ -142,7 +142,7 @@ function detectPitch(){
   return result.hz;
 }
 function updatePitch(now){
-  if(now-state.lastPitchAt<45)return;
+  if(now-state.lastPitchAt<(state.phase==='calibration'?45:25))return;
   state.lastPitchAt=now;
   const hz=detectPitch();
   if(hz){
@@ -152,7 +152,7 @@ function updatePitch(now){
     state.pitchSamples.push({midi:hzToMidi(hz),time:now});
     if(state.pitchSamples.length>5)state.pitchSamples.shift();
     const recent=state.pitchSamples.slice(-3).map(s=>s.midi);
-    const midi=median(recent);
+    const midi=recent.length<3?recent[recent.length-1]:median(recent);
     state.pitchHz=midiToHz(midi);
     if(state.smoothHz){
       const previous=hzToMidi(state.smoothHz);
@@ -293,7 +293,7 @@ function ballPosition(targetY,anchorX,now){
   const dt=Math.max(0,Math.min(.05,(now-m.time)/1000));m.time=now;
   // Exact critically damped spring: smooth acceleration, no overshoot,
   // and the same travel time on 30/60/120 Hz displays.
-  const omega=22,offset=m.y-targetY,c=m.velocity+omega*offset,decay=Math.exp(-omega*dt);
+  const omega=34,offset=m.y-targetY,c=m.velocity+omega*offset,decay=Math.exp(-omega*dt);
   m.y=targetY+(offset+c*dt)*decay;
   m.velocity=(m.velocity-omega*c*dt)*decay;
   // A small forward bow makes a pitch change read as a curved hop.
