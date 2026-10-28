@@ -13,7 +13,7 @@
 ## 구현
 - 진입점: `games/low_perfect_pitch/index.html`
 - 런타임: `games/low_perfect_pitch/game.js`
-- 음높이 인식기: `games/low_perfect_pitch/pitch-detection.js` (YIN 주기 검출, 4,096샘플 분석, 짧은 음정 흔들림 완화)
+- 음높이 인식기: `games/low_perfect_pitch/pitch-detection.js` (YIN 주기 검출, 2,048샘플 분석, 짧은 음정 흔들림 완화)
 - 외부 음성 API 없음
 - Game SDK: `low_perfect_pitch`
 - 기록 키: `kidscade_perfect_pitch_v1`
@@ -40,3 +40,14 @@
 - 노래길은 판정 구간에서 서로 다른 분석 프레임을 2개 이상 모아 오차의 중앙값으로 판정합니다.
 - 반음(100센트) 차이로 성공하지 않도록 성공 범위를 초급 ±48, 보통 ±42, 도전 ±35센트로 조정했습니다.
 - 자동 시험: `node games/low_perfect_pitch/pitch-detection.test.js`. 실제 기기와 교실 음향에서의 검수는 별도로 필요합니다.
+
+
+## 나의 선율 모드
+- 모드 선택 화면에서 「나의 선율」을 엽니다. 유튜브 공식 플레이어의 영상을 들으며 노래할 수 있습니다.
+- 원음 녹음 없이 40ms 간격의 측정 음높이(Hz), 시간, 쉼을 기록합니다. 도·레·미로 양자화하지 않고 측정한 높이를 악기 음색으로 다시 재생합니다.
+- 한 번에 최대 3분, 이 기기 최근 6개 선율 저장·불러오기·삭제와 재생 위치 이동을 지원합니다. 기기/브라우저를 바꾸면 기록이 공유되지 않습니다.
+- 이어폰을 사용합니다. 마이크에 들어온 반주·주변 소음도 인식될 수 있으며 원곡 음정 추출이나 자동 채점 기능은 아닙니다.
+- 영상 멈춤·버퍼링·탐색·화면 이탈 시 현재 기록을 마치고 마이크를 끕니다. 재생 속도를 바꿔도 실제 부른 시간 간격으로 기록합니다.
+- 검수: 유튜브 링크 형식, 음높이/쉼 데이터, 저장/복원, 악기 재생, 영상 멈춤·마이크 종료를 DOM·영상·마이크를 모의한 통합 시험으로 검사합니다. 실제 유튜브 연결·실기기 음향 검수는 별도입니다.
+
+- 자동 시험: `node --test games/low_perfect_pitch/melody-core.test.cjs games/low_perfect_pitch/melody-studio.test.cjs`
