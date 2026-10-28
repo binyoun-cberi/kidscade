@@ -46,3 +46,11 @@
 .map-controls button { font-size:11px; min-height:36px; padding:6px 10px; }
 .map-controls span { font-size:10px; color:#6b7d5c; }
 @media(max-width:760px) { .map-wrap.zoomed { max-height:400px; } }
+
+.bronze-field { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:5px; margin:12px 0; }
+.bronze-field button { padding:10px 2px; min-height:48px; font-size:12px; background:#e5ead3; border:1px solid #8b9c6e; }
+.bronze-field button.ripe { background:#f2dd9c; color:#394c30; border-color:#aa873e; }
+.bronze-stages { padding-left:24px; }
+.bronze-stages li { padding:7px; border-left:3px solid #d5d9c4; }
+.bronze-stages li.active { font-weight:bold; background:#f4df9d; border-color:#887137; }
+@media(max-width:500px) { .bronze-field { grid-template-columns:repeat(3,minmax(0,1fr)); } }

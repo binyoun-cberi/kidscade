@@ -39,6 +39,7 @@ function foundation() {
   seed = JSON.parse(JSON.stringify(s)); assert.ok(S.restore(seed)); return S.restore(seed);
 }
 function finishChapter(s, id) {
+  if (id === 'bronze') require('./helpers/settlement-bronze.cjs')(s, id => build(s, id), (key, n) => ensure(s, key, n));
   H.select(s, id);
   for (const g of H.byId(id).goals) {
     if (g.type === 'project') build(s, g.id);
@@ -69,6 +70,8 @@ test('two idle founders can connect all 16 chapters, 300 households and inherita
   const points = C.reward(s), oldTime = s.time, reported = ['paleolithic']; s.history.reported = reported;
   assert.equal(S.inherit(s, 'craft').ok, true);
   assert.equal(s.civilization.legacy.points, points);
+  assert.deepEqual([...s.bronze.learned].sort(), ['casting', 'evidence', 'harvest', 'storage']);
+  assert.equal(s.bronze.bundles, 0); assert.equal(s.bronze.grain, 0); assert.equal(s.bronze.meals, 0);
   assert.equal(s.civilization.legacy.archive[0].homes, 300);
   assert.equal(s.civilization.legacy.archive[0].time, oldTime);
   assert.equal(s.civilization.homes, 0); assert.equal(s.civilization.citizens, 0);
@@ -171,7 +174,7 @@ test('v3 migration preserves original work and inventory; invalid new jobs, home
   const s = foundation(), old = JSON.parse(JSON.stringify(s));
   old.version = 3; delete old.civilization;
   for (const key of Object.keys(C.RESOURCES)) delete old.resources[key];
-  const migrated = S.restore(old); assert.ok(migrated); assert.equal(migrated.version, 4);
+  const migrated = S.restore(old); assert.ok(migrated); assert.equal(migrated.version, S.VERSION);
   for (const [k, n] of Object.entries(old.resources)) assert.equal(migrated.resources[k], n);
   assert.deepEqual(migrated.buildings, old.buildings); assert.deepEqual(migrated.workers, old.workers);
   const bad = JSON.parse(JSON.stringify(s)); bad.civilization.homes = 300; assert.equal(S.restore(bad), null);

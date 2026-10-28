@@ -38,7 +38,7 @@ function page(saved) {
   }
   function parse(text) {
     const found = [];
-    for (const m of text.matchAll(/<(button|div|span|i|b|p|strong|small|h[123]|canvas|dialog|select|aside|article|section)\b([^>]*)>/g)) found.push(new Element(m[1], m[2]));
+    for (const m of text.matchAll(/<(button|div|span|i|b|p|strong|small|h[123]|canvas|dialog|select|aside|article|section|li)\b([^>]*)>/g)) found.push(new Element(m[1], m[2]));
     for (const m of text.matchAll(/<select\b([^>]*)>([\s\S]*?)<\/select>/g)) {
       const id = /data-worker="(\d+)"/.exec(m[1])?.[1], el = found.find(e => e.tag === 'select' && e.dataset.worker === id);
       if (el) el.options = [...m[2].matchAll(/<option value="([^"]*)"/g)].map(o => ({ value: o[1] }));
@@ -70,6 +70,7 @@ function page(saved) {
   vm.runInContext(fs.readFileSync(path.join(dir, 'history-ui.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(dir, 'prehistory-ui.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(dir, 'civilization-ui.js'), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(path.join(dir, 'bronze-ui.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(dir, 'game.js'), 'utf8'), context);
   const get = id => { const el = ids.get(id); assert.ok(el, `UI element ${id}`); return el; };
   function documentEvent(type, event) { for (const fn of document.listeners[type] || []) fn(event); }
@@ -80,6 +81,27 @@ function page(saved) {
   function hold(id, n) { const el = get(id); assert.equal(el.disabled, false); documentEvent('pointerdown', { target: el, isPrimary: true, button: 0, pointerId: 1, preventDefault() {} }); seconds(n); documentEvent('pointerup', { target: el, pointerId: 1 }); }
   return { get, click, seconds, save, select, hold, document, store, reported, paused: () => pausedHandlers, exited: () => exited, draws: () => draws };
 }
+
+test('Bronze UI connects harvest, carrying and research with keyboard-ready fixed controls and preserved saves', () => {
+  const s = S.initial(); s.era = 'neolithic'; s.history.completed = ['paleolithic', 'neolithic']; s.history.active = 'bronze';
+  s.flags.pottery = true;
+  for (const id of ['broadField', 'mumunStore', 'granary']) s.buildings.push({ type: id, ...S.PROJECTS[id].sites[0] });
+  s.prehistory.tools.reaping = 48; s.prehistory.selected = 'reaping'; s.bronze.crops.fill(30);
+  const p = page(JSON.stringify(s)); p.click(p.document.querySelector('[data-tab="bronze"]'));
+  assert.match(p.get('bronzeChain').textContent, /저장 곡물 0/);
+  assert.equal(p.get('bronze-answer-harvest-0').disabled, true);
+  p.click(p.get('bronze-crop-0')); assert.equal(p.save().bronze.bundles, 3);
+  p.click(p.get('bronze-answer-harvest-0'));
+  assert.equal(p.save().bronze.research.harvest, true);
+  p.seconds(.6); p.click(p.document.querySelector('[data-bronze-action="carry"]'));
+  const moving = p.save(); assert.ok(moving.bronze.delivery);
+  p.seconds(2.2); assert.ok(p.save().bronze.grain >= 3);
+  p.click(p.get('bronze-answer-storage-1')); assert.equal(p.save().bronze.research.storage, true);
+  p.click(p.get('pauseBtn')); const before = p.save(); p.seconds(10);
+  assert.equal(p.save().time, before.time); assert.equal(p.get('bronze-crop-3').disabled, true);
+  const q = page(JSON.stringify(moving)); q.click(q.document.querySelector('[data-tab="bronze"]')); q.seconds(2.2);
+  assert.ok(q.save().bronze.grain >= 3);
+});
 
 test('real UI supports hold harvesting, construction and persistence without a browser', () => {
   const p = page();

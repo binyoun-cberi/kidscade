@@ -12,6 +12,7 @@ function playthrough() {
   const s = S.initial();
   S.assign(s, 1, 'gather'); S.assign(s, 2, 'wood');
   function ensure(key, amount) {
+    if (s.resources[key] >= amount) return;
     let guard = 0;
     if (S.NODES[key]) {
       while (s.resources[key] < amount && guard++ < 300) run(s, 1, { harvest: key });
@@ -42,6 +43,7 @@ function playthrough() {
   build('pottery'); build('hut'); run(s, 61);
   assert.equal(s.era, 'neolithic');
   function finish(id) {
+    if (id === 'bronze') require('./helpers/settlement-bronze.cjs')(s, build, ensure);
     assert.equal(H.select(s, id).ok, true, `select ${id}`);
     const c = H.byId(id);
     for (const goal of c.goals) {

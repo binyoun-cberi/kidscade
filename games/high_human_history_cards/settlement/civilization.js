@@ -13,7 +13,7 @@
     needle: { name: '뼈바늘', kind: 'bone', uses: 40, sew: 1, cost: { bone: 1 }, needs: 'tools', text: '가죽·실을 이어 의복 마련 · 간석기와 다른 뼈 도구' },
     adze: { name: '자귀', kind: 'ground', uses: 48, timber: 2, cost: { stone: 1 }, needs: 'groundStone', text: '목재를 깎아 구조재로 · 목재 3 → 가공 목재 4' },
     grooveAdze: { name: '홈자귀', kind: 'ground', uses: 56, timber: 3, cost: { stone: 1 }, needs: 'bronze', text: '청동기 목공 전문화 · 목재 3 → 가공 목재 6' },
-    sickle: { name: '돌낫', kind: 'ground', uses: 48, grain: 1, fiber: 3, cost: { stone: 1 }, needs: 'bronze', text: '청동기 수확 분기 · 작물과 식물 섬유 확보' },
+    sickle: { name: '돌낫', kind: 'ground', uses: 48, grain: 1, fiber: 3, cost: { stone: 1 }, needs: 'bronze', text: '익은 한 줄의 줄기를 베어 수확 · 줄기는 식물 섬유로' },
     triangleKnife: { name: '삼각형돌칼', kind: 'ground', uses: 48, grain: 1, cost: { stone: 1 }, needs: 'bronze', text: '반달돌칼과 다른 형태의 수확 도구 · 동등한 대체 선택' },
     arrowhead: { name: '돌화살촉', kind: 'ground', uses: 36, hunt: 9, cost: { stone: 1, thread: 2, wood: 2 }, needs: 'groundStone', text: '활·줄을 함께 준비 · 먼 토끼 추적 범위 확대' },
     stoneSpear: { name: '돌창', kind: 'ground', uses: 36, hunt: 9, cost: { stone: 1, wood: 2, thread: 1 }, needs: 'groundStone', text: '창자루·결속을 함께 준비 · 수렵 전문 도구' },
@@ -80,6 +80,7 @@
   }
   function toolFor(s, task, P) {
     const p = s.prehistory;
+    if (task === 'grain' && p.tools[p.selected] > 0 && P.TOOLS[p.selected]?.grain) return p.selected;
     if (!s.civilization?.research.toolbox) return p.tools[p.selected] > 0 && P.TOOLS[p.selected]?.[task] ? p.selected : null;
     return Object.keys(p.tools).filter(id => p.tools[id] > 0 && P.TOOLS[id]?.[task]).sort((a, b) => P.TOOLS[b][task] - P.TOOLS[a][task])[0] || null;
   }
@@ -111,10 +112,23 @@
     return { ok: false, reason: '필요한 도구·재료·시설을 확인해요.' };
   }
   function recipeReady(s, id, d, ctx) {
+    if (id === 'bronze' && s.bronze && !built(s, 'castingWorkshop') && !s.history.completed.includes('bronze')) return false;
     if (!built(s, d.facility) || !(d.needs || []).every(n => ctx.gate(s, n))) return false;
     if (id === 'fishing' && (!s.civilization.net || !(s.prehistory.tools.netWeight > 0))) return false;
     if (d.tool && !toolFor(s, d.tool, ctx.P)) return false;
     return true;
+  }
+  function startOrder(s, id, ctx) {
+    const d = SIDE_JOBS[id] || ctx.jobs[id], c = s.civilization;
+    if (!d || !recipeReady(s, id, d, ctx)) return { ok: false, reason: '먼저 원료를 다룰 시설과 도구를 연결해요.' };
+    if (c.tasks[id]) return { ok: false, reason: '이미 작업·운반 중이에요. 입고 뒤 새 묶음을 주문해요.' };
+    if (s.resources[d.resource] >= ctx.cap(s)) return { ok: false, reason: '완제품 보관 공간이 필요해요.' };
+    if (Object.entries(d.cost || {}).some(([k, n]) => s.resources[k] < n + (k === 'wood' ? 12 : 0))) return { ok: false, reason: '원료와 생활용 목재 12개를 먼저 비축해요.' };
+    const method = s.history.printMode;
+    c.tasks[id] = { phase: 'work', progress: 0, cost: { ...(d.cost || {}) }, amount: output(s, id, d, ctx), method, duration: recipeTime(s, id, d, method) };
+    for (const [k, n] of Object.entries(c.tasks[id].cost)) s.resources[k] -= n;
+    if (d.tool) ctx.P.power(s, d.tool);
+    return { ok: true, reason: `${d.name} 한 묶음 시작 · 원료를 한 번 투입하고 운반까지 이어가요.` };
   }
   function recipeTime(s, id, d, method) {
     const base = id === 'printer' && method === 'type' ? 12 : d.time;
@@ -138,9 +152,15 @@
     result.food += farmRate(s);
     for (const [key, rate] of Object.entries(districtRates(s))) result[key] += rate;
     if (built(s, 'sharedGathering') && s.flags.survey) result.fiber += 5;
+    if (s.bronze?.research.casting && s.civilization.automatic && !s.workers.some(w => (w.nextJob || w.job) === 'bronze') && s.resources.bronze < (s.bronze.plan === 'reserve' ? 8 : 24) && recipeReady(s, 'bronze', ctx.jobs.bronze, ctx)) {
+      const d = ctx.jobs.bronze, cycles = 60 / (recipeTime(s, 'bronze', d) + transportTime(s));
+      result.bronze += cycles * d.amount;
+      for (const [k, n] of Object.entries(d.cost)) result[k] -= cycles * n;
+    }
     if (!s.civilization.automatic || !s.civilization.research.production) return result;
     for (const [id, d] of Object.entries({ ...SIDE_JOBS, ...ctx.jobs })) {
       if (!recipeReady(s, id, d, ctx)) continue;
+      if (id === 'bronze' && s.bronze) continue;
       const cycles = 60 / (recipeTime(s, id, d, s.history.printMode) + transportTime(s));
       result[d.resource] += cycles * output(s, id, d, ctx);
       for (const [k, n] of Object.entries(d.cost || {})) result[k] -= cycles * n;
@@ -171,13 +191,9 @@
     }
     for (const [id, d] of Object.entries({ ...SIDE_JOBS, ...ctx.jobs })) {
       let task = c.tasks[id];
-      if (!task && c.automatic && c.research.production && recipeReady(s, id, d, ctx)) {
-        if (s.resources[d.resource] >= ctx.cap(s) || (d.cost && Object.keys(d.cost).length && s.resources.food < 1)) continue;
-        if (Object.entries(d.cost || {}).some(([k, n]) => s.resources[k] < n + (k === 'wood' ? 12 : 0))) continue;
-        const method = s.history.printMode;
-        task = c.tasks[id] = { phase: 'work', progress: 0, cost: { ...(d.cost || {}) }, amount: output(s, id, d, ctx), method, duration: recipeTime(s, id, d, method) };
-        for (const [k, n] of Object.entries(task.cost)) s.resources[k] -= n;
-        if (d.tool) P.power(s, d.tool);
+      if (!task && c.automatic && c.research.production && !(id === 'bronze' && s.bronze) && recipeReady(s, id, d, ctx)) {
+        if (d.cost && Object.keys(d.cost).length && s.resources.food < 1) continue;
+        startOrder(s, id, ctx); task = c.tasks[id];
       }
       if (!task) continue;
       task.progress += dt;
@@ -250,5 +266,5 @@
     if (!Array.isArray(l.learned) || !l.learned.every(id => ctx.history.byId(id)) || !Array.isArray(l.research) || !l.research.every(id => RESEARCH[id] || ctx.P.RESEARCH[id]) || !Array.isArray(l.archive) || l.archive.length > 10) return false;
     return l.archive.every(a => object(a) && num(a.run, l.runs) && num(a.time) && num(a.homes, 300) && num(a.citizens, 608) && Array.isArray(a.chapters) && a.chapters.every(id => ctx.history.byId(id)) && Array.isArray(a.artifacts) && a.artifacts.every(id => ARTIFACTS.some(v => v.id === id)) && Array.isArray(a.buildings) && a.buildings.length <= 100 && a.buildings.every(b => ctx.projects[b.type] && num(b.x, 48) && num(b.y, 32)));
   }
-  return { RESOURCES, TOOLS, ARTIFACTS, PROJECTS, RESEARCH, SIDE_JOBS, FEATURES, initial, toolAvailable, craft, toolFor, unlocked, answer, artifact, action, recipeReady, recipeTime, rates, tick, consumption, complete, inheritanceReason, reward, inherit, buy, valid };
+  return { RESOURCES, TOOLS, ARTIFACTS, PROJECTS, RESEARCH, SIDE_JOBS, FEATURES, initial, toolAvailable, craft, toolFor, unlocked, answer, artifact, action, startOrder, recipeReady, recipeTime, rates, tick, consumption, complete, inheritanceReason, reward, inherit, buy, valid };
 });

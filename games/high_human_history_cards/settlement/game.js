@@ -51,6 +51,7 @@
   function panelMarkup() {
     const p = state.project;
     const projectHTML = p ? `<section class="project-card"><h3>${S.PROJECTS[p.type].name} 진행 중 <span id="projectPercent"></span></h3><p>재료는 이미 투입했어요. 취소하면 돌려받아요.</p><div class="mini-progress"><i id="projectProgress"></i></div><div class="project-actions"><button type="button" id="helpProject">꾹 눌러 작업 돕기</button><button type="button" id="assignBuilder">일꾼 배치</button><button type="button" id="cancelProject">취소</button></div></section>` : '';
+    if (tab === 'bronze') return window.SettlementBronzeUI.markup(state, projectHTML);
     if (tab === 'city') return window.SettlementCivilizationUI.markup(state, projectHTML);
     if (tab === 'life') return projectHTML + window.SettlementPrehistoryUI.markup(state);
     if (tab === 'history') return window.SettlementHistoryUI.markup(state, lessonView, projectHTML);
@@ -64,6 +65,7 @@
     if (state.history.completed.includes('goryeoPrint')) return { title: '도시를 키우고 다음 터전으로', text: S.Civilization.inheritanceReason(state) || '도시를 기록하고 새 터전으로 계승하거나, 이 도시를 더 키울 수 있어요.', action: 'city' };
     if (state.history.completed.includes('neolithic') && !state.civilization.research.production) return { title: '연결한 시설이 내 일을 대신해요', text: '도시 메뉴에서 목공터를 마련하고 가공을 연결하기를 연구해요. 실·목재·금속·인쇄가 새 일손 없이 이어져요.', action: 'city' };
     if (state.history.completed.includes('neolithic') && !state.civilization.homes) return { title: '강 너머로 마을을 넓혀요', text: '목공·곡물 처리와 첫 주거 구역을 연결하면 경작·저장·기초 생산이 함께 커져요.', action: 'city' };
+    if (state.history.completed.includes('neolithic') && !state.history.completed.includes('bronze')) return { title: '넓은 밭에서 생산 마을로', text: '청동기 메뉴에서 수확·운반·청동 제작을 직접 잇고 연구해요. 12가구 마을과 집·무덤·출토품을 비교하면 철기와 고조선이 함께 열려요.', action: 'bronze' };
     if (state.era !== 'paleolithic') { const c = H.byId(state.history.active); return { title: `${c.title} · 생활과 배움 잇기`, text: c.goals.find(g => !H.goalDone(state, g))?.label || '자료를 읽고 생각 잇기를 한 뒤 배움을 기록해요.', action: 'history' }; }
     if (state.resources.food < 4) return { title: '먹거리를 먼저 마련해요', text: '사냥·채집은 언제든 다시 시작할 수 있어요. 도구로 사냥을 편하게 하거나 공동 채집터를 마련해요.', node: 'food', action: 'life' };
     if (state.prehistory.stats.crafted === 0) return { title: '돌 하나로 달라지는 생활', text: '생활 메뉴에서 돌 1개로 주먹도끼나 찍개를 만들어요. 사냥과 벌목의 클릭 수가 줄어들어요.', action: 'life' };
@@ -109,7 +111,8 @@
     $('supportBtn').textContent = '꾹 눌러 주민 돕기';
     const sig = `${tab}:${state.workers.length}:${state.project?.type || ''}:${state.buildings.length}:${JSON.stringify(state.flags)}:${state.era}:${state.history.active}:${state.history.completed.join(',')}:${JSON.stringify(state.history.answers)}:${state.history.feedback}:${lessonView}:${state.history.printMode}:${H.byId(state.history.active).goals.map(g => H.goalDone(state, g)).join(',')}:${state.prehistory.stats.crafted > 0}:${state.civilization.homes}:${state.civilization.legacy.runs}`;
     if (sig !== signature) { $('panel').innerHTML = panelMarkup(); signature = sig; }
-    if (tab === 'city') window.SettlementCivilizationUI.update(state, paused);
+    if (tab === 'bronze') window.SettlementBronzeUI.update(state, paused);
+    else if (tab === 'city') window.SettlementCivilizationUI.update(state, paused);
     else if (tab === 'life') window.SettlementPrehistoryUI.update(state, paused);
     else if (tab === 'build') {
       for (const id of Object.keys(S.PROJECTS)) {
@@ -162,6 +165,8 @@
     render(); save();
   }
   document.addEventListener('click', e => {
+    const bronzeAction = e.target.closest('[data-bronze-action]'); if (bronzeAction) { doAction(() => { if (bronzeAction.dataset.bronzeAction === 'harvest' && !spendCredit()) return { ok: false }; return S.bronzeAction(state, bronzeAction.dataset.bronzeAction, Number(bronzeAction.dataset.plot || 0)); }); return; }
+    const bronzeResearch = e.target.closest('[data-bronze-research]'); if (bronzeResearch) { doAction(() => S.Bronze.answer(state, bronzeResearch.dataset.bronzeResearch, Number(bronzeResearch.dataset.choice))); return; }
     const zoom = e.target.closest('[data-zoom]'); if (zoom) { stopHolding(); const scale = Number(zoom.dataset.zoom); if ([1, 1.5, 2].includes(scale)) { $('world').style.width = `${scale * 100}%`; $('mapViewport').classList.toggle('zoomed', scale > 1); } return; }
     const cityAction = e.target.closest('[data-city-action]'); if (cityAction) { doAction(() => { if (['fiber', 'spin', 'timber'].includes(cityAction.dataset.cityAction) && !spendCredit()) return { ok: false }; return S.cityAction(state, cityAction.dataset.cityAction); }); return; }
     const cityResearch = e.target.closest('[data-city-research]'); if (cityResearch) { doAction(() => S.Civilization.answer(state, cityResearch.dataset.cityResearch, Number(cityResearch.dataset.choice))); return; }
@@ -242,6 +247,7 @@
   $('world').addEventListener('pointerdown', e => {
     if (!e.isPrimary || e.button !== 0 || frozen() || heldPointer !== null) return;
     const hit = view.hit(e.clientX, e.clientY, state);
+    if (hit?.startsWith('bronzeCrop:')) { doAction(() => spendCredit() ? S.bronzeAction(state, 'harvest', Number(hit.split(':')[1])) : { ok: false }); return; }
     if (hit === 'rabbit') { doAction(() => spendCredit() ? S.lifeAction(state, 'hunt') : { ok: false }); return; }
     if (hit?.startsWith('crop:')) { doAction(() => S.lifeAction(state, 'grain', Number(hit.split(':')[1]))); return; }
     if (hit === 'shell') { doAction(() => S.lifeAction(state, 'shell')); return; }
@@ -289,7 +295,7 @@
       if (input.harvest) manualWork(input.harvest);
       S.tick(state, dt, { ...input, harvest: null }); uiClock += dt; saveClock += dt;
       if (oldEvents !== state.events[0]) { render(); save(); sound('click'); }
-      if (oldEra !== state.era && !completedShown) complete();
+      if (oldEra === 'paleolithic' && state.era === 'neolithic' && !completedShown) complete();
       if (saveClock >= 8) { saveClock = 0; save(); }
     }
     if (uiClock >= .25) { uiClock = 0; render(); }

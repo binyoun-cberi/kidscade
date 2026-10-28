@@ -6,6 +6,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   const SOURCES = {
+    bronzeMuseum: { title: '국립춘천박물관 · 청동기 생활', url: 'https://chuncheon.museum.go.kr/kor/sub02_070101.do?partCode=03' },
     stone: { title: '우리역사넷 · 선사 시대 생활', url: 'https://contents.history.go.kr/front/ta/view.do?levelId=ta_e71_0010_0010_0010_0010' },
     metal: { title: '국사편찬위원회 · 청동기와 철기', url: 'https://contents.history.go.kr/eh_kk/teach/tong/II/04.htm' },
     joseon: { title: '우리역사넷 · 고조선과 여러 나라', url: 'https://contents.history.go.kr/front/ta/print.do?levelId=ta_m31_0040_0020&whereStr=' },
@@ -43,7 +44,7 @@
     kiln: project('숯 가마', { wood: 14, clay: 10, stone: 6 }, 20, 19, 6, '목재 → 숯 · 주조에 필요한 연료', ['neolithic'], 'bronze', '♨'),
     prospect: project('광맥 탐사', { food: 6, wood: 4 }, 20, 24, 4, '구리·주석 채광 자리 해금 · 발견 보장', ['neolithic'], 'bronze', '⌕'),
     bronzeRitual: project('청동 의례품 모형', { bronze: 2, stone: 8 }, 18, 15, 6, '청동의 의례·권력 상징과 전문 장인 살펴보기', ['kiln', 'prospect'], 'bronze'),
-    dolmen: project('고인돌 전시 모형', { stone: 18, wood: 6 }, 20, 12, 4, '무덤과 사회의 차이를 보여 주는 자료', ['bronzeRitual'], 'bronze'),
+    dolmen: project('고인돌 전시 모형', { stone: 18, wood: 6 }, 20, 12, 4, '무덤과 사회의 차이를 보여 주는 자료', ['neolithic'], 'bronze'),
     ironFurnace: project('철 제련로', { stone: 12, clay: 12, bronze: 2 }, 22, 22, 9, '철광석 채광 · 숯으로 제련 준비', ['bronze'], 'iron', '♨'),
     forge: project('대장간', { wood: 14, stone: 8 }, 20, 22, 12, '철광석 + 숯 → 철 · 제련·가공 단순화', ['ironFurnace'], 'iron', '⚒'),
     ironTools: project('철제 농기구', { iron: 3, wood: 6 }, 15, 12, 13, '농사 작업 20초 → 15초', ['forge'], 'iron', '⚒'),
@@ -77,9 +78,9 @@
       concepts: ['간석기', '잡곡 농경', '빗살무늬 토기·움집'], facts: ['돌을 갈아 만든 도구를 쓰고 농경과 정착 생활이 나타났어요.', '토기는 조리·저장에 쓰였고, 사냥·고기잡이도 계속했어요.'],
       goals: [built('groundStone', '간석기 다듬기'), { type: 'settled', label: '밭·토기·주거와 식량 안정으로 정착 달성' }],
       reflection: question('밭이 생긴 뒤에도 채집을 계속할 수 있게 한 까닭은?', ['농경과 사냥·채집이 함께 이루어졌기 때문', '농경이 시작되자 사냥과 채집이 바로 사라졌기 때문'], 0, '새 생활 방식이 나타나도 이전 방식이 즉시 없어지지 않았어요. 여러 먹거리 확보 방법이 함께 쓰였어요.') },
-    { id: 'bronze', title: '청동기', group: '생산과 여러 나라', period: '농경 확대·사회 분화', requires: ['neolithic'], sources: ['metal'],
-      concepts: ['청동 주조·장인', '반달 돌칼', '고인돌·사회 분화'], facts: ['청동은 무기·의례품 등에 쓰였고 농사에는 반달 돌칼 같은 석기도 중요했어요.', '큰 무덤과 부장품은 당시 사람들 사이의 차이를 살피는 자료예요.'],
-      goals: [built('kiln', '숯 가마'), built('prospect', '구리·주석 광맥 탐사'), built('bronzeRitual', '청동 의례품 모형'), built('dolmen', '고인돌 전시 모형')],
+    { id: 'bronze', title: '청동기', group: '생산과 여러 나라', period: '농경 확대·사회 분화', requires: ['neolithic'], sources: ['metal', 'stone', 'bronzeMuseum'],
+      concepts: ['청동 주조·장인', '반달 돌칼', '민무늬 토기·고인돌·사회 분화'], facts: ['농경이 확대되었고 일부 지역에서는 벼농사도 이루어졌어요. 청동은 무기·의례품 등에 쓰였으며 농사에는 석기·나무 도구도 중요했어요.', '큰 무덤과 부장품은 당시 사람들 사이의 차이를 살피는 자료예요.'],
+      goals: [built('broadField', '넓은 공동 밭'), built('mumunStore', '민무늬 토기와 저장터'), built('castingWorkshop', '거푸집 주조 작업터'), { type: 'bronzeCycle', label: '수확·운반·청동 제작 연구와 12가구 마을·자료 비교' }, built('kiln', '숯 가마'), built('prospect', '구리·주석 광맥 탐사'), built('bronzeRitual', '청동 의례품 모형'), built('dolmen', '고인돌 전시 모형')],
       reflection: question('청동기 마을의 농사 모습을 전시하려고 해요. 무엇을 함께 놓을까요?', ['청동검만 놓고 모든 농기구도 청동이었다고 설명', '청동 의례품과 반달 돌칼을 쓰임에 따라 구분'], 1, '청동기의 등장과 석기의 사용은 겹쳐요. 청동 농기구가 모든 석기를 곧바로 대신한 것은 아니에요.') },
     { id: 'iron', title: '철기', group: '생산과 여러 나라', period: '철제 농기구·무기와 교류', requires: ['bronze'], sources: ['metal', 'joseon'],
       concepts: ['철제 농기구', '제련·가공', '여러 나라의 성장'], facts: ['철제 도구의 보급은 농업과 여러 나라의 성장에 영향을 주었어요.', '교류 흔적과 유물은 당시 지역 사이의 관계를 보여 줘요.'],
@@ -156,6 +157,7 @@
   }
   function goalDone(s, g) {
     if (g.type === 'project') return gate(s, g.id);
+    if (g.type === 'bronzeCycle') return Boolean(s.bronze && ['harvest', 'storage', 'casting', 'evidence'].every(id => s.bronze.research[id]) && s.bronze.stats.processed > 0 && s.civilization.homes >= 12);
     if (g.type === 'settled') return s.era !== 'paleolithic';
     if (g.type === 'produced') return (s.history.produced[g.id] || 0) >= g.amount;
     if (g.type === 'action') return (s.history.actions[g.id] || 0) >= g.amount;
@@ -188,7 +190,7 @@
     if (id === 'iron') s.era = 'iron';
     const next = CHAPTERS.find(c => !s.history.completed.includes(c.id) && available(s, c.id));
     if (next) s.history.active = next.id;
-    s.events.unshift({ time: s.time, text: `${byId(id).title} 배움을 기록했어요.${next ? ` 다음은 ${next.title}.` : ' 고려까지의 탐방을 마쳤어요.'}` }); s.events.length = Math.min(20, s.events.length);
+    s.events.unshift({ time: s.time, text: `${byId(id).title} 배움을 기록했어요.${id === 'bronze' ? ' 마을을 이어 가며 철기와 고조선을 함께 탐방해요.' : next ? ` 다음은 ${next.title}.` : ' 고려까지의 탐방을 마쳤어요.'}` }); s.events.length = Math.min(20, s.events.length);
     return { ok: true, chapter: id };
   }
   function record(s, resource, n, w) {
