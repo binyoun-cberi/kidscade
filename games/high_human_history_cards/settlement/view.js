@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  const S = window.SettlementSim, TILE = 32, W = 1024, H = 704;
+  const S = window.SettlementSim, TILE = 32, W = 1536, H = 1024;
   const palette = { grass: ['#91b86a', '#95bc6f', '#8db367', '#92b66c'], water: '#679f99', sand: '#d7cba0', ink: '#314d37' };
   function random(x, y, salt = 0) { let n = (x * 374761393 + y * 668265263 + salt * 1447) | 0; n = Math.imul(n ^ (n >>> 13), 1274126177); return ((n ^ (n >>> 16)) >>> 0) / 4294967296; }
   function rect(c, x, y, w, h, fill) { c.fillStyle = fill; c.fillRect(Math.round(x), Math.round(y), w, h); }
@@ -80,20 +80,21 @@
     c.font = 'bold 15px "Malgun Gothic",sans-serif'; const width = c.measureText(title).width + 24;
     c.fillStyle = selected ? '#294d3e' : '#f6f3dcdd'; c.beginPath(); c.roundRect(x - width / 2, y - 14, width, 28, 7); c.fill(); c.fillStyle = selected ? '#fff4d2' : '#4b6649'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(title, x, y + 1);
   }
-  function rabbitPoint(s) { return { x: 13 + Math.sin(s.time * .7) * 3, y: 4 + Math.sin(s.time * .43) * 1.3 }; }
+  function rabbitPoint(s, reduced = false) { const t = reduced ? 0 : s.time; return { x: 13 + Math.sin(t * .7) * 3, y: 4 + Math.sin(t * .43) * 1.3 }; }
   function create(canvas) {
     const c = canvas.getContext('2d');
+    let motionReduced = false;
     const terrain = document.createElement('canvas'); terrain.width = W; terrain.height = H;
     const g = terrain.getContext('2d');
-    for (let y = 0; y < 22; y++) for (let x = 0; x < 32; x++) {
+    for (let y = 0; y < 32; y++) for (let x = 0; x < 48; x++) {
       rect(g, x * TILE, y * TILE, TILE, TILE, palette.grass[Math.floor(random(x, y) * 4)]);
       if (random(x, y, 1) > .55) { rect(g, x * TILE + 6, y * TILE + 12, 2, 4, '#75995755'); rect(g, x * TILE + 9, y * TILE + 10, 2, 6, '#aac77b'); }
     }
     // A winding river and its stepped bank remain outside all build/work sites.
     for (let y = 0; y < H; y += 8) {
       const bank = Math.floor((902 + Math.sin(y / 160) * 24) / 8) * 8;
-      rect(g, bank - 12, y, W - bank + 12, 8, '#c8c49a'); rect(g, bank, y, W - bank, 8, palette.water);
-      if ((y / 8) % 3 === 0) for (let x = bank + 16; x < W; x += 40) rect(g, x + (y % 16), y, 13, 2, '#91c0ae');
+      rect(g, bank - 12, y, 132, 8, '#c8c49a'); rect(g, bank, y, 108, 8, palette.water);
+      if ((y / 8) % 3 === 0) for (let x = bank + 16; x < bank + 104; x += 40) rect(g, x + (y % 16), y, 13, 2, '#91c0ae');
     }
     for (let i = 0; i < 80; i++) {
       const x = Math.floor(random(i, 3) * 27 + 1), y = Math.floor(random(i, 4) * 20 + 1);
@@ -110,14 +111,18 @@
     return {
       draw(s, selected, time, reducedMotion) {
         c.clearRect(0, 0, W, H); c.drawImage(terrain, 0, 0);
-        const t = reducedMotion ? 0 : time;
+        const t = reducedMotion ? 0 : time; motionReduced = reducedMotion;
         ellipse(c, CAMPX(), 366, 108, 70, '#c5ba8755');
         // Paths are functional links: workers move along these same direct routes.
         for (const type of ['wood', 'stone', 'food', 'clay']) {
           if (type === 'clay' && !s.flags.survey) continue;
           if (s.flags.road) line(c, S.CAMP, S.NODES[type], 18, '#c9ba88');
         }
-        for (const b of s.buildings) line(c, S.CAMP, b, s.flags.road ? 15 : 9, '#cbbb8c');
+        for (const b of s.buildings) {
+          if (b.x > 30) { line(c, { x: 31.5, y: 11 }, { x: b.x, y: 11 }, 12, '#cbbb8c'); line(c, { x: b.x, y: 11 }, b, 12, '#cbbb8c'); }
+          else line(c, S.CAMP, b, s.flags.road ? 15 : 9, '#cbbb8c');
+        }
+        if (s.civilization.homes) { line(c, S.CAMP, { x: 31.5, y: 11 }, 14, '#cbbb8c'); rect(c, 884, 341, 137, 22, '#a28459'); for (let i = 0; i < 12; i++) rect(c, 885 + i * 12, 342, 2, 20, '#d1b17b'); }
         if (s.flags.road) { for (let i = 0; i < 18; i++) rect(c, 330 + i * 14, 351 + Math.sin(i) * 3, 4, 3, '#ab9f79'); }
         // Founder's canvas shelter and shared drop-off.
         c.fillStyle = '#e9d8a9'; c.beginPath(); c.moveTo(480, 366); c.lineTo(507, 315); c.lineTo(538, 366); c.closePath(); c.fill();
@@ -144,6 +149,28 @@
             if (!reducedMotion) for (let i = 0; i < 3; i++) ellipse(c, x + Math.sin(t + i) * 6, y - 25 - ((t * 14 + i * 18) % 45), 4 + i, 3 + i, '#f4edce44'); }
           }
           if (b.type === 'warehouse') { hut(c, x, y, 1); rect(c, x - 30, y + 8, 13, 15, '#b09261'); rect(c, x + 22, y + 8, 12, 15, '#ae8956'); }
+          if (S.Civilization.PROJECTS[b.type]) {
+            const d = S.Civilization.PROJECTS[b.type];
+            if (d.homes) {
+              const visible = Math.min(30, d.homes), cols = Math.min(6, Math.ceil(Math.sqrt(visible)));
+              for (let i = 0; i < visible; i++) { c.save(); c.translate(x - 65 + i % cols * 27, y - 45 + Math.floor(i / cols) * 23); c.scale(.42, .42); hut(c, 0, 0, s.era !== 'neolithic'); c.restore(); }
+              farm(c, x - 43, y + 93, t, true); label(c, x, y - 78, `${d.homes}가구 · 주거 구역`);
+              if (!reducedMotion && s.civilization.citizens > 0) { const px = x - 60 + ((t * 9 + b.x) % 120); person(c, { id: 1, x: px / TILE, y: (y + 69) / TILE, phase: 'walk' }, t); }
+            } else if (b.type === 'civicMonument') {
+              rect(c, x - 33, y + 8, 66, 10, '#a3ac90'); rect(c, x - 23, y - 28, 46, 37, '#c6bc99'); rect(c, x - 14, y - 18, 28, 20, '#e6dab2');
+              label(c, x, y - 48, '도시의 공동 기록');
+            } else if (b.type === 'fishingHut') {
+              rect(c, x - 18, y - 12, 42, 29, '#b59465'); for (let i = 0; i < 4; i++) { line(c, { x: (x + 30) / TILE, y: (y - 15 + i * 7) / TILE }, { x: (x + 65) / TILE, y: (y + i * 7) / TILE }, 1, '#e1dab8'); }
+              label(c, x, y + 42, '어로터');
+            } else {
+              rect(c, x - 24, y - 8, 48, 25, '#c5ad7c'); rect(c, x - 28, y - 18, 56, 12, '#8d7955');
+              if (b.type === 'woodshop') { rect(c, x - 28, y + 8, 55, 6, '#8a6744'); rect(c, x - 22, y + 2, 39, 5, '#caa674'); }
+              if (b.type === 'spinningHut') { ellipse(c, x, y, 12, 12, '#ded5b3'); rect(c, x - 1, y - 20, 2, 36, '#866a44'); }
+              if (b.type === 'sewingHut') { rect(c, x - 14, y - 5, 28, 20, '#aebba0'); rect(c, x - 6, y - 12, 12, 28, '#b7c2ad'); }
+              if (b.type === 'maintenance') { rock(c, x + 6, y + 7, .7); rect(c, x - 12, y - 8, 3, 23, '#886d46'); }
+              label(c, x, y + 41, d.name);
+            }
+          }
           if (S.History.PROJECTS[b.type]) historic(c, b, s, t);
         } }));
         s.workers.forEach(w => drawables.push({ y: w.y, draw: () => person(c, w, t) }));
@@ -163,7 +190,7 @@
           label(c, n.x * TILE, (n.y + 1.6) * TILE, n.name, isSelected);
           if (s.manual.node === key && s.manual.progress > 0) { rect(c, n.x * TILE - 26, n.y * TILE + 25, 52, 5, '#4f704d'); rect(c, n.x * TILE - 26, n.y * TILE + 25, s.manual.progress / 6 * 52, 5, '#f6d18b'); }
         }
-        const rabbit = rabbitPoint(s), rx = rabbit.x * TILE, ry = rabbit.y * TILE;
+        const rabbit = rabbitPoint(s, motionReduced), rx = rabbit.x * TILE, ry = rabbit.y * TILE;
         if (s.prehistory.rabbit.respawn <= 0) {
           ellipse(c, rx, ry + 7, 18, 5, '#42613c33'); ellipse(c, rx, ry, 14, 9, '#ddd9bc');
           ellipse(c, rx + 10, ry - 7, 8, 8, '#ede6cc'); rect(c, rx + 8, ry - 25, 4, 15, '#ede6cc'); rect(c, rx + 14, ry - 24, 4, 15, '#ddd9bc');
@@ -181,9 +208,10 @@
       },
       hit(clientX, clientY, s) {
         const box = canvas.getBoundingClientRect();
-        const point = { x: (clientX - box.left) / box.width * 32, y: (clientY - box.top) / box.height * 22 };
+        const point = { x: (clientX - box.left) / box.width * 48, y: (clientY - box.top) / box.height * 32 };
         if (s) {
-          if (s.prehistory.rabbit.respawn <= 0 && Math.hypot(point.x - rabbitPoint(s).x, point.y - rabbitPoint(s).y) < 1.15) return 'rabbit';
+          const huntTool = S.Civilization.toolFor(s, 'hunt', S.Prehistory), radius = ['arrowhead', 'stoneSpear', 'point'].includes(huntTool) ? 1.8 : 1.15;
+          if (s.prehistory.rabbit.respawn <= 0 && Math.hypot(point.x - rabbitPoint(s, motionReduced).x, point.y - rabbitPoint(s, motionReduced).y) < radius) return 'rabbit';
           if (s.prehistory.shellVisible && Math.hypot(point.x - 27, point.y - 12) < 1) return 'shell';
           const field = s.buildings.find(b => b.type === 'farm');
           if (field && Math.abs(point.x - field.x) < 1.3 && Math.abs(point.y - field.y) < 1) {

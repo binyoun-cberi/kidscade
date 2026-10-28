@@ -4,7 +4,7 @@
   const H = S.History;
   const GAME_ID = 'high_human_history_cards';
   const SAVE_KEY = window.KidscadeGame?.storageKey(GAME_ID, 'settlement-v1') || 'kidscade_game_v1:high_human_history_cards:settlement-v1';
-  const icons = { wood: '🪵', stone: '🪨', food: '🌾', clay: '🏺', ...H.ICONS };
+  const icons = { fiber: '🌿', thread: '🧵', cloth: '🧶', timber: '🪵', wood: '🪵', stone: '🪨', food: '🌾', clay: '🏺', ...H.ICONS };
   const baseResources = Object.keys(S.NODES);
   let lessonView = false;
   const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -51,15 +51,19 @@
   function panelMarkup() {
     const p = state.project;
     const projectHTML = p ? `<section class="project-card"><h3>${S.PROJECTS[p.type].name} 진행 중 <span id="projectPercent"></span></h3><p>재료는 이미 투입했어요. 취소하면 돌려받아요.</p><div class="mini-progress"><i id="projectProgress"></i></div><div class="project-actions"><button type="button" id="helpProject">꾹 눌러 작업 돕기</button><button type="button" id="assignBuilder">일꾼 배치</button><button type="button" id="cancelProject">취소</button></div></section>` : '';
+    if (tab === 'city') return window.SettlementCivilizationUI.markup(state, projectHTML);
     if (tab === 'life') return projectHTML + window.SettlementPrehistoryUI.markup(state);
     if (tab === 'history') return window.SettlementHistoryUI.markup(state, lessonView, projectHTML);
-    if (tab === 'production') return window.SettlementHistoryUI.production(state, icons, projectHTML);
+    if (tab === 'production') return window.SettlementCivilizationUI.production(state, projectHTML) + window.SettlementHistoryUI.production(state, icons, '');
     if (tab === 'workers') {
       return '<p class="panel-intro">한 사람은 한 가지 일을 해요. 물품을 운반 중이라면 입고한 뒤 새 일을 시작해요.</p>' + state.workers.map(w => `<article class="worker"><div class="worker-head"><span class="worker-face" aria-hidden="true">♟</span><h3>${escape(w.name)}</h3><small id="worker-phase-${w.id}"></small></div><label><span class="sr-only">${escape(w.name)}의 일</span><select data-worker="${w.id}"><option value="idle">쉬기 · 새 일 기다리기</option>${Object.entries(S.JOBS).map(([k, d]) => `<option value="${k}">${d.name}</option>`).join('')}</select></label><p id="worker-info-${w.id}"></p></article>`).join('');
     }
     return `<p class="panel-intro">거처·도구·작업장을 연결해요. 역사 메뉴에서 생활과 자료를 이어 보고, 생산 메뉴에서 가공 재고를 확인해요.</p>${projectHTML}${Object.entries(S.PROJECTS).filter(([id, d]) => !d.historical || S.unlocked(state, id) || d.chapter === state.history.active).map(([id, d]) => `<article id="build-${id}" class="build-card"><span class="build-icon" aria-hidden="true">${d.icon}</span><div><h3>${d.name}</h3><p>${d.effect}</p><div class="cost">${costText(d)} · ${d.time}초 작업</div></div><button type="button" data-project="${id}">시작</button><small id="reason-${id}" class="build-reason"></small></article>`).join('')}`;
   }
   function goal() {
+    if (state.history.completed.includes('goryeoPrint')) return { title: '도시를 키우고 다음 터전으로', text: S.Civilization.inheritanceReason(state) || '도시를 기록하고 새 터전으로 계승하거나, 이 도시를 더 키울 수 있어요.', action: 'city' };
+    if (state.history.completed.includes('neolithic') && !state.civilization.research.production) return { title: '연결한 시설이 내 일을 대신해요', text: '도시 메뉴에서 목공터를 마련하고 가공을 연결하기를 연구해요. 실·목재·금속·인쇄가 새 일손 없이 이어져요.', action: 'city' };
+    if (state.history.completed.includes('neolithic') && !state.civilization.homes) return { title: '강 너머로 마을을 넓혀요', text: '목공·곡물 처리와 첫 주거 구역을 연결하면 경작·저장·기초 생산이 함께 커져요.', action: 'city' };
     if (state.era !== 'paleolithic') { const c = H.byId(state.history.active); return { title: `${c.title} · 생활과 배움 잇기`, text: c.goals.find(g => !H.goalDone(state, g))?.label || '자료를 읽고 생각 잇기를 한 뒤 배움을 기록해요.', action: 'history' }; }
     if (state.resources.food < 4) return { title: '먹거리를 먼저 마련해요', text: '사냥·채집은 언제든 다시 시작할 수 있어요. 도구로 사냥을 편하게 하거나 공동 채집터를 마련해요.', node: 'food', action: 'life' };
     if (state.prehistory.stats.crafted === 0) return { title: '돌 하나로 달라지는 생활', text: '생활 메뉴에서 돌 1개로 주먹도끼나 찍개를 만들어요. 사냥과 벌목의 클릭 수가 줄어들어요.', action: 'life' };
@@ -103,9 +107,10 @@
     $('supportBtn').disabled = paused || !state.workers.some(w => w.job === supportJob);
     $('supportBtn').dataset.support = supportJob;
     $('supportBtn').textContent = '꾹 눌러 주민 돕기';
-    const sig = `${tab}:${state.workers.length}:${state.project?.type || ''}:${state.buildings.length}:${JSON.stringify(state.flags)}:${state.era}:${state.history.active}:${state.history.completed.join(',')}:${JSON.stringify(state.history.answers)}:${state.history.feedback}:${lessonView}:${state.history.printMode}:${H.byId(state.history.active).goals.map(g => H.goalDone(state, g)).join(',')}`;
+    const sig = `${tab}:${state.workers.length}:${state.project?.type || ''}:${state.buildings.length}:${JSON.stringify(state.flags)}:${state.era}:${state.history.active}:${state.history.completed.join(',')}:${JSON.stringify(state.history.answers)}:${state.history.feedback}:${lessonView}:${state.history.printMode}:${H.byId(state.history.active).goals.map(g => H.goalDone(state, g)).join(',')}:${state.prehistory.stats.crafted > 0}:${state.civilization.homes}:${state.civilization.legacy.runs}`;
     if (sig !== signature) { $('panel').innerHTML = panelMarkup(); signature = sig; }
-    if (tab === 'life') window.SettlementPrehistoryUI.update(state, paused);
+    if (tab === 'city') window.SettlementCivilizationUI.update(state, paused);
+    else if (tab === 'life') window.SettlementPrehistoryUI.update(state, paused);
     else if (tab === 'build') {
       for (const id of Object.keys(S.PROJECTS)) {
         const why = S.projectReason(state, id), done = S.finished(state, id) >= S.PROJECTS[id].max;
@@ -129,6 +134,7 @@
       }
     } else if (tab === 'history') window.SettlementHistoryUI.update(state);
     else if (tab === 'production') {
+      window.SettlementCivilizationUI.updateProduction(state);
       for (const [id, d] of Object.entries(H.JOBS)) {
         $(`stock-${id}`).textContent = `재고 ${Math.floor(state.resources[d.resource])} / ${cap}`;
         $(`production-rate-${id}`).textContent = `예상 순증가 ${r[d.resource] >= 0 ? '+' : ''}${r[d.resource].toFixed(1)}/분 · 배치 ${S.assigned(state, id)}명`;
@@ -156,6 +162,17 @@
     render(); save();
   }
   document.addEventListener('click', e => {
+    const zoom = e.target.closest('[data-zoom]'); if (zoom) { stopHolding(); const scale = Number(zoom.dataset.zoom); if ([1, 1.5, 2].includes(scale)) { $('world').style.width = `${scale * 100}%`; $('mapViewport').classList.toggle('zoomed', scale > 1); } return; }
+    const cityAction = e.target.closest('[data-city-action]'); if (cityAction) { doAction(() => { if (['fiber', 'spin', 'timber'].includes(cityAction.dataset.cityAction) && !spendCredit()) return { ok: false }; return S.cityAction(state, cityAction.dataset.cityAction); }); return; }
+    const cityResearch = e.target.closest('[data-city-research]'); if (cityResearch) { doAction(() => S.Civilization.answer(state, cityResearch.dataset.cityResearch, Number(cityResearch.dataset.choice))); return; }
+    const artifact = e.target.closest('[data-artifact]'); if (artifact) { doAction(() => S.Civilization.artifact(state, artifact.dataset.artifact, Number(artifact.dataset.choice))); return; }
+    const upgrade = e.target.closest('[data-legacy-buy]'); if (upgrade) { doAction(() => S.Civilization.buy(state, upgrade.dataset.legacyBuy)); return; }
+    const inherit = e.target.closest('[data-inherit]'); if (inherit) {
+      if (paused || document.hidden || !$('inheritDialog').open) return;
+      const result = S.inherit(state, inherit.dataset.inherit);
+      if (!result.ok) { toast(result.reason); return; }
+      $('inheritDialog').close(); completedShown = false; stopHolding(); signature = ''; tab = 'life'; render(); save(); toast(result.reason); return;
+    }
     const lifeMenu = e.target.closest('[data-life-menu]'); if (lifeMenu) { stopHolding(); changeTab('life'); return; }
     const tool = e.target.closest('[data-tool]'); if (tool) { doAction(() => S.Prehistory.craft(state, tool.dataset.tool)); return; }
     const research = e.target.closest('[data-life-research]'); if (research) { doAction(() => S.Prehistory.answer(state, research.dataset.lifeResearch, Number(research.dataset.choice))); return; }
@@ -245,6 +262,9 @@
   $('helpBtn').addEventListener('click', () => openDialog('helpDialog'));
   $('learningAction').addEventListener('click', () => { changeTab('history'); if (innerWidth < 761) document.querySelector('.management').scrollIntoView({ block: 'start' }); });
   $('logBtn').addEventListener('click', () => { $('recordList').innerHTML = state.events.map(e => `<p><small>${formatTime(e.time)}</small>${escape(e.text)}</p>`).join(''); openDialog('recordDialog'); });
+  document.addEventListener('click', e => {
+    if (e.target.closest('#openInheritance') && !frozen() && !S.Civilization.inheritanceReason(state)) { $('inheritPreview').textContent = `새 터전에서 다시 시작: 현지 자원·건물·주민·진행 작업. 보존: 도시 ${state.civilization.homes}가구의 기록, 배운 연구·역사 ${Object.values(state.history.answers).filter(Boolean).length}개, 성취 기록. 이번 보상 ${S.Civilization.reward(state)}점. 계승 지식 단계는 그대로 남아요.`; openDialog('inheritDialog'); }
+  });
   $('continueBtn').addEventListener('click', () => $('completeDialog').close());
   document.querySelectorAll('dialog').forEach(d => d.addEventListener('close', () => { last = performance.now(); render(); }));
   document.addEventListener('visibilitychange', () => { stopHolding(); last = performance.now(); if (document.hidden) save(); });

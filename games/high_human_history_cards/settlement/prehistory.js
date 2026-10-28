@@ -1,12 +1,13 @@
 (function (root, factory) {
   'use strict';
-  const api = factory();
+  const api = factory(typeof module === 'object' && module.exports ? require('./civilization.js') : root.SettlementCivilization);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.SettlementPrehistory = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (C) {
   'use strict';
   // Tool strength, life, warmth and exchange ratios are game rules, not excavated measurements.
   const TOOLS = {
+    ...C.TOOLS,
     handaxe: { name: '주먹도끼', kind: 'chipped', uses: 24, hunt: 6, wood: 3, text: '여러 작업에 쓰는 도구 · 사냥 3회 / 벌목 2회' },
     chopper: { name: '찍개', kind: 'chipped', uses: 24, wood: 6, hunt: 2, text: '찍고 다듬기 · 나무 한 묶음 1회' },
     scraper: { name: '긁개', kind: 'chipped', uses: 20, hide: 1, text: '가죽 손질 · 가죽 조각을 옷감으로' },
@@ -37,6 +38,7 @@
   const built = (s, id) => s.buildings.some(b => b.type === id);
   function available(s, id) {
     const t = TOOLS[id];
+    if (Object.prototype.hasOwnProperty.call(C.TOOLS, id)) return C.toolAvailable(s, id);
     return Boolean(Object.prototype.hasOwnProperty.call(TOOLS, id) && t && (t.kind !== 'ground' || built(s, 'groundStone')) && (!t.late || s.flags.tools) && (!t.bronze || s.history.completed.includes('neolithic')));
   }
   function unlocked(s, id) {
@@ -49,6 +51,7 @@
   const maxUses = (s, id) => TOOLS[id].uses + (s.prehistory.engraved ? 8 : 0);
   function craft(s, id) {
     const p = s.prehistory, t = TOOLS[id];
+    if (Object.prototype.hasOwnProperty.call(C.TOOLS, id)) return C.craft(s, id, { TOOLS });
     if (!available(s, id)) return { ok: false, reason: '먼저 필요한 생활 기술을 갖춰요.' };
     if (p.grinding) return { ok: false, reason: '갈고 있는 도구를 먼저 완성하거나 취소해요.' };
     if ((p.tools[id] || 0) > 0) { p.selected = id; return { ok: true, reason: `${t.name} 장착 · 남은 사용 ${Math.ceil(p.tools[id])}회` }; }
@@ -67,7 +70,7 @@
     return true;
   }
   function power(s, task, work = 1) {
-    const p = s.prehistory, id = p.selected, t = TOOLS[id];
+    const p = s.prehistory, id = C.toolFor(s, task, { TOOLS }), t = TOOLS[id];
     if (!Number.isFinite(work) || work <= 0) return 1;
     if (!t?.[task] || !(p.tools[id] > 0)) return 1;
     // Each manual activation wears the tool; final fractional use contributes proportionally.
@@ -77,7 +80,7 @@
   }
   function use(s, task) {
     const p = s.prehistory;
-    if (!TOOLS[p.selected]?.[task] || !(p.tools[p.selected] > 0)) return false;
+    if (!C.toolFor(s, task, { TOOLS })) return false;
     power(s, task); return true;
   }
   function answer(s, id, choice) {
@@ -95,10 +98,10 @@
     // Pottery increases carrying capacity; the bronze knife extends harvesting reach.
     const radius = s.flags.pottery ? 1 : 0;
     let indices = [index];
-    if (automatic || radius || (p.selected === 'reaping' && p.tools.reaping > 0)) indices = [index - 1, index, index + 1].filter(i => i >= 0 && i < 6);
+    if (automatic || radius || Boolean(C.toolFor(s, 'grain', { TOOLS }))) indices = [index - 1, index, index + 1].filter(i => i >= 0 && i < 6);
     const targets = indices.filter(i => p.crops[i] >= 20).slice(0, Math.max(0, 60 - p.grain));
     if (!targets.length) return 0;
-    if (!automatic && p.selected === 'reaping') use(s, 'grain');
+    if (!automatic && C.toolFor(s, 'grain', { TOOLS })) use(s, 'grain');
     for (const i of targets) { p.crops[i] = 0; p.grain++; p.stats.collected++; }
     return targets.length;
   }
@@ -106,13 +109,13 @@
     const p = s.prehistory;
     if (id === 'cancelGrind') {
       if (!p.grinding) return { ok: false };
-      s.resources.stone++; p.grinding = null; return { ok: true, reason: '갈기를 취소하고 준비한 돌 1개를 돌려받았어요.' };
+      for (const [k, n] of Object.entries(p.grinding.cost || { stone: 1 })) s.resources[k] += n; p.grinding = null; return { ok: true, reason: '갈기를 취소하고 준비한 돌 1개를 돌려받았어요.' };
     }
     if (id === 'hunt') {
       if (p.rabbit.respawn > 0) return { ok: false, reason: '새 사냥감이 오는 중이에요. 채집도 계속할 수 있어요.' };
-      if (s.resources.food >= ctx.cap(s)) return { ok: false, reason: '식량 저장 공간을 먼저 마련해요.' };
+      if (s.resources.food >= ctx.cap(s) && p.hide >= 60 && p.bone >= 60) return { ok: false, reason: '식량·가죽·뼈의 보관 공간이 모두 가득해요.' };
       p.rabbit.hp -= power(s, 'hunt');
-      if (p.rabbit.hp <= 0) { add(s, ctx, 'food', 6); p.hide = Math.min(60, p.hide + 1); p.bone = Math.min(60, p.bone + 1); p.stats.hunts++; p.rabbit = { hp: 18, respawn: 10 }; return { ok: true, reason: '사냥 성공 · 식량 6, 가죽·뼈 각 1. 먹거리는 사냥·채집으로 얻어요.' }; }
+      if (p.rabbit.hp <= 0) { const food = add(s, ctx, 'food', 6); p.hide = Math.min(60, p.hide + 1); p.bone = Math.min(60, p.bone + 1); p.stats.hunts++; p.rabbit = { hp: 18, respawn: 10 }; return { ok: true, reason: `사냥 성공 · 식량 ${Math.floor(food)}, 가죽·뼈 각 1. 먹거리는 사냥·채집으로 얻어요.` }; }
       return { ok: true, reason: `토끼 추적 중 · 남은 작업 ${Math.ceil(p.rabbit.hp)}/18` };
     }
     if (id === 'fuel') {
@@ -135,7 +138,7 @@
     if (id === 'till' && built(s, 'farm') && use(s, 'till')) { p.tilled = 45; return { ok: true, reason: '밭 일구기 · 45초 동안 작물 성장 2배' }; }
     if (id === 'grain') { const n = collect(s, index); return { ok: n > 0, reason: n ? `익은 곡물 ${n}곳 수확${s.flags.pottery ? ' · 토기에 함께 담기' : ''}` : '익은 곡식을 기다리거나 곡물 저장 공간을 비워요.' }; }
     if (id === 'mill' && p.grain > 0 && s.resources.food <= ctx.cap(s) - 3) {
-      const amount = p.selected === 'quern' && p.tools.quern > 0 ? 3 : 1;
+      const amount = Boolean(C.toolFor(s, 'mill', { TOOLS })) ? 3 : 1;
       if (amount === 3) use(s, 'mill'); p.grain--; add(s, ctx, 'food', amount); return { ok: true, reason: `곡물 1 → 식량 ${amount}${amount === 3 ? ' · 갈판과 갈돌로 처리' : ' · 손으로 처리'}` };
     }
     return { ok: false, reason: '알맞은 도구를 장착하고 필요한 재료를 확인해요.' };
@@ -145,7 +148,7 @@
     p.fuel = Math.max(0, p.fuel - dt * (built(s, 'fire') ? .6 : 1));
     p.warmth = Math.max(0, Math.min(100, p.warmth + dt * (p.fuel > 0 ? .6 : p.clothing ? -.1 : -.2)));
     if (p.research.fire && built(s, 'hearth') && p.fuel <= 20 && s.resources.wood >= 3) { s.resources.wood--; p.fuel += 25; }
-    if (p.research.tools && built(s, 'flintWorkshop') && Object.prototype.hasOwnProperty.call(p.tools, p.selected) && !(p.tools[p.selected] > 0) && !p.grinding && available(s, p.selected) && s.resources.stone >= 1) {
+    if (p.research.tools && built(s, 'flintWorkshop') && !built(s, 'maintenance') && ['chipped', 'ground', 'stone'].includes(TOOLS[p.selected]?.kind) && Object.prototype.hasOwnProperty.call(p.tools, p.selected) && !(p.tools[p.selected] > 0) && !p.grinding && available(s, p.selected) && s.resources.stone >= 1) {
       s.resources.stone--; p.tools[p.selected] = maxUses(s, p.selected); p.stats.automatic++;
     }
     if (built(s, 'sharedGathering')) {
@@ -172,7 +175,7 @@
     if (!p.research || typeof p.research !== 'object' || Array.isArray(p.research) || !Object.entries(p.research).every(([k, v]) => RESEARCH[k] && typeof v === 'boolean') || typeof p.feedback !== 'string' || p.feedback.length > 1000) return false;
     if (!['clothing', 'engraved', 'shellVisible', 'legacy'].every(k => typeof p[k] === 'boolean') || !p.clocks || !num(p.clocks.gather, 12) || !num(p.clocks.mill, 4)) return false;
     if (!p.stats || !['hunts', 'chopped', 'crafted', 'collected', 'automatic'].every(k => num(p.stats[k], 1e12))) return false;
-    return !p.grinding || (TOOLS[p.grinding.id]?.kind === 'ground' && num(p.grinding.progress, 6));
+    return !p.grinding || (TOOLS[p.grinding.id]?.kind === 'ground' && num(p.grinding.progress, 6) && (!p.grinding.cost || JSON.stringify(p.grinding.cost) === JSON.stringify(TOOLS[p.grinding.id].cost || { stone: 1 })));
   }
   return { TOOLS, PROJECTS, RESEARCH, initial, available, unlocked, craft, grind, power, answer, action, tick, rates, valid };
 });

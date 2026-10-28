@@ -135,10 +135,19 @@ test('v2 saves migrate once, mid-grind and timers resume, malformed new saves ar
   const restored = S.restore(s); assert.ok(restored);
   S.tick(s, 30); S.tick(restored, 30); assert.deepEqual(restored, s);
   const old = JSON.parse(JSON.stringify(s)); old.version = 2; delete old.prehistory;
-  const migrated = S.restore(old); assert.ok(migrated); assert.equal(migrated.version, 3);
+  const migrated = S.restore(old); assert.ok(migrated); assert.equal(migrated.version, S.VERSION);
   assert.deepEqual(migrated.resources, old.resources); assert.deepEqual(migrated.buildings, old.buildings);
   assert.equal(migrated.prehistory.legacy, true);
   const bad = JSON.parse(JSON.stringify(s)); bad.prehistory.tools.handaxe = -1; assert.equal(S.restore(bad), null);
   bad.prehistory.tools = {}; bad.prehistory.selected = '__proto__'; assert.equal(S.restore(bad), null);
   bad.prehistory.selected = 'quern'; bad.prehistory.rabbit.respawn = Infinity; assert.equal(S.restore(bad), null);
+});
+
+
+test('full food storage does not block hunting for the hide and bone needed by other crafts', () => {
+  const s = S.initial(); s.resources.food = S.storageCap(s);
+  P.craft(s, 'handaxe');
+  for (let i = 0; i < 3; i++) assert.equal(S.lifeAction(s, 'hunt').ok, true);
+  assert.equal(s.prehistory.hide, 1); assert.equal(s.prehistory.bone, 1);
+  assert.equal(s.resources.food, S.storageCap(s));
 });

@@ -69,6 +69,7 @@ function page(saved) {
     innerWidth: 1200, setTimeout: () => 1, clearTimeout() {}, requestAnimationFrame: cb => { raf = cb; } });
   vm.runInContext(fs.readFileSync(path.join(dir, 'history-ui.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(dir, 'prehistory-ui.js'), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(path.join(dir, 'civilization-ui.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(dir, 'game.js'), 'utf8'), context);
   const get = id => { const el = ids.get(id); assert.ok(el, `UI element ${id}`); return el; };
   function documentEvent(type, event) { for (const fn of document.listeners[type] || []) fn(event); }
@@ -186,4 +187,37 @@ test('life UI crafts task-specific tools, hunts with equal fixed controls and su
   q.click(q.document.querySelector('[data-tab="life"]'));
   assert.match(q.get('toolStatus').textContent, /긁개/);
   assert.equal(q.save().prehistory.leather, 2);
+});
+
+
+test('city UI exposes material chains and inheritance preview, then preserves the old city and learning', () => {
+  const s = S.initial();
+  for (const id of ['neighborhood', 'quarter', 'township', 'civicMonument']) s.buildings.push({type:id, ...S.PROJECTS[id].sites[0]});
+  s.civilization.homes = 40; s.civilization.citizens = 20;
+  s.history.completed = S.History.CHAPTERS.map(c => c.id); s.era = 'iron';
+  s.history.answers = Object.fromEntries(s.history.completed.map(id => [id, true]));
+  assert.ok(S.restore(s));
+  const p = page(JSON.stringify(s));
+  p.click(p.document.querySelector('[data-tab="city"]'));
+  assert.match(p.get('citySummary').textContent, /40\/300가구/);
+  p.click(p.document.querySelector('[data-zoom="2"]'));
+  assert.equal(p.get('world').style.width, '200%');
+  p.click(p.get('openInheritance'));
+  assert.equal(p.get('inheritDialog').open, true);
+  assert.match(p.get('inheritPreview').textContent, /보존/);
+  const before = p.save(); p.seconds(20);
+  assert.equal(p.save().time, before.time);
+  p.get('inheritDialog').close();
+  assert.equal(p.save().civilization.homes, 40); // Preview/cancel never resets the city.
+  p.click(p.get('openInheritance'));
+  p.click(p.document.querySelector('[data-inherit="logistics"]'));
+  const next = p.save();
+  assert.equal(next.civilization.homes, 0);
+  assert.equal(next.civilization.legacy.archive[0].homes, 40);
+  assert.equal(next.civilization.legacy.learned.length, 16);
+  assert.equal(next.flags.road, true);
+  assert.ok(next.buildings.some(b => b.type === 'warehouse'));
+  p.click(p.document.querySelector('[data-tab="production"]'));
+  assert.match(p.get('panel').innerHTML, /시설이 이어가는 생산/);
+  assert.match(p.get('auto-job-timber').textContent, /먼저 연결/);
 });
