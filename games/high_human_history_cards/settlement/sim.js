@@ -1,11 +1,11 @@
 (function (root, factory) {
   'use strict';
-  const api = factory(typeof module === 'object' && module.exports ? require('./history.js') : root.SettlementHistory);
+  const api = factory(typeof module === 'object' && module.exports ? require('./history.js') : root.SettlementHistory, typeof module === 'object' && module.exports ? require('./prehistory.js') : root.SettlementPrehistory);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.SettlementSim = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (History) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (History, Prehistory) {
   'use strict';
-  const VERSION = 2;
+  const VERSION = 3;
   const CAMP = { x: 16, y: 11 };
   const RESOURCES = { wood: '목재', stone: '돌', food: '식량', clay: '점토', ...History.RESOURCES };
   const NODES = {
@@ -31,7 +31,7 @@
     pottery: { name: '토기 만들기', icon: '♜', cost: { clay: 8, wood: 4 }, time: 18, max: 1, effect: '자원별 저장 한도 60 → 120', sites: [{ x: 18, y: 13 }] },
     road: { name: '마을길 연결', icon: '╋', cost: { stone: 10, wood: 4 }, time: 18, max: 1, effect: '주민 이동 속도 +50%', sites: [{ x: 17, y: 11 }] },
     warehouse: { name: '공동 저장고', icon: '▤', cost: { wood: 18, stone: 8, clay: 4 }, time: 25, max: 1, effect: '저장 한도 +120 · 가까운 입고 지점', sites: [{ x: 10, y: 9 }] },
-    ...History.PROJECTS
+    ...History.PROJECTS, ...Prehistory.PROJECTS
   };
   const NAMES = ['나루', '보리', '두리', '하루', '여울', '도담', '산들', '소담'];
   const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -48,7 +48,7 @@
       workers: [worker(1), worker(2)], buildings: [], flags: { tools: false, survey: false, pottery: false, road: false },
       project: null, manual: { node: null, progress: 0 }, foodStable: 0, recruitStable: 0,
       lastRecruit: -45, era: 'paleolithic', events: [{ time: 0, text: '두 사람의 야영지. 첫 일감을 나눠 보세요.' }],
-      stats: { manual: 0, delivered: 0, recruits: 0 }, milestoneReported: false, history: History.initial() };
+      stats: { manual: 0, delivered: 0, recruits: 0 }, milestoneReported: false, history: History.initial(), prehistory: Prehistory.initial() };
   }
   function log(s, text) { s.events.unshift({ time: s.time, text }); s.events.length = Math.min(20, s.events.length); }
   function addResource(s, type, amount) {
@@ -57,6 +57,7 @@
     return added;
   }
   function unlocked(s, id) {
+    if (Prehistory.PROJECTS[id]) return Prehistory.unlocked(s, id);
     if (PROJECTS[id]?.historical) return PROJECTS[id].needs.every(n => History.gate(s, n));
     if (id === 'survey') return count(s, 'hut') > 0 && count(s, 'fire') > 0;
     if (id === 'farm') return s.flags.survey && count(s, 'groundStone') > 0;
@@ -71,7 +72,8 @@
     if (!d) return '없는 작업이에요.';
     if (finished(s, id) >= d.max) return '이미 완료했어요.';
     if (!unlocked(s, id)) {
-      if (id === 'survey') return '움집과 모닥불을 먼저 마련해요.';
+      if (id === 'survey') return '막집과 모닥불을 먼저 마련해요.';
+      if (Prehistory.PROJECTS[id]) return ({ sharedGathering: '첫 거처를 먼저 마련해요.', flintWorkshop: '기초 뗀석기를 먼저 만들어요.', hearth: '모닥불을 먼저 마련해요.', granary: '밭·간석기·토기를 먼저 갖춰요.' })[id];
       if (id === 'farm') return '강가 조사와 간석기 다듬기를 먼저 마쳐요.';
       if (id === 'pottery') return '강가 조사를 먼저 마쳐요.';
       if (id === 'road') return '기초 도구를 먼저 만들어요.';
@@ -165,6 +167,9 @@
         for (const [k, n] of Object.entries(d.cost || {})) result[k] -= cycles * n;
       }
     }
+    for (const [k, n] of Object.entries(Prehistory.rates(s))) result[k] += n;
+    // Fire tending consumes at most 1 wood per 25/.6 seconds after a hearth is built.
+    if (s.prehistory.research.fire && count(s, 'hearth')) result.wood -= 60 * (count(s, 'fire') ? .6 : 1) / 25;
     return result;
   }
   function recruitReason(s) {
@@ -188,11 +193,14 @@
     if (!NODES[node] || (node === 'clay' && !s.flags.survey)) return false;
     if (s.resources[node] >= storageCap(s)) return false;
     if (s.manual.node !== node) s.manual = { node, progress: 0 };
-    s.manual.progress += work * (s.flags.tools && ['wood', 'stone'].includes(node) ? 1.5 : 1);
+    if (!Number.isFinite(work) || work <= 0) return false;
+    const toolPower = Prehistory.power(s, node, work);
+    s.manual.progress += work * Math.max(toolPower, s.flags.tools && ['wood', 'stone'].includes(node) ? 1.5 : 1) * (s.prehistory.warmth < 20 ? .75 : 1);
     let produced = false;
     while (s.manual.progress >= 6) {
       s.manual.progress -= 6;
-      const n = addResource(s, node, 3); s.stats.manual += n; History.record(s, node, n); produced ||= n > 0;
+      const n = addResource(s, node, node === 'wood' && s.prehistory.selected === 'axe' && toolPower > 1 ? 4 : 3);
+      if (node === 'wood') s.prehistory.stats.chopped += n; s.stats.manual += n; History.record(s, node, n); produced ||= n > 0;
     }
     return produced;
   }
@@ -259,6 +267,8 @@
     let remaining = Math.min(dt, 120);
     while (remaining > 1e-8) {
       const step = Math.min(.1, remaining); remaining -= step; s.time += step;
+      Prehistory.tick(s, step, lifeContext);
+      if (input.grind) Prehistory.grind(s, step * 2);
       s.resources.food = Math.max(0, s.resources.food - population(s) * 2 / 60 * step);
       if (input.harvest) harvest(s, input.harvest, step * 2);
       if (s.project && input.help) s.project.progress += step;
@@ -275,11 +285,11 @@
   }
   function restore(raw) {
     // Reject malformed/future saves rather than silently granting or removing progress.
-    if (!raw || ![1, VERSION].includes(raw.version) || !Array.isArray(raw.workers) || !Array.isArray(raw.buildings)) return null;
+    if (!raw || ![1, 2, VERSION].includes(raw.version) || !Array.isArray(raw.workers) || !Array.isArray(raw.buildings)) return null;
     if (!raw.resources || typeof raw.resources !== 'object' || Array.isArray(raw.resources) || !raw.workers.every(w => w && typeof w === 'object')) return null;
     raw = JSON.parse(JSON.stringify(raw));
     if (raw.version === 1) {
-      raw.version = VERSION; raw.history = History.initial();
+      raw.version = 2; raw.history = History.initial();
       for (const k of Object.keys(History.RESOURCES)) raw.resources[k] = 0;
       raw.workers.forEach(w => { w.reserved = null; });
       if (raw.era === 'neolithic') { raw.history.completed = ['paleolithic', 'neolithic']; raw.history.active = 'bronze'; }
@@ -290,11 +300,13 @@
     if (!Object.keys(RESOURCES).every(k => finite(raw.resources[k]) && raw.resources[k] <= 1000)) return null;
     if (!['paleolithic', 'neolithic', 'bronze', 'iron'].includes(raw.era) || !Object.values(raw.stats).every(finite)) return null;
     if (!['tools', 'survey', 'pottery', 'road'].every(k => typeof raw.flags[k] === 'boolean')) return null;
-    if (!raw.buildings.every(b => (['hut', 'fire', 'farm', 'warehouse'].includes(b.type) || PROJECTS[b.type]?.historical) && finite(b.x) && finite(b.y) && b.x <= 32 && b.y <= 22)) return null;
+    if (!raw.buildings.every(b => (['hut', 'fire', 'farm', 'warehouse'].includes(b.type) || PROJECTS[b.type]?.historical || Prehistory.PROJECTS[b.type]) && finite(b.x) && finite(b.y) && b.x <= 32 && b.y <= 22)) return null;
     if (new Set(raw.workers.map(w => w.id)).size !== raw.workers.length) return null;
     if (!raw.workers.every(w => Number.isInteger(w.id) && w.id >= 1 && w.id <= 8 && (w.job === 'idle' || JOBS[w.job]) && (w.nextJob === null || w.nextJob === 'idle' || JOBS[w.nextJob]) && finite(w.x) && finite(w.y) && w.x <= 32 && w.y <= 22 && finite(w.progress) && (!w.cargo || (RESOURCES[w.cargo.type] && finite(w.cargo.amount))) && (!w.depot || (finite(w.depot.x) && finite(w.depot.y) && w.depot.x <= 32 && w.depot.y <= 22)))) return null;
     if (raw.project && (!PROJECTS[raw.project.type] || !finite(raw.project.progress) || !raw.project.site || !finite(raw.project.site.x) || !finite(raw.project.site.y) || raw.project.site.x > 32 || raw.project.site.y > 22 || JSON.stringify(raw.project.cost) !== JSON.stringify(PROJECTS[raw.project.type].cost))) return null;
     if (!finite(raw.manual.progress) || (raw.manual.node !== null && !NODES[raw.manual.node])) return null;
+    if (raw.version !== VERSION) { raw.version = VERSION; raw.prehistory = Prehistory.initial(true); }
+    if (!Prehistory.valid(raw.prehistory)) return null;
     const h = raw.history;
     if (!h || !History.byId(h.active) || !Array.isArray(h.completed) || new Set(h.completed).size !== h.completed.length || !h.completed.every(id => History.byId(id)) || !h.answers || typeof h.answers !== 'object' || Array.isArray(h.answers) || !Object.entries(h.answers).every(([id, v]) => History.byId(id) && typeof v === 'boolean') || !h.produced || !h.actions || !Array.isArray(h.reported) || !h.reported.every(id => History.byId(id))) return null;
     if (Array.isArray(h.produced) || Array.isArray(h.actions) || typeof h.feedback !== 'string') return null;
@@ -306,7 +318,9 @@
     s.workers.forEach(w => { w.name = NAMES[w.id - 1]; });
     return s;
   }
-  return { VERSION, History, CAMP, RESOURCES, NODES, JOBS, PROJECTS, initial, count, capacity, storageCap, population,
+  const lifeContext = { add: addResource, record: History.record, cap: storageCap };
+  const lifeAction = (s, id, index) => Prehistory.action(s, id, lifeContext, index);
+  return { VERSION, History, Prehistory, lifeAction, CAMP, RESOURCES, NODES, JOBS, PROJECTS, initial, count, capacity, storageCap, population,
     unlocked, finished, projectReason, startProject, cancelProject, assign, assigned, jobLimit, station, depot, workTime,
     rates, rateFor, recruitReason, recruit, harvest, requirements, tick, restore };
 });

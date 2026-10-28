@@ -80,6 +80,7 @@
     c.font = 'bold 15px "Malgun Gothic",sans-serif'; const width = c.measureText(title).width + 24;
     c.fillStyle = selected ? '#294d3e' : '#f6f3dcdd'; c.beginPath(); c.roundRect(x - width / 2, y - 14, width, 28, 7); c.fill(); c.fillStyle = selected ? '#fff4d2' : '#4b6649'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(title, x, y + 1);
   }
+  function rabbitPoint(s) { return { x: 13 + Math.sin(s.time * .7) * 3, y: 4 + Math.sin(s.time * .43) * 1.3 }; }
   function create(canvas) {
     const c = canvas.getContext('2d');
     const terrain = document.createElement('canvas'); terrain.width = W; terrain.height = H;
@@ -129,11 +130,18 @@
             if (s.era !== 'paleolithic') hut(c, x, y, s.era !== 'neolithic');
             else { c.fillStyle = '#cab287'; c.beginPath(); c.moveTo(x - 24, y + 17); c.lineTo(x, y - 25); c.lineTo(x + 25, y + 17); c.closePath(); c.fill(); rect(c, x - 4, y, 8, 17, '#6b6048'); }
           }
-          if (b.type === 'farm') farm(c, x, y, t, s.workers.some(w => w.job === 'farm'));
+          if (b.type === 'farm') {
+            farm(c, x, y, t, s.prehistory.crops.some(n => n >= 20));
+            if (b === s.buildings.find(a => a.type === 'farm')) for (let i = 0; i < 6; i++) {
+              const xx = x - 27 + (i % 3) * 27, yy = y - 12 + Math.floor(i / 3) * 26;
+              ellipse(c, xx, yy, 8, 8, s.prehistory.crops[i] >= 20 ? '#efd27b' : '#66864d');
+            }
+          }
+          if (S.Prehistory.PROJECTS[b.type]) { hut(c, x, y, 0); rect(c, x - 25, y + 12, 17, 8, '#a08a65'); }
           if (b.type === 'fire') {
             ellipse(c, x, y + 4, 17, 7, '#998667'); rect(c, x - 12, y, 24, 5, '#7d6040');
-            rect(c, x - 7, y - 12 - Math.sin(t * 8) * 2, 14, 17, '#d88b45'); rect(c, x - 3, y - 18, 6, 20, '#f3cd73');
-            if (!reducedMotion) for (let i = 0; i < 3; i++) ellipse(c, x + Math.sin(t + i) * 6, y - 25 - ((t * 14 + i * 18) % 45), 4 + i, 3 + i, '#f4edce44');
+            if (s.prehistory.fuel > 0) { rect(c, x - 7, y - 12 - Math.sin(t * 8) * 2, 14, 17, '#d88b45'); rect(c, x - 3, y - 18, 6, 20, '#f3cd73');
+            if (!reducedMotion) for (let i = 0; i < 3; i++) ellipse(c, x + Math.sin(t + i) * 6, y - 25 - ((t * 14 + i * 18) % 45), 4 + i, 3 + i, '#f4edce44'); }
           }
           if (b.type === 'warehouse') { hut(c, x, y, 1); rect(c, x - 30, y + 8, 13, 15, '#b09261'); rect(c, x + 22, y + 8, 12, 15, '#ae8956'); }
           if (S.History.PROJECTS[b.type]) historic(c, b, s, t);
@@ -155,11 +163,34 @@
           label(c, n.x * TILE, (n.y + 1.6) * TILE, n.name, isSelected);
           if (s.manual.node === key && s.manual.progress > 0) { rect(c, n.x * TILE - 26, n.y * TILE + 25, 52, 5, '#4f704d'); rect(c, n.x * TILE - 26, n.y * TILE + 25, s.manual.progress / 6 * 52, 5, '#f6d18b'); }
         }
+        const rabbit = rabbitPoint(s), rx = rabbit.x * TILE, ry = rabbit.y * TILE;
+        if (s.prehistory.rabbit.respawn <= 0) {
+          ellipse(c, rx, ry + 7, 18, 5, '#42613c33'); ellipse(c, rx, ry, 14, 9, '#ddd9bc');
+          ellipse(c, rx + 10, ry - 7, 8, 8, '#ede6cc'); rect(c, rx + 8, ry - 25, 4, 15, '#ede6cc'); rect(c, rx + 14, ry - 24, 4, 15, '#ddd9bc');
+          rect(c, rx + 13, ry - 9, 2, 2, '#3d4c39'); ellipse(c, rx - 14, ry, 5, 5, '#f7eed6');
+          rect(c, rx - 18, ry + 15, 36, 4, '#55744c'); rect(c, rx - 18, ry + 15, 36 * s.prehistory.rabbit.hp / 18, 4, '#f0ce81');
+          label(c, rx, ry + 40, '토끼 · 눌러 사냥');
+        }
+        if (s.prehistory.shellVisible) {
+          const sx = 27 * TILE, sy = 12 * TILE; ellipse(c, sx, sy, 12, 9, '#f5dfba');
+          for (let i = -1; i <= 1; i++) rect(c, sx + i * 5, sy - 5, 2, 9, '#c8a787');
+          label(c, sx, sy + 28, '조개 발견');
+        }
+        if (!S.count(s, 'fire')) { rect(c, 546, 328, 20, 5, '#816447'); if (s.prehistory.fuel > 0) { rect(c, 551, 319, 9, 10, '#d5a25c'); } }
         c.font = '12px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#8bc1b2'; c.save(); c.translate(971, 355); c.rotate(Math.PI / 2); c.fillText('여 울 강', 0, 0); c.restore();
       },
-      hit(clientX, clientY) {
+      hit(clientX, clientY, s) {
         const box = canvas.getBoundingClientRect();
         const point = { x: (clientX - box.left) / box.width * 32, y: (clientY - box.top) / box.height * 22 };
+        if (s) {
+          if (s.prehistory.rabbit.respawn <= 0 && Math.hypot(point.x - rabbitPoint(s).x, point.y - rabbitPoint(s).y) < 1.15) return 'rabbit';
+          if (s.prehistory.shellVisible && Math.hypot(point.x - 27, point.y - 12) < 1) return 'shell';
+          const field = s.buildings.find(b => b.type === 'farm');
+          if (field && Math.abs(point.x - field.x) < 1.3 && Math.abs(point.y - field.y) < 1) {
+            const col = Math.max(0, Math.min(2, Math.round((point.x - field.x) / .84) + 1));
+            return `crop:${col + (point.y > field.y ? 3 : 0)}`;
+          }
+        }
         let closest = null, min = 2.8;
         for (const [key, n] of Object.entries(S.NODES)) { const d = Math.hypot(point.x - n.x, point.y - n.y); if (d < min) { min = d; closest = key; } }
         return closest;

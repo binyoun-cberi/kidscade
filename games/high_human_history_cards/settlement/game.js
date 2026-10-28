@@ -8,7 +8,7 @@
   const baseResources = Object.keys(S.NODES);
   let lessonView = false;
   const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-  let state = S.initial(), saveBlocked = false, paused = false, tab = 'build', selected = 'wood', signature = '';
+  let state = S.initial(), saveBlocked = false, paused = false, tab = 'life', selected = 'wood', signature = '';
   let input = {}, pointerOrigin = null, heldPointer = null, last = performance.now(), uiClock = 0, saveClock = 0, toastTimer;
   let manualCredit = 1, creditTime = performance.now();
   let completedShown = false;
@@ -18,7 +18,7 @@
     if (raw !== null) {
       const restored = S.restore(JSON.parse(raw));
       if (!restored) saveBlocked = true;
-      else { state = restored; completedShown = state.era !== 'paleolithic'; }
+      else { state = restored; if (state.prehistory.legacy) tab = 'build'; completedShown = state.era !== 'paleolithic'; }
     }
   } catch (_) { saveBlocked = true; }
   const view = window.SettlementView.create($('world'));
@@ -34,11 +34,13 @@
     } catch (_) { $('saveStatus').textContent = '저장하지 못했어요'; if (show) toast('저장 공간을 확인해 주세요.'); return false; }
   }
   function stopHolding() { input = {}; heldPointer = null; pointerOrigin = null; }
-  function manualWork(node) {
+  function spendCredit() {
     const now = performance.now();
     manualCredit = Math.min(1, manualCredit + Math.max(0, now - creditTime) / 1000 * 2); creditTime = now;
-    if (manualCredit >= 1 - 1e-8) { S.harvest(state, node, 1); manualCredit = 0; }
+    if (manualCredit >= 1 - 1e-8) { manualCredit = 0; return true; }
+    return false;
   }
+  function manualWork(node) { if (spendCredit()) S.harvest(state, node, 1); }
   function frozen() { return paused || document.hidden || Boolean(document.querySelector('dialog[open]')); }
   function setPaused(value) { paused = value; stopHolding(); render(); save(); }
   function changeTab(value) { tab = value; signature = ''; render(); }
@@ -49,6 +51,7 @@
   function panelMarkup() {
     const p = state.project;
     const projectHTML = p ? `<section class="project-card"><h3>${S.PROJECTS[p.type].name} 진행 중 <span id="projectPercent"></span></h3><p>재료는 이미 투입했어요. 취소하면 돌려받아요.</p><div class="mini-progress"><i id="projectProgress"></i></div><div class="project-actions"><button type="button" id="helpProject">꾹 눌러 작업 돕기</button><button type="button" id="assignBuilder">일꾼 배치</button><button type="button" id="cancelProject">취소</button></div></section>` : '';
+    if (tab === 'life') return projectHTML + window.SettlementPrehistoryUI.markup(state);
     if (tab === 'history') return window.SettlementHistoryUI.markup(state, lessonView, projectHTML);
     if (tab === 'production') return window.SettlementHistoryUI.production(state, icons, projectHTML);
     if (tab === 'workers') {
@@ -58,21 +61,26 @@
   }
   function goal() {
     if (state.era !== 'paleolithic') { const c = H.byId(state.history.active); return { title: `${c.title} · 생활과 배움 잇기`, text: c.goals.find(g => !H.goalDone(state, g))?.label || '자료를 읽고 생각 잇기를 한 뒤 배움을 기록해요.', action: 'history' }; }
-    if (state.resources.food < 4) return { title: '먹거리를 먼저 마련해요', text: '식량이 부족해도 채집은 계속할 수 있어요. 채집할 사람도 배치해 보세요.', node: 'food', action: 'workers' };
-    if (!state.workers.some(w => ['gather', 'farm'].includes(w.nextJob || w.job))) return { title: '첫 일을 나눠 주세요', text: '일꾼 메뉴에서 한 명은 채집, 다른 한 명은 벌목을 맡겨 보세요.', action: 'workers' };
+    if (state.resources.food < 4) return { title: '먹거리를 먼저 마련해요', text: '사냥·채집은 언제든 다시 시작할 수 있어요. 도구로 사냥을 편하게 하거나 공동 채집터를 마련해요.', node: 'food', action: 'life' };
+    if (state.prehistory.stats.crafted === 0) return { title: '돌 하나로 달라지는 생활', text: '생활 메뉴에서 돌 1개로 주먹도끼나 찍개를 만들어요. 사냥과 벌목의 클릭 수가 줄어들어요.', action: 'life' };
     if (S.count(state, 'hut') < 1) return { title: '첫 거처를 마련해요', text: '목재 12개와 돌 4개로 막집을 마련해요. 정착 후에는 움집으로 표현돼요.', action: 'build' };
+    if (!S.count(state, 'sharedGathering')) return { title: '내 클릭을 대신하는 채집', text: '공동 채집터를 지으면 목재·돌·식량이 자동으로 모여요. 주민을 새로 배치하지 않아도 돼요.', action: 'life' };
     if (!state.flags.tools) return { title: '우리의 첫 도구', text: '돌을 떼어 만든 기초 석기로 벌목·채석에 걸리는 시간을 줄여요.', action: 'build' };
     if (!S.count(state, 'fire')) return { title: '모닥불 곁에 모여요', text: '움집과 모닥불을 갖추면 강가를 조사할 수 있어요.', action: 'build' };
     if (!state.flags.survey) return { title: '강가에 무엇이 있을까요?', text: '강가 조사에서 씨앗·점토와 간석기 사용을 배워 농경·토기를 준비해요.', action: 'build' };
     if (!S.count(state, 'groundStone')) return { title: '돌을 갈아 쓰임에 맞게', text: '간석기를 다듬어 농경용 도구를 준비해요. 뗀석기와 만드는 방법을 비교해 보세요.', action: 'build' };
     if (!S.count(state, 'farm')) return { title: '먹거리를 기르는 생활', text: '잡곡밭을 만들면 농부 한 명이 더 많은 주민의 먹거리를 맡을 수 있어요.', action: 'build' };
-    if (!state.workers.some(w => (w.nextJob || w.job) === 'farm')) return { title: '밭을 돌볼 사람을 정해요', text: '채집하던 주민을 농사에 배치하고 식량 순증가를 살펴보세요.', action: 'workers' };
+
     if (!state.flags.pottery) return { title: '남는 것을 담아 두기', text: '강가에서 점토를 모아 토기를 만들어요. 저장 한도가 120개로 늘어나요.', node: 'clay', action: 'build' };
+    if (!S.count(state, 'granary') || !state.prehistory.research.pottery) return { title: '밭에서 식탁까지 자동으로', text: '곡물 처리터를 짓고 토기의 쓰임을 연결해 자동 수확·곡물 처리를 열어요.', action: 'life' };
     if (S.count(state, 'hut') < 2) return { title: '집들이 모여 마을로', text: '두 번째 움집을 세워 정착할 자리를 넓혀요.', action: 'build' };
     return { title: '안정된 생활을 이어 가요', text: '식량 순증가를 0 이상으로, 1분 소비량만큼의 식량을 60초 유지하면 신석기 정착이에요.', action: 'workers' };
   }
   function render() {
     const r = S.rates(state), cap = S.storageCap(state);
+    const life = state.prehistory;
+    $('campWarmth').textContent = `🔥 온기 ${Math.round(life.warmth)}/100 · 땔감 ${Math.ceil(life.fuel)}`;
+    $('equippedTool').textContent = `⚒ ${S.Prehistory.TOOLS[life.selected].name} · ${Math.ceil(life.tools[life.selected] || 0)}회`;
     for (const k of baseResources) {
       $(`amount-${k}`).innerHTML = `${Math.floor(state.resources[k] + 1e-7)} <em>/ ${cap}</em>`;
       const el = $(`rate-${k}`); el.classList.toggle('negative', r[k] < -.01);
@@ -97,7 +105,8 @@
     $('supportBtn').textContent = '꾹 눌러 주민 돕기';
     const sig = `${tab}:${state.workers.length}:${state.project?.type || ''}:${state.buildings.length}:${JSON.stringify(state.flags)}:${state.era}:${state.history.active}:${state.history.completed.join(',')}:${JSON.stringify(state.history.answers)}:${state.history.feedback}:${lessonView}:${state.history.printMode}:${H.byId(state.history.active).goals.map(g => H.goalDone(state, g)).join(',')}`;
     if (sig !== signature) { $('panel').innerHTML = panelMarkup(); signature = sig; }
-    if (tab === 'build') {
+    if (tab === 'life') window.SettlementPrehistoryUI.update(state, paused);
+    else if (tab === 'build') {
       for (const id of Object.keys(S.PROJECTS)) {
         const why = S.projectReason(state, id), done = S.finished(state, id) >= S.PROJECTS[id].max;
         const b = document.querySelector(`[data-project="${id}"]`);
@@ -147,6 +156,16 @@
     render(); save();
   }
   document.addEventListener('click', e => {
+    const lifeMenu = e.target.closest('[data-life-menu]'); if (lifeMenu) { stopHolding(); changeTab('life'); return; }
+    const tool = e.target.closest('[data-tool]'); if (tool) { doAction(() => S.Prehistory.craft(state, tool.dataset.tool)); return; }
+    const research = e.target.closest('[data-life-research]'); if (research) { doAction(() => S.Prehistory.answer(state, research.dataset.lifeResearch, Number(research.dataset.choice))); return; }
+    const lifeAction = e.target.closest('[data-life]'); if (lifeAction) {
+      doAction(() => {
+        const id = lifeAction.dataset.life;
+        if (id === 'hunt' && !spendCredit()) return { ok: false };
+        return S.lifeAction(state, id, Number(lifeAction.dataset.crop || 0));
+      }); return;
+    }
     const tabButton = e.target.closest('[data-tab]'); if (tabButton) { stopHolding(); changeTab(tabButton.dataset.tab); return; }
     const node = e.target.closest('[data-node]'); if (node) { stopHolding(); selected = node.dataset.node; render(); return; }
     const hv = e.target.closest('[data-history-view]'); if (hv) { lessonView = hv.dataset.historyView === 'lesson'; signature = ''; render(); return; }
@@ -177,6 +196,7 @@
   function beginHold(target, pointerId) {
     if (frozen() || target.disabled) return false;
     if (target.id === 'harvestBtn') { input = { harvest: selected }; manualWork(selected); }
+    else if (target.id === 'grindBtn') input = { grind: true };
     else if (target.id === 'helpProject') input = { help: true };
     else if (target.id === 'supportBtn') input = { support: target.dataset.support };
     else return false;
@@ -184,13 +204,13 @@
   }
   document.addEventListener('pointerdown', e => {
     if (!e.isPrimary || e.button !== 0 || heldPointer !== null) return;
-    const b = e.target.closest('#harvestBtn,#helpProject,#supportBtn');
+    const b = e.target.closest('#harvestBtn,#helpProject,#supportBtn,#grindBtn');
     if (b && beginHold(b, e.pointerId)) { e.preventDefault(); b.setPointerCapture(e.pointerId); }
   });
   document.addEventListener('pointerup', e => { if (e.pointerId === heldPointer) { stopHolding(); render(); } });
   document.addEventListener('pointercancel', stopHolding);
   document.addEventListener('keydown', e => {
-    if ((e.code === 'Space' || e.code === 'Enter') && e.target.matches('#harvestBtn,#helpProject,#supportBtn')) {
+    if ((e.code === 'Space' || e.code === 'Enter') && e.target.matches('#harvestBtn,#helpProject,#supportBtn,#grindBtn')) {
       e.preventDefault(); if (!e.repeat) beginHold(e.target, 'keyboard');
     }
   });
@@ -199,11 +219,15 @@
   document.addEventListener('click', e => {
     if (e.detail !== 0 || frozen()) return;
     if (e.target.id === 'harvestBtn') { manualWork(selected); render(); }
+    if (e.target.id === 'grindBtn' && spendCredit()) { S.Prehistory.grind(state); render(); }
     if (e.target.id === 'helpProject') { S.tick(state, .5, { help: true }); render(); }
   });
   $('world').addEventListener('pointerdown', e => {
     if (!e.isPrimary || e.button !== 0 || frozen() || heldPointer !== null) return;
-    const hit = view.hit(e.clientX, e.clientY);
+    const hit = view.hit(e.clientX, e.clientY, state);
+    if (hit === 'rabbit') { doAction(() => spendCredit() ? S.lifeAction(state, 'hunt') : { ok: false }); return; }
+    if (hit?.startsWith('crop:')) { doAction(() => S.lifeAction(state, 'grain', Number(hit.split(':')[1]))); return; }
+    if (hit === 'shell') { doAction(() => S.lifeAction(state, 'shell')); return; }
     if (!hit) return;
     if (hit === 'clay' && !state.flags.survey) { toast('먼저 움집과 모닥불을 마련하고 강가를 조사해요.'); return; }
     selected = hit; pointerOrigin = { x: e.clientX, y: e.clientY }; heldPointer = e.pointerId;

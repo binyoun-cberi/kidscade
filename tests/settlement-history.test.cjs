@@ -149,7 +149,7 @@ test('v1 Neolithic saves migrate without losing villagers, inventory or ongoing 
   for (const k of Object.keys(H.RESOURCES)) delete legacy.resources[k];
   legacy.workers.forEach(w => { delete w.reserved; });
   const restored = S.restore(legacy);
-  assert.ok(restored); assert.equal(restored.version, 2);
+  assert.ok(restored); assert.equal(restored.version, S.VERSION);
   assert.equal(restored.resources.wood, legacy.resources.wood);
   assert.deepEqual(restored.buildings, legacy.buildings);
   assert.deepEqual(restored.project, legacy.project);

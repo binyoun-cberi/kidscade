@@ -68,6 +68,7 @@ function page(saved) {
   const context = vm.createContext({ window, document, performance: { now: () => now }, matchMedia: () => ({ matches: false }),
     innerWidth: 1200, setTimeout: () => 1, clearTimeout() {}, requestAnimationFrame: cb => { raf = cb; } });
   vm.runInContext(fs.readFileSync(path.join(dir, 'history-ui.js'), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(path.join(dir, 'prehistory-ui.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(dir, 'game.js'), 'utf8'), context);
   const get = id => { const el = ids.get(id); assert.ok(el, `UI element ${id}`); return el; };
   function documentEvent(type, event) { for (const fn of document.listeners[type] || []) fn(event); }
@@ -81,7 +82,8 @@ function page(saved) {
 
 test('real UI supports hold harvesting, construction and persistence without a browser', () => {
   const p = page();
-  assert.equal(p.get('goalTitle').textContent, '첫 일을 나눠 주세요');
+  assert.equal(p.get('goalTitle').textContent, '돌 하나로 달라지는 생활');
+  p.click(p.document.querySelector('[data-tab="build"]'));
   p.hold('harvestBtn', 6.1);
   assert.ok(p.save().resources.wood >= 12);
   p.click(p.document.querySelector('[data-project="hut"]'));
@@ -149,6 +151,7 @@ test('the actual UI can complete the settlement chain and report its milestone o
 
 test('history controls link completed play with reflection and production without a browser', () => {
   const p = page();
+  p.click(p.document.querySelector('[data-tab="build"]'));
   p.click(p.document.querySelector('[data-project="tools"]')); p.hold('helpProject', 10.3);
   p.click(p.document.querySelector('[data-node="food"]')); p.hold('harvestBtn', 3.2);
   p.click(p.document.querySelector('[data-tab="history"]'));
@@ -160,4 +163,27 @@ test('history controls link completed play with reflection and production withou
   assert.match(p.get('panel').innerHTML, /고려의 기록과 인쇄/);
   p.click(p.document.querySelector('[data-tab="production"]'));
   assert.match(p.get('stock-bronze').textContent, /재고 0/);
+});
+
+
+test('life UI crafts task-specific tools, hunts with equal fixed controls and survives pause/reload', () => {
+  const p = page();
+  p.click(p.document.querySelector('[data-tab="life"]'));
+  assert.match(p.get('panel').innerHTML, /내 클릭을 대신하는 시설/);
+  p.click(p.document.querySelector('[data-tool="handaxe"]'));
+  assert.equal(p.save().prehistory.tools.handaxe, 24);
+  for (let i = 0; i < 3; i++) { p.click(p.get('trackRabbit')); p.seconds(.6); }
+  const s = p.save();
+  assert.equal(s.prehistory.stats.hunts, 1);
+  assert.equal(s.prehistory.tools.handaxe, 21);
+  assert.equal(s.prehistory.hide, 1);
+  p.click(p.document.querySelector('[data-tool="scraper"]'));
+  p.click(p.document.querySelector('[data-life="hide"]'));
+  assert.equal(p.save().prehistory.leather, 2);
+  p.paused().pause(); const before = p.save(); p.seconds(20);
+  assert.equal(p.save().prehistory.fuel, before.prehistory.fuel);
+  const q = page(p.store.get(KEY));
+  q.click(q.document.querySelector('[data-tab="life"]'));
+  assert.match(q.get('toolStatus').textContent, /긁개/);
+  assert.equal(q.save().prehistory.leather, 2);
 });
