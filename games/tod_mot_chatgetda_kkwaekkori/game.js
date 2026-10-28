@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=4';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose } from './sim.mjs?v=5';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -33,12 +33,20 @@ const sun = new THREE.DirectionalLight(0xfff0ce, 2.6);
 sun.position.set(-12, 21, 13);
 scene.add(sun);
 const canvas = $('town');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+function makeRenderer(options){
+  try{return new THREE.WebGLRenderer(options);}
+  catch(error){
+    $('startStatus').textContent='3D 화면을 시작하지 못했어요. WebGL을 지원하는 브라우저에서 그래픽 가속을 켠 뒤 다시 열어 주세요.';
+    document.querySelectorAll('[data-stage],#quickStart,#challengeStart').forEach(b=>b.disabled=true);
+    throw error;
+  }
+}
+const renderer = makeRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.55));
 const camera = new THREE.OrthographicCamera(-10,10,10,-10,0.1,200);
 const cameraLook = new THREE.Vector3();
-const cameraOffset = new THREE.Vector3(11,17,20);
+const cameraOffset = new THREE.Vector3(10,24,18);
 const scenery = new THREE.Group(), citizens = new THREE.Group(), movingCars = new THREE.Group(), marker = new THREE.Group();
 scene.add(scenery,citizens,movingCars,marker);
 let town = null, viewSize = 21, initialViewSize = 21, worldSerial = 0, currentTarget = 0, found = [], hintLevel = 0;
@@ -56,7 +64,7 @@ let mode='explore',challengeLevel=1,timeRemaining=CHALLENGE.seconds,challengeBes
 const recentLooks=[];
 let seeThrough = false, previewActor = null, previewMixer = null;
 const previewCanvas = $('targetPreview');
-const previewRenderer = new THREE.WebGLRenderer({canvas:previewCanvas,antialias:true,alpha:true});
+const previewRenderer = makeRenderer({canvas:previewCanvas,antialias:true,alpha:true});
 previewRenderer.setPixelRatio(Math.min(devicePixelRatio||1,1.55));
 previewRenderer.outputColorSpace=THREE.SRGBColorSpace;
 const previewScene=new THREE.Scene();
@@ -136,6 +144,10 @@ function removeOccluder(root){
   root.traverse(o=>{if(!o.isMesh)return;const i=occluders.indexOf(o);if(i>=0)occluders.splice(i,1);});
 }
 function modelIn(group, url, longest, fallback, parent, revision) {
+  if(group.userData.footprint){
+    const box=new THREE.Box3().setFromObject(fallback),size=box.getSize(new THREE.Vector3());
+    fallback.scale.multiplyScalar(Math.min(1,group.userData.footprint/Math.max(size.x,size.z),longest/Math.max(.001,size.y)));
+  }
   group.add(fallback);
   loadGLB(url).then(gltf => {
     if (!gltf || worldSerial !== revision || !parent.parent || !group.parent) return;
@@ -219,31 +231,33 @@ function generateWorld() {
     const block=town.blocks[i],center=getBlockCenter(block,town.config);
     const parcel=addPart(scenery,cube(5.6,.035,5.6,block.kind==='park'?0xa6c987:colors.concrete),center.x,.03,center.z);
     parcel.userData.block=block.id;
+    for(const side of [-1,1]){
+      addPart(scenery,cube(5.7,.025,.64,0xf4ecd6),center.x,.065,center.z+side*WALK.edge);
+      addPart(scenery,cube(.64,.025,5.7,0xf4ecd6),center.x+side*WALK.edge,.066,center.z);
+    }
     // A 2.6-wide building envelope leaves the 1.88 sidewalk loop clear.
     const local=(url,x,z,size,footprint=null,blocksView=false)=>placeObject(url,{x:center.x+x,z:center.z+z},size,smallFallback(url),revision,footprint,blocksView);
     if(block.kind==='park') {
       addPart(scenery,cube(2.8,.06,2.8,0x8fbd75),center.x,.08,center.z);
       local(MODEL.parkTree,-.8,-.7,1.6,.9,true);
       local(`${CITY}flower-pot.glb`,.8,-.8,.55,.5);
-      local(MODEL.bench,.45,.65,1.1);
-      local(`${CITY}bicycle.glb`,-.7,.7,.9);
+      // Benches belong to occupied activity bays, not a second overlapping prop.
+      local(`${CITY}bicycle.glb`,-1.5,-.65,.75,.7);
     } else if(block.kind==='stop') {
-      local(`${CITY}bus-stop.glb`,0,-.35,2.25,2.6,true);
+      local(`${CITY}bus-stop.glb`,0,-1.1,1.65,2.6,true);
       local(`${CITY}bus-stop-sign.glb`,-1.7,-.1,1.25);
       local(`${CITY}trash-can.glb`,1.8,-.1,.65);
       addPart(scenery,cube(4.7,.025,.18,0xf6d16c),center.x,.07,center.z+2.72);
     } else {
       const variants=DISTRICT_MODELS[block.kind];
       const url=town.stageName==='small'&&block.kind==='home' ? MODEL.buildings[i%MODEL.buildings.length] : `${CITY}${variants[Math.floor(i/6)%variants.length]}.glb`;
-      const height=block.kind==='plaza'?4.6:block.kind==='home'?3.3:2.7;
-      const building=placeObject(url,{x:center.x-.95,z:center.z-.45},height,buildingFallback(block),revision,1.65,true);
-      building.rotation.y=0;
-      const neighbor=block.kind==='home'?MODEL.buildings[(i+3)%MODEL.buildings.length]:`${CITY}${variants[(Math.floor(i/6)+1)%variants.length]}.glb`;
-      placeObject(neighbor,{x:center.x+1.05,z:center.z-.25},Math.min(height,2.8),buildingFallback(block),revision,1.7,true);
+      const height=1.65;
+      // One low building at the rear leaves four full-sized activity bays clear.
+      placeObject(url,{x:center.x,z:center.z-1.2},height,buildingFallback(block),revision,2.65,true);
       // Distinct, low storefront details sit inside each parcel, never in the pedestrian loop.
       if(block.kind==='market'||block.kind==='bakery') {
         // A stocked counter belongs to the storefront, clear of all activity bays.
-        const counter=new THREE.Group();counter.position.set(center.x,.62,center.z+.93);scenery.add(counter);
+        const counter=new THREE.Group();counter.position.set(center.x,.52,center.z+.2);scenery.add(counter);
         addPart(counter,cube(2.35,.14,.44,0xe7bd85),0,0,0);
         for(let bread=0;bread<3;bread++){
           const tray=new THREE.Group();tray.position.set((bread-1)*.7,.08,0);counter.add(tray);
@@ -251,20 +265,21 @@ function generateWorld() {
         }
         local(`${CITY}flower-pot.glb`,2,-.6,.65);
       } else if(block.kind==='school') {
-        local(`${CITY}bicycle.glb`,1.05,1.02,.75);
-        local(`${CITY}planter-and-bushes.glb`,-.75,1.08,.85);
+        local(`${CITY}bicycle.glb`,1.8,-.55,.65,.6);
+        local(`${CITY}planter-and-bushes.glb`,-1.8,-.55,.65,.6);
       } else if(block.kind==='home') {
-        local(`${CITY}mailbox.glb`,1.08,1.05,.6);
-        local(`${ROOT}3d/city/kenney-city-kit-suburban/planter.glb`,-.9,1.08,.65);
+        local(`${CITY}mailbox.glb`,1.8,-.55,.55,.5);
+        local(`${ROOT}3d/city/kenney-city-kit-suburban/planter.glb`,-1.8,-.55,.55,.5);
       } else {
         local(`${CITY}bus-stop.glb`,.25,1.05,.9);
         local(`${CITY}bus-stop-sign.glb`,-1.08,1.05,.7);
       }
     }
-    // Street lamps and zebra crossings give the connected streets a human scale.
-    if(block.col<cols-1&&block.row<rows-1){
-      local(`${STREET}light-curved.glb`,2.3,1.35,1.65);
-      for(let stripe=0;stripe<4;stripe++)addPart(scenery,cube(.19,.025,1.1,0xfff7e6),center.x+1.98+stripe*.27,.05,center.z+2.6);
+    if(block.col<cols-1&&block.row<rows-1)local(`${STREET}light-curved.glb`,1.95,-1.85,1.25,.3);
+    // Paint crossings from the same endpoints used by the path graph.
+    for(const side of [-1,1])for(let stripe=0;stripe<5;stripe++){
+      if(block.col<cols-1)addPart(scenery,cube(.15,.025,.65,0xfff7e6),center.x+2.9+stripe*.3,.05,center.z+side*WALK.edge);
+      if(block.row<rows-1)addPart(scenery,cube(.65,.025,.15,0xfff7e6),center.x+side*WALK.edge,.05,center.z+2.9+stripe*.3);
     }
   }
 
@@ -275,7 +290,7 @@ function generateWorld() {
     holder.add(body,appearance);
     citizens.add(holder);
     holder.userData.citizenId=person.id;
-    citizenMeshes.set(person.id,{holder,body,appearance,person,activity:person.activity});
+    citizenMeshes.set(person.id,{holder,body,appearance,person,activity:person.activity,pose:getPose(person),state:person.state});
     makeCitizenAppearance(person,body,appearance,revision);
   }
   if(rows>1) {
@@ -321,7 +336,7 @@ function makeCitizenAppearance(person,body,appearance,revision) {
     const model=normalizedModel(gltf,1.35,1.8);
     if(model){
       body.remove(fallback);disposeProcedural(fallback);body.add(model);
-      const clipName=ACTIVITIES.find(a=>a.id===person.activity).clip;
+      const clipName=getPose(person);
       const clip=gltf.animations?.find(animation=>animation.name===clipName);
       if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push({mixer,person,clipName});}
       citizenAssets.set(person.id,gltf);
@@ -350,9 +365,11 @@ function buildActivityProps(person,appearance,revision){
     prop.position.set(0,.25,.38);prop.add(ball(.17,color));
     addPart(prop,cube(.25,.035,.04,0xfff9e5),0,.14,0);
   } else if(person.activity==='sit') {
-    const bench=new THREE.Group();bench.position.set(0,0,-.08);appearance.add(bench);
-    modelIn(bench,MODEL.bench,1.05,cube(1,.4,.4,0x977452),appearance,revision);
-    addPart(prop,cube(.48,.065,.32,color),0,.43,.02);
+    if(person.state!=='walking'){
+      const bench=new THREE.Group();bench.position.set(0,0,-.08);appearance.add(bench);
+      modelIn(bench,MODEL.bench,1.05,cube(1,.4,.4,0x977452),appearance,revision);
+    }
+    addPart(prop,cube(.48,.065,.32,color),0,person.state==='walking'?.72:.43,person.state==='walking'?.36:.02);
   } else if(person.activity==='wait'){
     prop.position.set(-.37,0,.12);
     addPart(prop,cube(.28,.37,.23,color),0,.20,0);
@@ -378,7 +395,7 @@ function refreshPreview(){
   // Procedural geometry/material must not be shared with a disposable preview.
   previewActor.traverse(o=>{if(o.isMesh&&o.userData.procedural){o.geometry=o.geometry.clone();o.material=o.material.clone();}});
   const gltf=citizenAssets.get(source.person.id);
-  const clip=gltf?.animations.find(a=>a.name===ACTIVITIES.find(a=>a.id===source.person.activity).clip);
+  const clip=gltf?.animations.find(a=>a.name===getPose(source.person));
   if(clip){previewMixer=new THREE.AnimationMixer(previewActor.children[0].children[0]);previewMixer.clipAction(clip).play();}
 }
 function registerOccluder(root){
@@ -396,6 +413,7 @@ function applyVisibility(){
   }
 }
 function animateActivity(actor,person,now){
+  if(person.state==='walking')return;
   const prop=actor.getObjectByName('activity-prop');
   if(prop&&person.activity==='ball')prop.position.y=.22+Math.abs(Math.sin(person.elapsed*3))*(celebration?.id===person.id ? .65 : .45);
   if(prop&&person.activity==='eat'){prop.position.y=.82+Math.sin(person.elapsed*1.5)*.13;prop.rotation.z=Math.sin(person.elapsed*1.5)*.12;}
@@ -409,19 +427,22 @@ function positionEverything(dt) {
   for(const p of town.people) {
     const mesh=citizenMeshes.get(p.id);
     if(!mesh)continue;
-    if(mesh.activity!==p.activity){
+    const pose=getPose(p),changed=mesh.activity!==p.activity||mesh.pose!==pose||mesh.state!==p.state;
+    if(changed){
+      mesh.pose=pose;mesh.state=p.state;
       mesh.activity=p.activity;buildActivityProps(p,mesh.appearance,worldSerial);
       const entry=mixers.find(e=>e.person.id===p.id),gltf=citizenAssets.get(p.id);
-      const clipName=ACTIVITIES.find(a=>a.id===p.activity).clip;
+      const clipName=pose;
       const clip=gltf?.animations.find(a=>a.name===clipName);
       if(entry&&clip){entry.mixer.stopAllAction();entry.mixer.clipAction(clip).play();entry.clipName=clipName;}
+      if(getTarget()?.id===p.id){refreshPreview();updateLiveClue();}
     }
     const pos=getRoutePosition(p,town.config);
-    if(dt===0)mesh.holder.position.set(pos.x,.08,pos.z);
-    else mesh.holder.position.lerp(new THREE.Vector3(pos.x,.08,pos.z),1-Math.exp(-5*dt));
-    const walking=p.slot===1&&p.activity==='deliver';
-    const facing=walking?(Math.cos(p.elapsed*.47*(p.challengeSpeed||1)+p.phase)>=0?Math.PI/2:-Math.PI/2):0;
-    mesh.holder.rotation.y=THREE.MathUtils.lerp(mesh.holder.rotation.y,facing,dt===0?1:Math.min(1,dt*6));
+    mesh.holder.position.set(pos.x,.08,pos.z);
+    // shortest-angle interpolation avoids a full turn when crossing -PI / PI.
+    const facing=p.state==='walking'?p.facing:0;
+    const angle=Math.atan2(Math.sin(facing-mesh.holder.rotation.y),Math.cos(facing-mesh.holder.rotation.y));
+    mesh.holder.rotation.y+=angle*(dt===0?1:Math.min(1,dt*8));
     if(celebration?.id===p.id){mesh.body.rotation.z=Math.sin(p.elapsed*12)*.07;}
     else mesh.body.rotation.z=0;
     if(mesh.catchBurst){
@@ -442,11 +463,13 @@ function positionEverything(dt) {
   }
   for(const car of cars) {
     if(car.bus){
+      if(town.people.some(p=>p.state==='walking'&&Math.abs(p.position.z-car.z)<1.15&&Math.abs(p.position.x-car.holder.position.x)<2))continue;
       car.phase=(car.phase+dt)%40;
       const entry=-car.width/2-2,exit=car.width/2+2;
       const x=car.phase<10 ? entry+(car.stopX-entry)*car.phase/10:car.phase<20?car.stopX:car.stopX+(exit-car.stopX)*(car.phase-20)/20;
       car.holder.position.set(x,.10,car.z);car.holder.rotation.y=Math.PI/2;continue;
     }
+    if(town.people.some(p=>p.state==='walking'&&Math.abs(p.position.z-car.z)<1&&Math.abs(p.position.x-car.holder.position.x)<1.65))continue;
     car.phase=(car.phase+dt*car.speed/car.width)%1;
     car.holder.position.set((car.phase-.5)*car.width*car.direction,.10,car.z);
     car.holder.rotation.y=car.direction>0?Math.PI/2:-Math.PI/2;
@@ -461,11 +484,16 @@ function positionEverything(dt) {
 }
 
 function getTarget(){return town?.people.find(p=>p.id===town.order[currentTarget])||null}
+function updateLiveClue(){
+  const target=getTarget(),clue=getClue(target,town.difficulty);if(!clue)return;
+  $('clueTitle').textContent=clue.title;
+  $('clueText').textContent=target.state==='walking'?'이동 중이에요. 옷과 들고 가는 물건을 비교해요.':DIFFICULTIES[town.difficulty].description;
+  if(hintLevel===1)$('hintText').textContent=`📍 ${clue.place}`;
+}
 function setClue(){
   const clue=getClue(getTarget(),town.difficulty);
   if(!clue)return;
-  $('clueTitle').textContent=clue.title;
-  $('clueText').textContent=DIFFICULTIES[town.difficulty].description;
+  updateLiveClue();
   refreshPreview();
   $('progress').textContent=`찾은 친구 ${found.length} / ${town.order.length}`;
   $('foundStamps').textContent='🌟'.repeat(found.length);
@@ -560,7 +588,7 @@ function pick(clientX,clientY) {
     if(id&&!found.includes(id)){nearest=town.people.find(p=>p.id===id);break;}
   }
   if(!nearest){
-    let best=35*35;
+    let best=20*20;
     for(const person of town.people){
       if(found.includes(person.id))continue;
       const holder=citizenMeshes.get(person.id)?.holder;
@@ -635,7 +663,7 @@ function hint(){
   if(hintLevel===1)$('hintText').textContent=`📍 ${getClue(person).place}`;
   else if(hintLevel===2){
     $('hintText').textContent='👀 친구가 있는 거리로 화면을 옮겼어요.';
-    const center=getBlockCenter(person.block,town.config);cameraLook.x=center.x;cameraLook.z=center.z+1;
+    const center=getRoutePosition(person);cameraLook.x=center.x;cameraLook.z=center.z;
     viewSize=10;resize();updateCamera();
   }else $('hintText').textContent='✨ 반짝이는 동그라미를 살펴봐요!';
   try{window.KidscadeGame?.sound?.('click')}catch(_){}
@@ -659,7 +687,7 @@ function resize(){
   previewCamera.aspect=Math.max(1,previewRect.width)/Math.max(1,previewRect.height);previewCamera.updateProjectionMatrix();
   updateCamera();
 }
-function resetView(){if(!town)return;cameraOffset.set(11,17,20);cameraLook.set(0,0,0);viewSize=initialViewSize;resize()}
+function resetView(){if(!town)return;cameraOffset.set(10,24,18);cameraLook.set(0,0,0);viewSize=initialViewSize;resize()}
 function groundAt(clientX,clientY){
   camera.updateMatrixWorld(true);
   const rect=canvas.getBoundingClientRect();

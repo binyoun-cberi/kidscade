@@ -54,17 +54,26 @@ test('one day is seeded and every sought resident has unambiguous appearance',as
     }
   }
 });
-test('residents stay on visible sidewalk routes during life simulation',async()=>{
-  const {STAGES,makeTown,getBlockCenter,getRoutePosition,movePeople}=await simPromise;
-  for(const stage of Object.keys(STAGES)) {
-    const town=makeTown(stage,884);
-    for(let tick=0;tick<800;tick++)movePeople(town,.1);
-    for(const person of town.people){
-      const at=getRoutePosition(person,town.config),center=getBlockCenter(person.block,town.config);
-      assert.ok(Number.isFinite(at.x)&&Number.isFinite(at.z));
-      assert.ok(Math.abs(at.x-center.x)<=2.25 && Math.abs(at.z-center.z)<=2.75);
-      assert.ok(person.elapsed>=0);
+test('residents use connected sidewalks and cross only at the marked links',async()=>{
+  const {makeTown,movePeople,WALK,BLOCK_PITCH}=await simPromise;
+  for(const size of ['small','medium','large']){
+    const town=makeTown(size,884);
+    for(let tick=0;tick<1200;tick++){
+      movePeople(town,.1);
+      for(const p of town.people){
+        const {x,z}=p.position;
+        assert.ok(Number.isFinite(x)&&Number.isFinite(z));
+        assert.ok(Math.abs(x)<town.config.cols*BLOCK_PITCH/2);
+        assert.ok(Math.abs(z)<town.config.rows*BLOCK_PITCH/2);
+        if(p.state!=='walking')continue;
+        // Every motion segment remains axis-aligned on the shared path graph.
+        const next=town.paths.nodes.get(p.route[0]);
+        assert.ok(Math.abs(x-next.x)<1e-6||Math.abs(z-next.z)<1e-6);
+      }
     }
+    assert.ok(town.people.some(p=>p.trips>0),'residents must actually arrive in another block');
+    assert.ok(town.paths.slots.length>town.people.length,'leave room to reserve a destination');
+    assert.ok(WALK.clearance>.8);
   }
 });
 test('only known repository GLB paths are referenced',()=>{
@@ -173,7 +182,66 @@ test('3D picking, honest prop fallbacks and rotated-camera ground dragging are p
   assert.match(code,/challengeLevel\+1/);
   assert.match(code,/finishChallenge\(/);
   assert.match(html,/20초 연속 찾기 도전/);
-  assert.match(code,/sim\.mjs\?v=4/);
+  assert.match(code,/sim\.mjs\?v=5/);
   assert.match(code,/pinchCenter/);
   assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
+});
+
+
+test('shared paths keep residents apart and let every small-town neighbor travel',async()=>{
+  const {makeTown,movePeople,WALK,signature,getClue,getPose}=await simPromise;
+  for(const seed of [1,812,2026]){
+    const town=makeTown('small',seed,'hard');
+    const target=town.people.find(p=>p.id===town.order[0]),look=signature(target);
+    let walkingTarget=false;
+    for(let tick=0;tick<6000;tick++){
+      movePeople(town,.1);
+      for(let i=0;i<town.people.length;i++)for(let j=i+1;j<town.people.length;j++){
+        const a=town.people[i].position,b=town.people[j].position;
+        assert.ok(Math.hypot(a.x-b.x,a.z-b.z)>=WALK.clearance-1e-6,'residents overlap');
+      }
+      assert.equal(signature(target),look,'movement must not invalidate the identifying features');
+      if(target.state==='walking'){
+        walkingTarget=true;assert.equal(getPose(target),'walk');
+        assert.ok(getClue(target).place.includes(target.destination.block.name));
+        assert.ok(getClue(target).title.includes('걸어가는'));
+      }
+      assert.ok(town.people.every(p=>p.waiting<5),'an occupied junction must not trap a resident');
+    }
+    assert.ok(walkingTarget,'the answer must travel too');
+    assert.ok(town.people.every(p=>p.trips>0),'no resident remains confined to their original block');
+    assert.equal(new Set(town.paths.occupied.values()).size,town.people.length);
+  }
+});
+
+test('activity bays and connected paths stay outside the rear building envelope',async()=>{
+  const {makeTown,getBlockCenter,WALK}=await simPromise;
+  const town=makeTown('small',3);
+  for(const slot of town.paths.slots){
+    const n=town.paths.nodes.get(slot.id),c=getBlockCenter(slot.block,town.config);
+    assert.ok(n.z-c.z>-.0+2.65/2-1.2+.6);
+  }
+  for(const n of town.paths.nodes.values())for(const id of n.next){
+    const next=town.paths.nodes.get(id);
+    assert.ok(n.x===next.x||n.z===next.z);
+  }
+  assert.ok(WALK.edge-Math.max(...WALK.bayX)>WALK.clearance);
+});
+
+
+test('legacy saved days reconstruct the same target IDs and order',async()=>{
+  const {makeTown}=await simPromise;
+  const before={small:['person-11'],medium:['person-14','person-13','person-30'],large:['person-18','person-17','person-36','person-47','person-59']};
+  for(const size of Object.keys(before))assert.deepEqual(makeTown(size,812,'hard').order,before[size]);
+});
+
+test('sought face and prop stay unique when a walking pose hides the old activity',async()=>{
+  const {makeTown}=await simPromise;
+  for(const size of ['small','medium','large'])for(const difficulty of ['easy','normal','hard'])for(let seed=1;seed<=60;seed++){
+    const town=makeTown(size,seed,difficulty);
+    for(const id of town.order){
+      const p=town.people.find(p=>p.id===id);
+      assert.equal(town.people.filter(q=>q.modelVariant===p.modelVariant&&q.propVariant===p.propVariant).length,1);
+    }
+  }
 });
