@@ -50,26 +50,123 @@ export function createRng(seed) {
 function shuffled(input,random){const a=[...input];for(let i=a.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 export function getBlockCenter(block,stage){const c=typeof stage==='string'?STAGES[stage]:stage;return {x:(block.col-(c.cols-1)/2)*BLOCK_PITCH,z:(block.row-(c.rows-1)/2)*BLOCK_PITCH};}
 export function signature(p){return `${p.modelVariant}:${p.activity}:${p.propVariant}`;}
-export function getRoutePosition(person,stage){
-  const c=getBlockCenter(person.block,stage);
-  // Separate activity bays in front of every building, with room for bodies and props.
-  // Sidewalk: shoppers/reading/resting stand at z + 1.61.
-  // Deliveries, ball games and waving residents use the wider walking lane.
-  // Neither route crosses the building footprint or the road (starts z + 2.825).
-  // Stationary groups never overlap the pedestrian lane.
-  const t=person.elapsed,pace=person.challengeSpeed||1,phase=person.phase;
-  if(person.slot===1&&person.activity==='deliver'){
-    // A walking neighbor travels continuously across most of the block.
-    // Smooth easing at each end avoids teleporting and sudden reversals.
-    const x=1.94*Math.sin(t*.47*pace+phase);
-    const z=2.61+Math.sin(t*.34*pace+phase)*.035;
-    return {x:c.x+x,z:c.z+z};
+// One geometry contract is shared by the simulation and the renderer.
+// Props/buildings stay behind the activity bays; the perimeter is pedestrians only.
+export const WALK = Object.freeze({edge:2.65, bayZ:1.15, bayX:[-1.8,-.6,.6,1.8], clearance:.82});
+export function getRoutePosition(person){return {...person.position};}
+export function getPose(person){return person.state==='walking'?'walk':person.activity==='deliver'?'holding-both':ACTIVITIES.find(a=>a.id===person.activity).clip;}
+
+function makePaths(blocks,config){
+  const nodes=new Map(),slots=[];
+  const add=(id,x,z)=>{nodes.set(id,{id,x,z,next:[]});return id;};
+  const link=(a,b)=>nodes.get(a).next.push(b);
+  for(const block of blocks){
+    const c=getBlockCenter(block,config),id=block.id,e=WALK.edge;
+    add(id+':nw',c.x-e,c.z-e);add(id+':ne',c.x+e,c.z-e);
+    add(id+':se',c.x+e,c.z+e);add(id+':sw',c.x-e,c.z+e);
+    // Clockwise one-way footways avoid head-on traffic, including at crossings.
+    link(id+':nw',id+':ne');link(id+':ne',id+':se');link(id+':sw',id+':nw');
+    let last=id+':se';
+    for(let i=3;i>=0;i--){
+      const lane=add(id+':lane'+i,c.x+WALK.bayX[i],c.z+e);
+      const bay=add(id+':bay'+i,c.x+WALK.bayX[i],c.z+WALK.bayZ);
+      link(last,lane);link(lane,bay);link(bay,lane);last=lane;
+      slots.push({id:bay,lane,block,index:i});
+    }
+    link(last,id+':sw');
   }
-  const anchor=person.slot===0?-1.48:person.slot===1?0:1.48;
-  // Residents in activity bays keep the same center while changing their pose.
-  // Animation is applied to the model, never to its walking-lane assignment.
-  const drift=Math.sin(t*.29+phase)*.045;
-  return {x:c.x+anchor+drift,z:c.z+1.61};
+  for(const b of blocks){
+    const right=blocks.find(q=>q.row===b.row&&q.col===b.col+1);
+    const below=blocks.find(q=>q.col===b.col&&q.row===b.row+1);
+    if(right){link(b.id+':ne',right.id+':nw');link(right.id+':sw',b.id+':se');}
+    if(below){link(b.id+':se',below.id+':ne');link(below.id+':nw',b.id+':sw');}
+  }
+  return {nodes,slots,occupied:new Map(),routes:new Map()};
+}
+function findRoute(paths,start,goal){
+  const key=start+'>'+goal;if(paths.routes.has(key))return [...paths.routes.get(key)];
+  const previous=new Map([[start,null]]),queue=[start];
+  for(let index=0;index<queue.length;index++){
+    const id=queue[index];
+    if(id===goal){
+      const route=[];for(let at=goal;at!==start;at=previous.get(at))route.unshift(at);
+      paths.routes.set(key,route);return [...route];
+    }
+    for(const next of paths.nodes.get(id).next){
+      if((next.includes(':bay')&&next!==goal)||previous.has(next))continue;
+      previous.set(next,id);queue.push(next);
+    }
+  }
+  return [];
+}
+const visits={browse:['market','bakery'],deliver:['home','bakery'],eat:['park','bakery'],read:['park','home','school'],ball:['park','school'],sit:['park','home'],wait:['stop','school'],wave:['home','stop'],map:['stop','park','market']};
+const ROUTINES={
+  browse:[['bakery','browse'],['park','eat'],['home','sit']],
+  eat:[['bakery','browse'],['park','eat'],['home','sit']],
+  deliver:[['bakery','deliver'],['home','deliver'],['market','browse']],
+  read:[['home','read'],['park','read'],['bakery','browse']],
+  sit:[['home','sit'],['park','sit'],['bakery','browse']],
+  ball:[['school','ball'],['park','ball'],['home','sit']],
+  wait:[['home','read'],['stop','wait'],['market','browse']],
+  wave:[['home','wave'],['market','browse'],['stop','wave']],
+  map:[['stop','map'],['market','browse'],['park','read']]
+};
+function reservedNodes(town,p){
+  const nodes=new Set(p.route);
+  const last=town.paths.nodes.get(p.lastNode||p.slotId);
+  if(last&&Math.hypot(last.x-p.position.x,last.z-p.position.z)<WALK.clearance+.05)nodes.add(last.id);
+  return nodes;
+}
+function depart(town,p){
+  p.requestedAt??=town.time;p.pendingRoute=[];
+  const routine=ROUTINES[p.routine];
+  const kinds=p.reserved?visits[p.activity]:[routine[(p.lifeStop+1)%routine.length][0]];
+  const candidates=town.paths.slots.filter(s=>s.block.id!==p.block.id&&!town.paths.occupied.has(s.id));
+  const preferred=candidates.filter(s=>kinds.includes(s.block.kind));
+  // Background neighbors can do another errand if a favorite district is full.
+  // Clue residents retain their action/prop and only visit suitable places.
+  const pool=[...preferred.filter(s=>s.block.kind!==p.block.kind),...preferred.filter(s=>s.block.kind===p.block.kind),
+    ...(p.reserved?[]:candidates.filter(s=>!kinds.includes(s.block.kind)))];
+  const busy=new Set();
+  for(const q of town.people){
+    if(q.state==='walking')for(const id of reservedNodes(town,q))busy.add(id);
+    else if(q!==p&&q.pendingRoute?.length&&town.time-q.requestedAt>6&&
+      (q.trips<p.trips||(q.trips===p.trips&&q.requestedAt<p.requestedAt))){
+      busy.add(q.slotId);for(const id of q.pendingRoute)busy.add(id);
+    }
+  }
+  pool.sort((a,b)=>{
+    const score=s=>(kinds.includes(s.block.kind)?0:100)+Math.abs(town.paths.nodes.get(s.id).x-p.position.x)+Math.abs(town.paths.nodes.get(s.id).z-p.position.z);
+    return score(a)-score(b);
+  });
+  for(let i=0;i<pool.length;i++){
+    const slot=pool[i],route=findRoute(town.paths,p.slotId,slot.id);
+    if(!route.length)continue;
+    if(!p.pendingRoute.length)p.pendingRoute=route;
+    // Reserve the clear corridor before leaving a bay. Residents wait while doing
+    // their activity, rather than getting stuck face-to-face in a narrow junction.
+    if(busy.has(p.slotId)||route.some(id=>busy.has(id)))continue;
+    town.paths.occupied.set(slot.id,p.id);
+    p.pendingRoute=[];p.requestedAt=null;
+    p.originSlot=p.slotId;p.destination=slot;p.route=route;p.state='walking';p.waiting=0;
+    return;
+  }
+  p.routineAt=p.elapsed+1.5;
+}
+function arrive(town,p){
+  p.block=p.destination.block;p.slot=p.destination.index;p.slotId=p.destination.id;
+  p.destination=null;p.route=[];p.state='acting';p.trips++;
+  // Sought neighbors keep their identifying prop/action, but travel like everyone else.
+  if(!p.reserved&&!p.found){
+    const routine=ROUTINES[p.routine],stop=routine.findIndex(([kind])=>kind===p.block.kind);
+    if(stop>=0)p.lifeStop=stop;
+    const choices=[...(stop>=0?[routine[stop][1]]:[]),...p.block.activities];
+    if(p.block.kind==='park'&&['browse','deliver','eat'].includes(p.activity))choices.unshift('eat');
+    if(p.block.kind==='home'&&p.activity==='deliver')choices.unshift('deliver');
+    const next=choices.find(id=>!town.people.some(q=>q.id!==p.id&&signature(q)===signature({...p,activity:id})));
+    if(next)p.activity=next;
+  }
+  p.action=p.activity;p.routineAt=p.elapsed+8+(Number(p.id.slice(7))%5)*1.7;
 }
 export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=true,challenge=null){
   const base=STAGES[stageName];if(!base)throw new Error(`알 수 없는 마을 크기: ${stageName}`);
@@ -81,11 +178,19 @@ export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=t
     const block=blocks[i%blocks.length],slot=Math.floor(i/blocks.length),activity=block.activities[slot%3];
     const choices=shuffled(Array.from({length:36},(_,n)=>({modelVariant:n%12,propVariant:Math.floor(n/12)})),random);
     const look=choices.find(v=>!used.has(signature({...v,activity})));
-    const person={id:`person-${i}`,block,slot,...look,activity,action:activity,elapsed:0,routineAt:18+random()*14,reserved:false,found:false,
+    const person={id:`person-${i}`,block,slot,...look,activity,action:activity,elapsed:0,routineAt:3+random()*9,reserved:false,found:false,
       challengeSpeed:challenge?.speed||0,phase:i*2.39996+(seed%19)*.37};
     used.add(signature(person));return person;
   });
-  const town={stageName,config,seed,difficulty,challenge:!!challenge,blocks,people,order:[],time:0};
+  const paths=makePaths(blocks,config);
+  for(const p of people){
+    const slot=paths.slots.find(s=>s.block.id===p.block.id&&s.index===p.slot);
+    const point=paths.nodes.get(slot.id);
+    Object.assign(p,{slotId:slot.id,position:{x:point.x,z:point.z},state:'acting',route:[],destination:null,trips:0,facing:0,waiting:0});
+    paths.occupied.set(slot.id,p.id);
+  }
+  for(const p of people){p.routine=p.activity;p.lifeStop=Math.max(0,ROUTINES[p.routine].findIndex(([kind])=>kind===p.block.kind));}
+  const town={stageName,config,seed,difficulty,challenge:!!challenge,blocks,people,paths,order:[],time:0};
   if(autoSelect)selectTargets(town,people.map(p=>p.id));return town;
 }
 export function selectTargets(town,eligibleIds,previous=[]){
@@ -98,6 +203,19 @@ export function selectTargets(town,eligibleIds,previous=[]){
     const [person]=pool.splice(index,1);order.push(person.id);kinds.add(person.block.kind);
   }
   town.order=order;for(const p of town.people)p.reserved=order.includes(p.id);
+  // Preserve the seeded target IDs/order used by existing saved games. Resolve
+  // look collisions after choosing that order, rather than choosing new targets.
+  const usedModels=new Set(),usedLooks=new Set(),variants=new Set(town.people.filter(p=>eligible.has(p.id)).map(p=>p.modelVariant));
+  for(const id of order){
+    const target=town.people.find(p=>p.id===id);
+    if(usedModels.has(target.modelVariant)){
+      const look=Array.from({length:36},(_,i)=>({modelVariant:(target.modelVariant+Math.floor(i/3))%12,propVariant:(target.propVariant+i)%3}))
+        .find(v=>variants.has(v.modelVariant)&&!usedModels.has(v.modelVariant))||
+        Array.from({length:3},(_,i)=>({modelVariant:target.modelVariant,propVariant:i})).find(v=>!usedLooks.has(`${v.modelVariant}:${v.propVariant}`));
+      if(look)Object.assign(target,look);
+    }
+    usedModels.add(target.modelVariant);usedLooks.add(`${target.modelVariant}:${target.propVariant}`);
+  }
   if(town.difficulty!=='easy')for(const id of order){
     const target=town.people.find(p=>p.id===id);
     const candidates=town.people.filter(p=>eligible.has(p.id)&&!p.reserved&&!p.foilFor&&p.id!==id&&(town.difficulty==='hard'?p.activity===target.activity:p.activity!==target.activity));
@@ -111,30 +229,62 @@ export function selectTargets(town,eligibleIds,previous=[]){
       if(assigned)break;
     }
   }
+  // Walking changes the pose. Keep each sought face + prop combination unique
+  // even during travel, so the reference card never points at two residents.
+  const targets=town.people.filter(p=>order.includes(p.id)),used=new Set(targets.map(signature));
+  // Place near-matches first; ordinary background looks can move out of their way.
+  const neighbors=town.people.filter(p=>!order.includes(p.id)).sort((a,b)=>Number(!!b.foilFor)-Number(!!a.foilFor));
+  for(const p of neighbors){
+    if(used.has(signature(p))||targets.some(t=>t.modelVariant===p.modelVariant&&t.propVariant===p.propVariant)){
+      const choices=Array.from({length:36},(_,i)=>({modelVariant:(p.modelVariant+Math.floor(i/3))%12,propVariant:(p.propVariant+i)%3}));
+      const look=choices.find(v=>(!p.foilFor||v.modelVariant===p.modelVariant)&&
+        !targets.some(t=>t.modelVariant===v.modelVariant&&t.propVariant===v.propVariant)&&!used.has(signature({...p,...v})));
+      if(look)Object.assign(p,look);
+    }
+    used.add(signature(p));
+  }
   return order;
 }
 export function movePeople(town,deltaSeconds){
   const dt=Math.min(.25,Math.max(0,Number(deltaSeconds)||0));town.time+=dt;
-  for(const p of town.people){
-    p.elapsed+=dt;if(p.reserved||p.found||p.elapsed<p.routineAt)continue;
-    // A delivery worker never teleports from the walking lane to an activity bay.
-    // The other residents may change their activity without moving their feet.
-    if(p.slot===1&&p.activity==='deliver'){p.routineAt=p.elapsed+40;continue;}
-    const activities=p.block.activities.filter(id=>!(p.slot===1&&id==='deliver'));
-    const index=activities.indexOf(p.activity);
-    const candidates=[...activities.slice(index+1),...activities.slice(0,index+1)];
-    const next=candidates.find(id=>id!==p.activity&&!town.people.some(q=>q.id!==p.id&&signature(q)===signature({...p,activity:id})));
-    if(next){p.activity=next;p.action=next;}
-    // A longer varied routine means the last frame won't always look like frame one.
-    p.routineAt=p.elapsed+42+(p.slot%3)*6;
+  // Rotate priority to avoid giving low IDs a permanent advantage at junctions.
+  const offset=Math.floor(town.time*2)%town.people.length;
+  const people=[...town.people.slice(offset),...town.people.slice(0,offset)].sort((a,b)=>a.trips-b.trips);
+  for(const p of people){
+    p.elapsed+=dt;
+    if(p.state!=='walking'){
+      if(p.elapsed>=p.routineAt)depart(town,p);
+      continue;
+    }
+    const node=town.paths.nodes.get(p.route[0]);if(!node)continue;
+    const dx=node.x-p.position.x,dz=node.z-p.position.z,distance=Math.hypot(dx,dz);
+    const step=Math.min(distance,dt*(.95+(Number(p.id.slice(7))%4)*.04)*Math.min(p.challengeSpeed||1,1.35));
+    const next=distance?{x:p.position.x+dx/distance*step,z:p.position.z+dz/distance*step}:{...p.position};
+    const blocked=town.people.some(q=>{
+      if(q.id===p.id)return false;
+      const before=Math.hypot(p.position.x-q.position.x,p.position.z-q.position.z);
+      const after=Math.hypot(next.x-q.position.x,next.z-q.position.z);
+      return after<WALK.clearance&&after<before-1e-7;
+    });
+    if(blocked){p.waiting+=dt;continue;}
+    p.waiting=0;p.position=next;
+    if(distance>.001)p.facing=Math.atan2(dx,dz);
+    if(distance<=step+.00001){
+      p.lastNode=p.route.shift();
+      if(p.originSlot){town.paths.occupied.delete(p.originSlot);p.originSlot=null;}
+      if(!p.route.length)arrive(town,p);
+    }
   }
 }
 export function getClue(person,difficulty='easy'){
   if(!person)return null;const a=ACTIVITIES.find(a=>a.id===person.activity),prop=a.props[person.propVariant];
-  return {title:difficulty==='hard'?`${prop} · ${a.name} 친구`:`${a.name} 친구`,subtitle:`${a.name} 친구를 찾아줘! ${prop}도 확인해 봐.`,place:`${person.block.name} 근처에 있어요.`,prop};
+  const walking=person.state==='walking';
+  const place=walking?`${person.destination.block.name} 쪽으로 가고 있어요.`:`${person.block.name} 근처에 있어요.`;
+  return {title:walking?`${prop} · 걸어가는 친구`:difficulty==='hard'?`${prop} · ${a.name} 친구`:`${a.name} 친구`,subtitle:`${walking?'걸어가는':a.name} 친구를 찾아줘! ${prop}도 확인해 봐.`,place,prop};
 }
 export function getComparison(target,picked){
   if(target.modelVariant!==picked.modelVariant)return '하고 있는 일은 비슷할까? 얼굴과 옷도 살펴봐!';
+  if(target.state==='walking'&&target.propVariant!==picked.propVariant)return '옷이 같은 친구네! 들고 가는 물건의 모양과 색도 살펴봐!';
   if(target.activity!==picked.activity)return '옷이 같은 친구네! 무엇을 하고 있는지도 살펴봐!';
   return '아주 비슷하네! 손에 든 물건의 모양과 색도 살펴봐!';
 }
