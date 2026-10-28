@@ -123,6 +123,7 @@ const TEST_FILES = [
   "tests/kidsmon-move-dex.test.cjs",
   "tests/kidsmon-family-signatures.test.cjs",
   "tests/cosmic-growth.test.cjs",
+  "tests/interstellar.test.cjs",
   "tests/number-tower-avatar.test.cjs",
   "tests/four-games-avatar-integration.test.cjs",
   "tests/pixel-avatar-studio.test.cjs",
