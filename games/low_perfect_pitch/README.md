@@ -13,7 +13,7 @@
 ## 구현
 - 진입점: `games/low_perfect_pitch/index.html`
 - 런타임: `games/low_perfect_pitch/game.js`
-- 음높이 인식기: `games/low_perfect_pitch/pitch-detection.js` (YIN 주기 검출, 2,048샘플 분석, 짧은 음정 흔들림 완화)
+- 음높이 인식기: `games/low_perfect_pitch/pitch-detection.js` (Pitchy MPM 검출, 2,048샘플 분석, 신뢰도 필터)
 - 외부 음성 API 없음
 - Game SDK: `low_perfect_pitch`
 - 기록 키: `kidscade_perfect_pitch_v1`
@@ -60,3 +60,10 @@
 - 브라우저가 지원하는 WebM/MP4/Ogg 형식을 선택합니다. MediaRecorder 미지원이면 실제 녹음만 비활성화하고 선율 기능은 유지합니다. 저장 실패 시 성공으로 표시하지 않으며 녹음 파일 다운로드는 가능합니다.
 - 녹음에는 마이크에 들어온 주변 소리가 포함될 수 있으므로 이어폰을 권장합니다.
 - 검증: 음높이·DOM·미디어 이벤트·IndexedDB 모의 시험 19건. 실제 브라우저 녹음 인코딩과 기기별 재생은 미검수입니다.
+
+## Pitchy 인식기 적용
+- 기존 자체 YIN 구현을 Pitchy/MPM으로 교체했습니다. 기존 `detectPitch(samples, sampleRate)`의 `{hz, rms, clarity}` API는 유지합니다.
+- 신뢰도 0.8 미만·무음·주파수 범위 밖의 값은 음으로 사용하지 않습니다. 노래길/고음 계단/선율 기록이 같은 인식기를 사용합니다.
+- Pitchy(0BSD)와 fft.js(MIT)는 `vendor/pitchy.bundle.js`에 포함합니다. 실행 중 CDN 또는 외부 분석 API를 호출하지 않습니다. 원문 라이선스와 소스 blob SHA는 `vendor/THIRD_PARTY_NOTICES.md`를 참고합니다.
+- 2,048/4,096샘플, 44.1/48kHz, 배음·잡음·무음·DC 오프셋·연속 옥타브 입력 및 브라우저 스크립트 로딩을 포함한 227개 합성/구조 검사를 통과했습니다. 기존 선율·선택 녹음·UI 모의시험 20건도 새 인식기로 통과했습니다. 실제 음성/교실 소음/기기 마이크 검수는 별도로 필요합니다.
+
