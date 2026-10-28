@@ -303,3 +303,6 @@ button{font:inherit}.hidden{display:none!important}
   .card{width:96px;height:126px}.cardArt{height:60px}.cardName{font-size:11px}.panel{padding:16px}.heroEmoji{font-size:34px}.panel h1{font-size:36px}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+:root .settlementPreviewLink{display:block;margin:12px auto 0;padding:12px 18px;border:1px solid #8fa874;border-radius:12px;color:#315c44;background:#edf1df;font-weight:700;font-size:13px;text-align:center;text-decoration:none;line-height:1.6;min-height:44px}
+:root .settlementPreviewLink:focus-visible{outline:3px solid #d58b45;outline-offset:3px}
+:root .settlementPreviewNote{font-size:11px;line-height:1.7;color:#718066;margin:8px 0 0}
