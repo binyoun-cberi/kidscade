@@ -38,7 +38,7 @@ function page(saved) {
   }
   function parse(text) {
     const found = [];
-    for (const m of text.matchAll(/<(button|div|span|i|p|strong|small|h[123]|canvas|dialog|select|aside|article|section)\b([^>]*)>/g)) found.push(new Element(m[1], m[2]));
+    for (const m of text.matchAll(/<(button|div|span|i|b|p|strong|small|h[123]|canvas|dialog|select|aside|article|section)\b([^>]*)>/g)) found.push(new Element(m[1], m[2]));
     for (const m of text.matchAll(/<select\b([^>]*)>([\s\S]*?)<\/select>/g)) {
       const id = /data-worker="(\d+)"/.exec(m[1])?.[1], el = found.find(e => e.tag === 'select' && e.dataset.worker === id);
       if (el) el.options = [...m[2].matchAll(/<option value="([^"]*)"/g)].map(o => ({ value: o[1] }));
@@ -67,6 +67,7 @@ function page(saved) {
   };
   const context = vm.createContext({ window, document, performance: { now: () => now }, matchMedia: () => ({ matches: false }),
     innerWidth: 1200, setTimeout: () => 1, clearTimeout() {}, requestAnimationFrame: cb => { raf = cb; } });
+  vm.runInContext(fs.readFileSync(path.join(dir, 'history-ui.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(dir, 'game.js'), 'utf8'), context);
   const get = id => { const el = ids.get(id); assert.ok(el, `UI element ${id}`); return el; };
   function documentEvent(type, event) { for (const fn of document.listeners[type] || []) fn(event); }
@@ -133,7 +134,7 @@ test('the actual UI can complete the settlement chain and report its milestone o
     p.click(p.document.querySelector(`[data-project="${id}"]`));
     p.hold('helpProject', d.time + .3);
   }
-  build('hut'); build('tools'); build('fire'); build('survey'); build('farm');
+  build('hut'); build('tools'); build('fire'); build('survey'); build('groundStone'); build('farm');
   tab('workers'); p.select(1, 'farm'); tab('build');
   build('pottery'); build('hut'); p.seconds(61);
   assert.equal(p.get('completeDialog').open, true);
@@ -144,4 +145,19 @@ test('the actual UI can complete the settlement chain and report its milestone o
   const resumed = page(p.store.get(KEY)); resumed.seconds(3);
   assert.equal(resumed.get('completeDialog').open, undefined);
   assert.equal(resumed.reported.length, 0);
+});
+
+test('history controls link completed play with reflection and production without a browser', () => {
+  const p = page();
+  p.click(p.document.querySelector('[data-project="tools"]')); p.hold('helpProject', 10.3);
+  p.click(p.document.querySelector('[data-node="food"]')); p.hold('harvestBtn', 3.2);
+  p.click(p.document.querySelector('[data-tab="history"]'));
+  assert.match(p.get('panel').innerHTML, /삼국·가야/);
+  p.click(p.document.querySelector('[data-answer="0"]'));
+  p.click(p.get('claimChapter'));
+  assert.deepEqual(p.save().history.completed, ['paleolithic']);
+  p.click(p.document.querySelector('[data-history-view="lesson"]'));
+  assert.match(p.get('panel').innerHTML, /고려의 기록과 인쇄/);
+  p.click(p.document.querySelector('[data-tab="production"]'));
+  assert.match(p.get('stock-bronze').textContent, /재고 0/);
 });

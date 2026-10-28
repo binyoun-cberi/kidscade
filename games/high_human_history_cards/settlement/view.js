@@ -33,6 +33,37 @@
     }
     for (let i = -40; i <= 40; i += 20) { rect(c, x + i, y + 29, 2, 8, '#876641'); }
   }
+  function historic(c, b, s, time) {
+    const x = b.x * TILE, y = b.y * TILE;
+    ellipse(c, x, y + 17, 30, 9, '#36533122');
+    if (['kiln', 'ironFurnace', 'forge'].includes(b.type)) {
+      rect(c, x - 20, y - 13, 40, 30, '#9e8667'); rect(c, x - 13, y - 29, 26, 18, '#b09c7b');
+      rect(c, x - 9, y + 1, 18, 16, '#574b3d'); rect(c, x - 6, y + 4, 12, 10, '#d18c47'); rect(c, x - 2, y, 5, 12, '#edc169');
+    } else if (b.type === 'dolmen') {
+      rect(c, x - 20, y - 3, 9, 22, '#8d9986'); rect(c, x + 11, y - 3, 9, 22, '#7c8978'); rect(c, x - 30, y - 14, 60, 14, '#a3ae98'); rect(c, x - 26, y - 17, 51, 5, '#bec7ad');
+    } else if (b.type === 'fort') {
+      for (let i = 0; i < 5; i++) { rect(c, x - 40 + i * 17, y - 18, 16, 35, '#9eac90'); rect(c, x - 40 + i * 17, y - 23, 10, 8, '#afba9c'); }
+      rect(c, x - 8, y + 1, 16, 17, '#5c6d52');
+    } else if (['dock', 'seaRoute', 'goryeoHarbor'].includes(b.type)) {
+      rect(c, x - 18, y - 7, 85, 15, '#b08e59');
+      for (let i = 0; i < 7; i++) rect(c, x - 16 + i * 12, y - 7, 2, 15, '#d1b273');
+      rect(c, x + 34, y - 5, 4, 31, '#8e7048'); rect(c, x + 53, y - 5, 4, 31, '#8e7048');
+      const boatX = Math.min(970, x + 85), boatY = y + 22 + Math.sin(time) * 2;
+      rect(c, boatX - 16, boatY, 32, 8, '#846a47'); rect(c, boatX - 9, boatY + 8, 18, 4, '#6a5b42'); rect(c, boatX - 1, boatY - 26, 2, 29, '#7e6e4a'); rect(c, boatX + 1, boatY - 23, 15, 18, '#e4dab4');
+    } else if (b.type === 'prospect') {
+      rock(c, x - 10, y + 8, 1); rock(c, x + 14, y + 5, .8); rect(c, x - 10, y - 3, 5, 5, '#cc925e'); rect(c, x + 12, y - 3, 5, 5, '#c6cfbd');
+    } else if (b.type === 'bronzeRitual') {
+      rect(c, x - 16, y + 7, 32, 9, '#b79c6b'); rect(c, x - 4, y - 19, 8, 28, '#9b9559'); rect(c, x - 11, y - 8, 22, 4, '#c6ad69');
+    } else if (b.type === 'ironTools') {
+      rect(c, x - 20, y + 4, 40, 12, '#a58e63'); rect(c, x - 10, y - 17, 3, 25, '#8b714b'); rect(c, x - 10, y - 18, 14, 6, '#8b9d94');
+    } else {
+      rect(c, x - 23, y - 6, 46, 25, '#d5c69c'); rect(c, x - 28, y - 14, 56, 10, '#637a72'); rect(c, x - 20, y - 20, 40, 7, '#718b7e');
+      rect(c, x - 5, y + 4, 10, 15, '#667161'); rect(c, x + 11, y + 1, 6, 7, '#8a9a80');
+      if (['paperWorkshop', 'woodblock', 'movableType', 'taebongRecord'].includes(b.type)) { rect(c, x - 30, y + 9, 17, 10, '#a58a59'); rect(c, x - 28, y + 7, 14, 3, '#f0e6c9'); }
+      if (b.type === 'gayaMarket') { rect(c, x + 23, y + 6, 15, 13, '#a68e60'); rect(c, x + 25, y + 4, 11, 4, '#9da99a'); }
+    }
+    if (S.History.PROJECTS[b.type].chapter === s.history.active) { c.strokeStyle = '#f5e9b3'; c.lineWidth = 2; c.strokeRect(x - 34, y - 32, 68, 56); }
+  }
   function person(c, w, t) {
     const x = w.x * TILE, y = w.y * TILE, walking = w.phase === 'walk' || w.phase === 'return';
     const bob = walking ? Math.sin(t * 12 + w.id) * 1.5 : 0;
@@ -94,7 +125,10 @@
         rect(c, 529, 367, 21, 14, '#ac8c56'); rect(c, 531, 369, 17, 3, '#d1b77b'); rect(c, 536, 367, 3, 14, '#876d45');
         const drawables = s.buildings.map(b => ({ y: b.y, draw() {
           const x = b.x * TILE, y = b.y * TILE;
-          if (b.type === 'hut') hut(c, x, y, s.era === 'neolithic');
+          if (b.type === 'hut') {
+            if (s.era !== 'paleolithic') hut(c, x, y, s.era !== 'neolithic');
+            else { c.fillStyle = '#cab287'; c.beginPath(); c.moveTo(x - 24, y + 17); c.lineTo(x, y - 25); c.lineTo(x + 25, y + 17); c.closePath(); c.fill(); rect(c, x - 4, y, 8, 17, '#6b6048'); }
+          }
           if (b.type === 'farm') farm(c, x, y, t, s.workers.some(w => w.job === 'farm'));
           if (b.type === 'fire') {
             ellipse(c, x, y + 4, 17, 7, '#998667'); rect(c, x - 12, y, 24, 5, '#7d6040');
@@ -102,6 +136,7 @@
             if (!reducedMotion) for (let i = 0; i < 3; i++) ellipse(c, x + Math.sin(t + i) * 6, y - 25 - ((t * 14 + i * 18) % 45), 4 + i, 3 + i, '#f4edce44');
           }
           if (b.type === 'warehouse') { hut(c, x, y, 1); rect(c, x - 30, y + 8, 13, 15, '#b09261'); rect(c, x + 22, y + 8, 12, 15, '#ae8956'); }
+          if (S.History.PROJECTS[b.type]) historic(c, b, s, t);
         } }));
         s.workers.forEach(w => drawables.push({ y: w.y, draw: () => person(c, w, t) }));
         drawables.sort((a, b) => a.y - b.y).forEach(d => d.draw());

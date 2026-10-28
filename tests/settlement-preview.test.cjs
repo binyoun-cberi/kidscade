@@ -38,7 +38,7 @@ test('two founders can sustain food and automate wood before building or recruit
   assert.ok(s.resources.food > 24);
   assert.ok(s.resources.wood > 6);
   assert.equal(S.capacity(s), 2);
-  assert.match(S.recruitReason(s), /움집/);
+  assert.match(S.recruitReason(s), /거처/);
 });
 
 test('outputs enter inventory only after transport, including a deferred job change', () => {
@@ -80,6 +80,7 @@ test('normal actions connect first house, river survey, farming, pottery and Neo
   assert.equal(S.harvest(s, 'clay', 6), false);
   build(s, 'hut'); build(s, 'tools'); build(s, 'fire'); build(s, 'survey');
   assert.equal(s.flags.survey, true);
+  build(s, 'groundStone');
   build(s, 'farm');
   assert.equal(S.assign(s, 1, 'farm').ok, true);
   assert.ok(S.rates(s).food > 8);

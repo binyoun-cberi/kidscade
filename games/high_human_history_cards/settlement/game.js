@@ -1,9 +1,12 @@
 (function () {
   'use strict';
   const S = window.SettlementSim, $ = id => document.getElementById(id);
+  const H = S.History;
   const GAME_ID = 'high_human_history_cards';
   const SAVE_KEY = window.KidscadeGame?.storageKey(GAME_ID, 'settlement-v1') || 'kidscade_game_v1:high_human_history_cards:settlement-v1';
-  const icons = { wood: '🪵', stone: '🪨', food: '🌾', clay: '🏺' };
+  const icons = { wood: '🪵', stone: '🪨', food: '🌾', clay: '🏺', ...H.ICONS };
+  const baseResources = Object.keys(S.NODES);
+  let lessonView = false;
   const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   let state = S.initial(), saveBlocked = false, paused = false, tab = 'build', selected = 'wood', signature = '';
   let input = {}, pointerOrigin = null, heldPointer = null, last = performance.now(), uiClock = 0, saveClock = 0, toastTimer;
@@ -15,7 +18,7 @@
     if (raw !== null) {
       const restored = S.restore(JSON.parse(raw));
       if (!restored) saveBlocked = true;
-      else { state = restored; completedShown = state.era === 'neolithic'; }
+      else { state = restored; completedShown = state.era !== 'paleolithic'; }
     }
   } catch (_) { saveBlocked = true; }
   const view = window.SettlementView.create($('world'));
@@ -41,23 +44,27 @@
   function changeTab(value) { tab = value; signature = ''; render(); }
   function costText(d) { return Object.entries(d.cost).map(([k, n]) => `${icons[k]} ${n}`).join(' · ') || '재료 없이 조사'; }
   function formatTime(seconds) { return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`; }
-  $('resources').innerHTML = Object.keys(S.RESOURCES).map(k => `<div class="resource"><span class="resource-icon" aria-hidden="true">${icons[k]}</span><div><small>${S.RESOURCES[k]}</small><strong id="amount-${k}">0</strong></div><div id="rate-${k}" class="rate"></div></div>`).join('');
+  $('resources').innerHTML = baseResources.map(k => `<div class="resource"><span class="resource-icon" aria-hidden="true">${icons[k]}</span><div><small>${S.RESOURCES[k]}</small><strong id="amount-${k}">0</strong></div><div id="rate-${k}" class="rate"></div></div>`).join('');
   $('selection').innerHTML = `<div class="node-picker" aria-label="채집할 자원">${Object.keys(S.NODES).map(k => `<button type="button" data-node="${k}" aria-pressed="${k === selected}">${icons[k]} ${S.RESOURCES[k]}</button>`).join('')}</div><div class="selection-copy"><h3 id="selectionTitle"></h3><p id="selectionText"></p><div class="mini-progress"><i id="manualProgress"></i></div></div><div class="selection-actions"><button id="harvestBtn" class="harvest-btn" type="button">꾹 눌러 채집</button><button id="supportBtn" type="button">주민 작업 돕기</button></div>`;
   function panelMarkup() {
     const p = state.project;
+    const projectHTML = p ? `<section class="project-card"><h3>${S.PROJECTS[p.type].name} 진행 중 <span id="projectPercent"></span></h3><p>재료는 이미 투입했어요. 취소하면 돌려받아요.</p><div class="mini-progress"><i id="projectProgress"></i></div><div class="project-actions"><button type="button" id="helpProject">꾹 눌러 작업 돕기</button><button type="button" id="assignBuilder">일꾼 배치</button><button type="button" id="cancelProject">취소</button></div></section>` : '';
+    if (tab === 'history') return window.SettlementHistoryUI.markup(state, lessonView, projectHTML);
+    if (tab === 'production') return window.SettlementHistoryUI.production(state, icons, projectHTML);
     if (tab === 'workers') {
       return '<p class="panel-intro">한 사람은 한 가지 일을 해요. 물품을 운반 중이라면 입고한 뒤 새 일을 시작해요.</p>' + state.workers.map(w => `<article class="worker"><div class="worker-head"><span class="worker-face" aria-hidden="true">♟</span><h3>${escape(w.name)}</h3><small id="worker-phase-${w.id}"></small></div><label><span class="sr-only">${escape(w.name)}의 일</span><select data-worker="${w.id}"><option value="idle">쉬기 · 새 일 기다리기</option>${Object.entries(S.JOBS).map(([k, d]) => `<option value="${k}">${d.name}</option>`).join('')}</select></label><p id="worker-info-${w.id}"></p></article>`).join('');
     }
-    return `<p class="panel-intro">집은 살 자리를, 도구는 작업 속도를 늘려요.<br>직접 공사를 돕거나 일꾼 한 명에게 맡겨 보세요.</p>${p ? `<section class="project-card"><h3>${S.PROJECTS[p.type].name} 진행 중 <span id="projectPercent"></span></h3><p>재료는 이미 투입했어요. 취소하면 돌려받아요.</p><div class="mini-progress"><i id="projectProgress"></i></div><div class="project-actions"><button type="button" id="helpProject">꾹 눌러 작업 돕기</button><button type="button" id="assignBuilder">일꾼 배치</button><button type="button" id="cancelProject">취소</button></div></section>` : ''}${Object.entries(S.PROJECTS).map(([id, d]) => `<article id="build-${id}" class="build-card"><span class="build-icon" aria-hidden="true">${d.icon}</span><div><h3>${d.name}</h3><p>${d.effect}</p><div class="cost">${costText(d)} · ${d.time}초 작업</div></div><button type="button" data-project="${id}">시작</button><small id="reason-${id}" class="build-reason"></small></article>`).join('')}`;
+    return `<p class="panel-intro">거처·도구·작업장을 연결해요. 역사 메뉴에서 생활과 자료를 이어 보고, 생산 메뉴에서 가공 재고를 확인해요.</p>${projectHTML}${Object.entries(S.PROJECTS).filter(([id, d]) => !d.historical || S.unlocked(state, id) || d.chapter === state.history.active).map(([id, d]) => `<article id="build-${id}" class="build-card"><span class="build-icon" aria-hidden="true">${d.icon}</span><div><h3>${d.name}</h3><p>${d.effect}</p><div class="cost">${costText(d)} · ${d.time}초 작업</div></div><button type="button" data-project="${id}">시작</button><small id="reason-${id}" class="build-reason"></small></article>`).join('')}`;
   }
   function goal() {
-    if (state.era === 'neolithic') return { title: '우리 마을의 다음 준비', text: '공동 저장고로 보관할 자리와 가까운 입고 지점을 늘려 보세요.', action: 'build' };
+    if (state.era !== 'paleolithic') { const c = H.byId(state.history.active); return { title: `${c.title} · 생활과 배움 잇기`, text: c.goals.find(g => !H.goalDone(state, g))?.label || '자료를 읽고 생각 잇기를 한 뒤 배움을 기록해요.', action: 'history' }; }
     if (state.resources.food < 4) return { title: '먹거리를 먼저 마련해요', text: '식량이 부족해도 채집은 계속할 수 있어요. 채집할 사람도 배치해 보세요.', node: 'food', action: 'workers' };
     if (!state.workers.some(w => ['gather', 'farm'].includes(w.nextJob || w.job))) return { title: '첫 일을 나눠 주세요', text: '일꾼 메뉴에서 한 명은 채집, 다른 한 명은 벌목을 맡겨 보세요.', action: 'workers' };
-    if (S.count(state, 'hut') < 1) return { title: '첫 집 한 채를 올려요', text: '목재 12개와 돌 4개를 모아 움집을 지어요. 집은 주민이 살 자리를 늘려요.', action: 'build' };
-    if (!state.flags.tools) return { title: '우리의 첫 도구', text: '돌도끼와 찍개로 벌목·채석에 걸리는 시간을 줄여요.', action: 'build' };
+    if (S.count(state, 'hut') < 1) return { title: '첫 거처를 마련해요', text: '목재 12개와 돌 4개로 막집을 마련해요. 정착 후에는 움집으로 표현돼요.', action: 'build' };
+    if (!state.flags.tools) return { title: '우리의 첫 도구', text: '돌을 떼어 만든 기초 석기로 벌목·채석에 걸리는 시간을 줄여요.', action: 'build' };
     if (!S.count(state, 'fire')) return { title: '모닥불 곁에 모여요', text: '움집과 모닥불을 갖추면 강가를 조사할 수 있어요.', action: 'build' };
-    if (!state.flags.survey) return { title: '강가에 무엇이 있을까요?', text: '강가 조사로 씨앗과 점토를 발견해 농경과 토기를 준비해요.', action: 'build' };
+    if (!state.flags.survey) return { title: '강가에 무엇이 있을까요?', text: '강가 조사에서 씨앗·점토와 간석기 사용을 배워 농경·토기를 준비해요.', action: 'build' };
+    if (!S.count(state, 'groundStone')) return { title: '돌을 갈아 쓰임에 맞게', text: '간석기를 다듬어 농경용 도구를 준비해요. 뗀석기와 만드는 방법을 비교해 보세요.', action: 'build' };
     if (!S.count(state, 'farm')) return { title: '먹거리를 기르는 생활', text: '잡곡밭을 만들면 농부 한 명이 더 많은 주민의 먹거리를 맡을 수 있어요.', action: 'build' };
     if (!state.workers.some(w => (w.nextJob || w.job) === 'farm')) return { title: '밭을 돌볼 사람을 정해요', text: '채집하던 주민을 농사에 배치하고 식량 순증가를 살펴보세요.', action: 'workers' };
     if (!state.flags.pottery) return { title: '남는 것을 담아 두기', text: '강가에서 점토를 모아 토기를 만들어요. 저장 한도가 120개로 늘어나요.', node: 'clay', action: 'build' };
@@ -66,12 +73,12 @@
   }
   function render() {
     const r = S.rates(state), cap = S.storageCap(state);
-    for (const k of Object.keys(S.RESOURCES)) {
+    for (const k of baseResources) {
       $(`amount-${k}`).innerHTML = `${Math.floor(state.resources[k] + 1e-7)} <em>/ ${cap}</em>`;
       const el = $(`rate-${k}`); el.classList.toggle('negative', r[k] < -.01);
       el.innerHTML = `${r[k] >= 0 ? '+' : ''}${r[k].toFixed(1)}<span>예상 순증가 / 분</span>`;
     }
-    $('eraBadge').textContent = state.era === 'neolithic' ? '신석기 정착 마을' : '구석기 야영지';
+    $('eraBadge').textContent = ({ paleolithic: '구석기 야영지', neolithic: '신석기 정착 마을', bronze: '청동기 생산 모형', iron: '철기·역사 탐방 모형' })[state.era];
     $('timeLabel').textContent = `마을의 시간 · ${formatTime(state.time)}`;
     $('population').innerHTML = `${S.population(state)} <span>/ ${S.capacity(state)}명</span>`;
     const recruitWhy = S.recruitReason(state);
@@ -88,37 +95,49 @@
     $('supportBtn').disabled = paused || !state.workers.some(w => w.job === supportJob);
     $('supportBtn').dataset.support = supportJob;
     $('supportBtn').textContent = '꾹 눌러 주민 돕기';
-    const sig = `${tab}:${state.workers.length}:${state.project?.type || ''}:${state.buildings.length}:${JSON.stringify(state.flags)}:${state.era}`;
+    const sig = `${tab}:${state.workers.length}:${state.project?.type || ''}:${state.buildings.length}:${JSON.stringify(state.flags)}:${state.era}:${state.history.active}:${state.history.completed.join(',')}:${JSON.stringify(state.history.answers)}:${state.history.feedback}:${lessonView}:${state.history.printMode}:${H.byId(state.history.active).goals.map(g => H.goalDone(state, g)).join(',')}`;
     if (sig !== signature) { $('panel').innerHTML = panelMarkup(); signature = sig; }
     if (tab === 'build') {
       for (const id of Object.keys(S.PROJECTS)) {
         const why = S.projectReason(state, id), done = S.finished(state, id) >= S.PROJECTS[id].max;
         const b = document.querySelector(`[data-project="${id}"]`);
+        if (!b) continue;
         b.disabled = Boolean(why) || paused; b.textContent = done ? '완료' : '시작';
         $(`reason-${id}`).textContent = done ? '' : why;
         $(`build-${id}`).classList.toggle('locked', !S.unlocked(state, id));
       }
-      if (state.project) {
-        const percent = Math.min(100, Math.floor(state.project.progress / S.PROJECTS[state.project.type].time * 100));
-        $('projectPercent').textContent = `${percent}%`; $('projectProgress').style.width = `${percent}%`;
-        $('helpProject').disabled = paused; $('assignBuilder').disabled = paused;
-      }
-    } else {
+    } else if (tab === 'workers') {
       for (const w of state.workers) {
         const select = document.querySelector(`[data-worker="${w.id}"]`);
         select.value = w.nextJob || w.job; select.disabled = paused;
         for (const o of select.options) o.disabled = o.value !== select.value && S.assigned(state, o.value, w.id) >= S.jobLimit(state, o.value);
-        const phases = { idle: '대기', walk: '이동 중', work: '작업 중', return: '입고하러 가는 중', full: '창고가 가득해요' };
+        const phases = { idle: '대기', walk: '이동 중', work: '작업 중', return: '입고하러 가는 중', full: '창고가 가득해요', material: '원료·비축 확인', hungry: '식량 확보 후 가공' };
         $(`worker-phase-${w.id}`).textContent = phases[w.phase] || '대기';
         const d = S.JOBS[w.job], el = $(`worker-info-${w.id}`);
         if (w.cargo) { el.textContent = `${icons[w.cargo.type]} ${w.cargo.amount.toFixed(0)}개 운반 중${w.nextJob ? ' · 입고 후 일 변경' : ''}`; el.className = 'cargo'; }
-        else if (d?.resource) { const site = S.station(state, w), depot = S.depot(state, site); const travel = 2 * Math.hypot(site.x - depot.x, site.y - depot.y) / (state.flags.road ? 2.7 : 1.8); el.textContent = `작업 ${S.workTime(state, w.job)}초 · 왕복 ${travel.toFixed(0)}초 · ${S.rateFor(state, w).toFixed(1)}개/분`; el.className = ''; }
+        else if (d?.resource) { const site = S.station(state, w), depot = S.depot(state, site); const travel = 2 * Math.hypot(site.x - depot.x, site.y - depot.y) / (state.flags.road ? 2.7 : 1.8); const cost = Object.entries(d.cost || {}).map(([k, n]) => `${S.RESOURCES[k]} ${n}`).join(' + '); el.textContent = `${cost ? cost + ' → ' : ''}작업 ${S.workTime(state, w.job, w)}초 · 왕복 ${travel.toFixed(0)}초 · ${S.rateFor(state, w).toFixed(1)}개/분`; el.className = ''; }
         else { el.textContent = w.job === 'builder' ? (state.project ? '현재 공사·제작을 자동으로 도와요.' : '새 공사·제작을 시작하면 도와요.') : '새로운 일을 맡길 수 있어요.'; el.className = ''; }
       }
+    } else if (tab === 'history') window.SettlementHistoryUI.update(state);
+    else if (tab === 'production') {
+      for (const [id, d] of Object.entries(H.JOBS)) {
+        $(`stock-${id}`).textContent = `재고 ${Math.floor(state.resources[d.resource])} / ${cap}`;
+        $(`production-rate-${id}`).textContent = `예상 순증가 ${r[d.resource] >= 0 ? '+' : ''}${r[d.resource].toFixed(1)}/분 · 배치 ${S.assigned(state, id)}명`;
+      }
+      $('printModeLabel').textContent = `다음 인쇄 작업: ${state.history.printMode === 'type' ? '금속활자 방식' : '목판 방식'}`;
+    }
+    if (state.project && $('projectProgress')) {
+      const percent = Math.min(100, Math.floor(state.project.progress / S.PROJECTS[state.project.type].time * 100));
+      $('projectPercent').textContent = `${percent}%`; $('projectProgress').style.width = `${percent}%`;
+      $('helpProject').disabled = paused; $('assignBuilder').disabled = paused;
     }
     const g = goal(); $('goalTitle').textContent = g.title; $('goalText').textContent = g.text;
-    $('eraChecks').innerHTML = S.requirements(state).map(q => `<span class="${q.done ? 'done' : ''}">${q.done ? '✓' : '○'} ${q.label}</span>`).join('');
+    const checks = state.era === 'paleolithic' ? S.requirements(state) : [...H.byId(state.history.active).goals.map(g => ({ label: g.label, done: H.goalDone(state, g) })), { label: '생각 잇기', done: state.history.answers[state.history.active] }];
+    $('eraChecks').innerHTML = checks.map(q => `<span class="${q.done ? 'done' : ''}">${q.done ? '✓' : '○'} ${q.label}</span>`).join('');
     $('latestEvent').textContent = state.events[0]?.text || '마을이 자라고 있어요.';
+    const learning = state.era === 'paleolithic' ? H.byId(state.flags.survey ? 'neolithic' : 'paleolithic') : H.byId(state.history.active);
+    $('learningTitle').textContent = learning.concepts.join(' · ');
+    $('learningFact').textContent = learning.facts[0];
   }
   function doAction(fn) {
     if (frozen()) return;
@@ -130,6 +149,19 @@
   document.addEventListener('click', e => {
     const tabButton = e.target.closest('[data-tab]'); if (tabButton) { stopHolding(); changeTab(tabButton.dataset.tab); return; }
     const node = e.target.closest('[data-node]'); if (node) { stopHolding(); selected = node.dataset.node; render(); return; }
+    const hv = e.target.closest('[data-history-view]'); if (hv) { lessonView = hv.dataset.historyView === 'lesson'; signature = ''; render(); return; }
+    const chapter = e.target.closest('[data-history]'); if (chapter) { doAction(() => H.select(state, chapter.dataset.history)); return; }
+    const answer = e.target.closest('[data-answer]'); if (answer) { doAction(() => H.answer(state, answer.dataset.chapter, Number(answer.dataset.answer))); return; }
+    const claim = e.target.closest('[data-claim]'); if (claim) {
+      doAction(() => { const result = H.claim(state, claim.dataset.claim); if (result.ok && !state.history.reported.includes(result.chapter)) { state.history.reported.push(result.chapter); save(); window.KidscadeGame?.milestone('history_chapter', { uniqueKey: `history-v2-${result.chapter}`, chapter: result.chapter }); } return result; }); return;
+    }
+    const jump = e.target.closest('[data-history-project]'); if (jump) {
+      const d = S.PROJECTS[jump.dataset.historyProject];
+      if (d?.chapter && H.available(state, d.chapter)) H.select(state, d.chapter);
+      changeTab('build'); $(`build-${jump.dataset.historyProject}`)?.scrollIntoView({ block: 'center', behavior: 'instant' }); return;
+    }
+    const productionWorker = e.target.closest('[data-production-worker]'); if (productionWorker) { changeTab('workers'); toast(`${S.JOBS[productionWorker.dataset.productionWorker].name} 일을 맡길 주민을 골라 주세요.`); return; }
+    const print = e.target.closest('[data-print]'); if (print) { doAction(() => H.setPrintMode(state, print.dataset.print)); return; }
     const project = e.target.closest('[data-project]'); if (project) doAction(() => S.startProject(state, project.dataset.project));
     if (e.target.closest('#cancelProject')) doAction(() => ({ ok: S.cancelProject(state) }));
     if (e.target.closest('#assignBuilder')) doAction(() => {
@@ -187,6 +219,7 @@
   $('goalAction').addEventListener('click', () => { const g = goal(); stopHolding(); if (g.node) selected = g.node; changeTab(g.action); $('panel').scrollTop = 0; if (innerWidth < 761) document.querySelector('.management').scrollIntoView({ behavior: reducedMotion ? 'instant' : 'smooth', block: 'start' }); });
   function openDialog(id) { stopHolding(); $(id).showModal(); }
   $('helpBtn').addEventListener('click', () => openDialog('helpDialog'));
+  $('learningAction').addEventListener('click', () => { changeTab('history'); if (innerWidth < 761) document.querySelector('.management').scrollIntoView({ block: 'start' }); });
   $('logBtn').addEventListener('click', () => { $('recordList').innerHTML = state.events.map(e => `<p><small>${formatTime(e.time)}</small>${escape(e.text)}</p>`).join(''); openDialog('recordDialog'); });
   $('continueBtn').addEventListener('click', () => $('completeDialog').close());
   document.querySelectorAll('dialog').forEach(d => d.addEventListener('close', () => { last = performance.now(); render(); }));

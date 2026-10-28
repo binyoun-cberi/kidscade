@@ -1,13 +1,13 @@
 (function (root, factory) {
   'use strict';
-  const api = factory();
+  const api = factory(typeof module === 'object' && module.exports ? require('./history.js') : root.SettlementHistory);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.SettlementSim = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (History) {
   'use strict';
-  const VERSION = 1;
+  const VERSION = 2;
   const CAMP = { x: 16, y: 11 };
-  const RESOURCES = { wood: '목재', stone: '돌', food: '식량', clay: '점토' };
+  const RESOURCES = { wood: '목재', stone: '돌', food: '식량', clay: '점토', ...History.RESOURCES };
   const NODES = {
     wood: { x: 6, y: 6, name: '나무숲', hint: '목재는 집과 도구를 만드는 데 써요.' },
     stone: { x: 24, y: 6, name: '바위언덕', hint: '돌은 도구와 시설의 기초가 돼요.' },
@@ -20,17 +20,18 @@
     stone: { name: '채석', resource: 'stone', node: 'stone', amount: 3, time: 20, limit: 3 },
     clay: { name: '점토', resource: 'clay', node: 'clay', amount: 3, time: 20, limit: 2 },
     farm: { name: '농사', resource: 'food', amount: 7, time: 20, limit: 2 },
-    builder: { name: '건설·제작', limit: 1 }
+    builder: { name: '건설·제작', limit: 1 }, ...History.JOBS
   };
   const PROJECTS = {
-    hut: { name: '움집', icon: '⌂', cost: { wood: 12, stone: 4 }, time: 15, max: 3, effect: '주민이 살 자리 +2', sites: [{ x: 13, y: 9 }, { x: 19, y: 9 }, { x: 20, y: 12 }] },
-    tools: { name: '돌도끼와 찍개', icon: '⚒', cost: { wood: 4, stone: 4 }, time: 10, max: 1, effect: '벌목·채석 작업 20초 → 14초', sites: [{ x: 15, y: 11 }] },
+    hut: { name: '거처 마련', icon: '⌂', cost: { wood: 12, stone: 4 }, time: 15, max: 3, effect: '살 자리 +2 · 막집에서 정착 후 움집으로', sites: [{ x: 13, y: 9 }, { x: 19, y: 9 }, { x: 20, y: 12 }] },
+    tools: { name: '뗀석기 만들기', icon: '⚒', cost: { wood: 4, stone: 4 }, time: 10, max: 1, effect: '찍개 등 기초 도구 · 벌목·채석 작업 14초', sites: [{ x: 15, y: 11 }] },
     fire: { name: '모닥불', icon: '♨', cost: { wood: 6, stone: 4 }, time: 12, max: 1, effect: '첫 집과 함께 강가 조사 해금', sites: [{ x: 16, y: 9 }] },
     survey: { name: '강가 조사', icon: '⌕', cost: {}, time: 20, max: 1, effect: '점토 채취·밭·토기 해금', sites: [{ x: 25, y: 13 }] },
     farm: { name: '잡곡밭', icon: '≋', cost: { wood: 12, stone: 6 }, time: 25, max: 2, effect: '농부 자리 +1 · 한 번에 식량 7', sites: [{ x: 10, y: 13 }, { x: 10, y: 16 }] },
     pottery: { name: '토기 만들기', icon: '♜', cost: { clay: 8, wood: 4 }, time: 18, max: 1, effect: '자원별 저장 한도 60 → 120', sites: [{ x: 18, y: 13 }] },
     road: { name: '마을길 연결', icon: '╋', cost: { stone: 10, wood: 4 }, time: 18, max: 1, effect: '주민 이동 속도 +50%', sites: [{ x: 17, y: 11 }] },
-    warehouse: { name: '공동 저장고', icon: '▤', cost: { wood: 18, stone: 8, clay: 4 }, time: 25, max: 1, effect: '저장 한도 +120 · 가까운 입고 지점', sites: [{ x: 10, y: 9 }] }
+    warehouse: { name: '공동 저장고', icon: '▤', cost: { wood: 18, stone: 8, clay: 4 }, time: 25, max: 1, effect: '저장 한도 +120 · 가까운 입고 지점', sites: [{ x: 10, y: 9 }] },
+    ...History.PROJECTS
   };
   const NAMES = ['나루', '보리', '두리', '하루', '여울', '도담', '산들', '소담'];
   const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -40,14 +41,14 @@
   const speed = s => s.flags.road ? 2.7 : 1.8;
   const population = s => s.workers.length;
   function worker(id) {
-    return { id, name: NAMES[id - 1], job: 'idle', nextJob: null, phase: 'idle', x: CAMP.x + (id % 3) * .25, y: CAMP.y + .7, progress: 0, cargo: null, depot: null };
+    return { id, name: NAMES[id - 1], job: 'idle', nextJob: null, phase: 'idle', x: CAMP.x + (id % 3) * .6, y: CAMP.y + .7, progress: 0, cargo: null, depot: null, reserved: null };
   }
   function initial() {
-    return { version: VERSION, time: 0, resources: { wood: 6, stone: 4, food: 24, clay: 0 },
+    return { version: VERSION, time: 0, resources: { ...Object.fromEntries(Object.keys(RESOURCES).map(k => [k, 0])), wood: 6, stone: 4, food: 24 },
       workers: [worker(1), worker(2)], buildings: [], flags: { tools: false, survey: false, pottery: false, road: false },
       project: null, manual: { node: null, progress: 0 }, foodStable: 0, recruitStable: 0,
       lastRecruit: -45, era: 'paleolithic', events: [{ time: 0, text: '두 사람의 야영지. 첫 일감을 나눠 보세요.' }],
-      stats: { manual: 0, delivered: 0, recruits: 0 }, milestoneReported: false };
+      stats: { manual: 0, delivered: 0, recruits: 0 }, milestoneReported: false, history: History.initial() };
   }
   function log(s, text) { s.events.unshift({ time: s.time, text }); s.events.length = Math.min(20, s.events.length); }
   function addResource(s, type, amount) {
@@ -56,10 +57,12 @@
     return added;
   }
   function unlocked(s, id) {
+    if (PROJECTS[id]?.historical) return PROJECTS[id].needs.every(n => History.gate(s, n));
     if (id === 'survey') return count(s, 'hut') > 0 && count(s, 'fire') > 0;
-    if (id === 'farm' || id === 'pottery') return s.flags.survey;
+    if (id === 'farm') return s.flags.survey && count(s, 'groundStone') > 0;
+    if (id === 'pottery') return s.flags.survey;
     if (id === 'road') return s.flags.tools;
-    if (id === 'warehouse') return s.era === 'neolithic';
+    if (id === 'warehouse') return s.era !== 'paleolithic';
     return Boolean(PROJECTS[id]);
   }
   function finished(s, id) { return ['tools', 'survey', 'pottery', 'road'].includes(id) ? Number(s.flags[id]) : count(s, id); }
@@ -69,8 +72,10 @@
     if (finished(s, id) >= d.max) return '이미 완료했어요.';
     if (!unlocked(s, id)) {
       if (id === 'survey') return '움집과 모닥불을 먼저 마련해요.';
-      if (id === 'farm' || id === 'pottery') return '강가 조사를 먼저 마쳐요.';
+      if (id === 'farm') return '강가 조사와 간석기 다듬기를 먼저 마쳐요.';
+      if (id === 'pottery') return '강가 조사를 먼저 마쳐요.';
       if (id === 'road') return '기초 도구를 먼저 만들어요.';
+      if (d.historical) return `먼저 연결하기: ${d.needs.map(n => PROJECTS[n]?.name || History.byId(n)?.title || ({ kingdoms: '철기·고조선 배움', northSouth: '삼국·가야 배움', laterThree: '남북국 배움', goryeo: '후삼국 배움' })[n] || n).join(' · ')}`;
       return '신석기 정착 후 지을 수 있어요.';
     }
     if (s.project) return '진행 중인 작업을 먼저 마치거나 취소해요.';
@@ -100,6 +105,10 @@
     if (!p) return;
     if (['tools', 'survey', 'pottery', 'road'].includes(p.type)) s.flags[p.type] = true;
     else s.buildings.push({ type: p.type, ...p.site });
+    // One-time exchange goods may temporarily exceed the cap, like cancellation refunds.
+    // They must not disappear merely because a farm filled the store during construction.
+    if (p.type === 'gayaMarket') { s.resources.food += 12; s.resources.clay += 6; }
+    if (p.type === 'movableType') s.history.printMode = 'type';
     log(s, `${PROJECTS[p.type].name} 완료! ${PROJECTS[p.type].effect}`);
     s.project = null;
     for (const w of s.workers) if (w.job === 'builder') w.phase = 'idle';
@@ -108,6 +117,7 @@
   function jobLimit(s, job) {
     if (job === 'idle') return 8;
     if (!JOBS[job] || (job === 'clay' && !s.flags.survey)) return 0;
+    if (JOBS[job].facility && (!History.gate(s, JOBS[job].facility) || !(JOBS[job].needs || []).every(n => History.gate(s, n)))) return 0;
     return job === 'farm' ? count(s, 'farm') : JOBS[job].limit;
   }
   function assign(s, id, job) {
@@ -115,11 +125,14 @@
     if (!w || (job !== 'idle' && !JOBS[job])) return { ok: false, reason: '선택할 수 없는 일이에요.' };
     if (assigned(s, job, id) >= jobLimit(s, job)) return { ok: false, reason: job === 'farm' ? '빈 밭이 필요해요.' : '이 작업의 자리가 모두 찼어요.' };
     if (w.cargo) { w.nextJob = job; return { ok: true, reason: '운반 중인 물품을 입고한 뒤 일을 바꿔요.' }; }
+    if (w.reserved) { for (const [k, n] of Object.entries(w.reserved)) s.resources[k] += n; w.reserved = null; }
     w.job = job; w.nextJob = null; w.phase = 'idle'; w.progress = 0;
     return { ok: true };
   }
   function station(s, w) {
     if (w.job === 'builder') return s.project?.site || CAMP;
+    if (JOBS[w.job]?.point) return JOBS[w.job].point;
+    if (JOBS[w.job]?.facility) return s.buildings.find(b => b.type === JOBS[w.job].facility) || PROJECTS[JOBS[w.job].facility]?.sites[0] || CAMP;
     if (w.job === 'farm') {
       const farmers = s.workers.filter(a => a.job === 'farm');
       return s.buildings.filter(b => b.type === 'farm')[Math.max(0, farmers.findIndex(a => a.id === w.id))] || CAMP;
@@ -129,7 +142,11 @@
   function depot(s, site) {
     return [CAMP, ...s.buildings.filter(b => b.type === 'warehouse')].reduce((a, b) => distance(a, site) < distance(b, site) ? a : b);
   }
-  function workTime(s, job) { return s.flags.tools && ['wood', 'stone'].includes(job) ? 14 : (JOBS[job]?.time || 1); }
+  function workTime(s, job, w) {
+    if (job === 'farm' && count(s, 'ironTools')) return 15;
+    if (job === 'printer' && (w?.printMethod || s.history.printMode) === 'type') return 12;
+    return s.flags.tools && ['wood', 'stone'].includes(job) ? 14 : (JOBS[job]?.time || 1);
+  }
   function rateFor(s, w) {
     const d = JOBS[w.nextJob || w.job];
     if (!d?.resource) return 0;
@@ -138,15 +155,20 @@
     return d.amount * 60 / (workTime(s, virtual.job) + 2 * distance(site, depot(s, site)) / speed(s));
   }
   function rates(s) {
-    const result = { wood: 0, stone: 0, food: -population(s) * 2, clay: 0 };
+    const result = Object.fromEntries(Object.keys(RESOURCES).map(k => [k, 0]));
+    result.food = -population(s) * 2;
     for (const w of s.workers) {
       const d = JOBS[w.nextJob || w.job];
-      if (d?.resource) result[d.resource] += rateFor(s, w);
+      if (d?.resource) {
+        const cycles = rateFor(s, w) / d.amount;
+        result[d.resource] += cycles * d.amount;
+        for (const [k, n] of Object.entries(d.cost || {})) result[k] -= cycles * n;
+      }
     }
     return result;
   }
   function recruitReason(s) {
-    if (population(s) >= capacity(s)) return '움집을 지어 살 자리를 마련해요.';
+    if (population(s) >= capacity(s)) return '거처를 마련해 살 자리를 늘려요.';
     if (s.resources.food < 12) return '합류를 위한 식량 12개가 필요해요.';
     if (rates(s).food < 2 - 1e-6) return '새 주민의 소비까지 감당할 식량 생산이 필요해요.';
     if (s.recruitStable < 30) return `식량 생산을 ${Math.ceil(30 - s.recruitStable)}초 더 유지해요.`;
@@ -170,7 +192,7 @@
     let produced = false;
     while (s.manual.progress >= 6) {
       s.manual.progress -= 6;
-      const n = addResource(s, node, 3); s.stats.manual += n; produced ||= n > 0;
+      const n = addResource(s, node, 3); s.stats.manual += n; History.record(s, node, n); produced ||= n > 0;
     }
     return produced;
   }
@@ -186,6 +208,7 @@
       w.phase = 'return';
       if (move(w, w.depot || CAMP, dt, speed(s))) {
         const n = addResource(s, w.cargo.type, w.cargo.amount);
+        History.record(s, w.cargo.type, n, w);
         w.cargo.amount -= n; s.stats.delivered += n;
         if (w.cargo.amount < 1e-7) {
           w.cargo = null; w.phase = 'idle';
@@ -206,16 +229,25 @@
     if (s.resources[d.resource] >= storageCap(s)) { w.phase = 'full'; return; }
     const site = station(s, w);
     if (!move(w, site, dt, speed(s))) { w.phase = 'walk'; return; }
+    if (d.cost && !w.reserved) {
+      if (s.resources.food < 1 && !['food', 'gather', 'farm'].includes(w.job)) { w.phase = 'hungry'; return; }
+      if (Object.entries(d.cost).some(([k, n]) => s.resources[k] < n + (k === 'wood' && w.job === 'charcoal' ? 12 : 0))) { w.phase = 'material'; return; }
+      w.reserved = { ...d.cost }; for (const [k, n] of Object.entries(d.cost)) s.resources[k] -= n;
+      if (w.job === 'printer') w.printMethod = s.history.printMode;
+    }
     w.phase = 'work';
     w.progress += dt * (support === w.job ? 1.25 : 1);
-    if (w.progress >= workTime(s, w.job)) {
+    if (w.progress >= workTime(s, w.job, w)) {
       w.progress = 0; w.cargo = { type: d.resource, amount: d.amount };
+      if (w.job === 'printer') w.cargo.method = w.printMethod === 'type' ? 'typePrinted' : 'woodPrinted';
+      w.reserved = null;
+      w.printMethod = null;
       w.depot = { ...depot(s, site) }; w.phase = 'return';
     }
   }
   function requirements(s) {
     return [
-      { id: 'hut', label: '움집 두 채', done: count(s, 'hut') >= 2 },
+      { id: 'hut', label: '정착할 거처 두 곳', done: count(s, 'hut') >= 2 },
       { id: 'farm', label: '잡곡밭 한 곳', done: count(s, 'farm') >= 1 },
       { id: 'pottery', label: '토기 만들기', done: s.flags.pottery },
       { id: 'food', label: `식량 안정 ${Math.floor(s.foodStable)}/60초`, done: s.foodStable >= 60 }
@@ -236,31 +268,45 @@
       s.recruitStable = foodRate >= 2 - 1e-6 && s.resources.food >= 12 ? Math.min(30, s.recruitStable + step) : 0;
       const ready = count(s, 'farm') > 0 && s.flags.pottery && count(s, 'hut') >= 2;
       s.foodStable = ready && foodRate >= -1e-6 && s.resources.food >= population(s) * 2 ? Math.min(60, s.foodStable + step) : 0;
-      if (s.era !== 'neolithic' && requirements(s).every(r => r.done)) {
+      if (s.era === 'paleolithic' && requirements(s).every(r => r.done)) {
         s.era = 'neolithic'; log(s, '신석기 정착! 농경·저장·주거가 하나의 마을이 되었어요.');
       }
     }
   }
   function restore(raw) {
     // Reject malformed/future saves rather than silently granting or removing progress.
-    if (!raw || raw.version !== VERSION || !Array.isArray(raw.workers) || !Array.isArray(raw.buildings)) return null;
+    if (!raw || ![1, VERSION].includes(raw.version) || !Array.isArray(raw.workers) || !Array.isArray(raw.buildings)) return null;
+    if (!raw.resources || typeof raw.resources !== 'object' || Array.isArray(raw.resources) || !raw.workers.every(w => w && typeof w === 'object')) return null;
+    raw = JSON.parse(JSON.stringify(raw));
+    if (raw.version === 1) {
+      raw.version = VERSION; raw.history = History.initial();
+      for (const k of Object.keys(History.RESOURCES)) raw.resources[k] = 0;
+      raw.workers.forEach(w => { w.reserved = null; });
+      if (raw.era === 'neolithic') { raw.history.completed = ['paleolithic', 'neolithic']; raw.history.active = 'bronze'; }
+    }
     if (raw.workers.length < 2 || raw.workers.length > 8 || !raw.flags || !raw.resources || !raw.stats || !raw.manual) return null;
     const finite = n => typeof n === 'number' && Number.isFinite(n) && n >= 0;
     if (!['time', 'foodStable', 'recruitStable'].every(k => finite(raw[k])) || !Number.isFinite(raw.lastRecruit)) return null;
     if (!Object.keys(RESOURCES).every(k => finite(raw.resources[k]) && raw.resources[k] <= 1000)) return null;
-    if (!['paleolithic', 'neolithic'].includes(raw.era) || !Object.values(raw.stats).every(finite)) return null;
+    if (!['paleolithic', 'neolithic', 'bronze', 'iron'].includes(raw.era) || !Object.values(raw.stats).every(finite)) return null;
     if (!['tools', 'survey', 'pottery', 'road'].every(k => typeof raw.flags[k] === 'boolean')) return null;
-    if (!raw.buildings.every(b => ['hut', 'fire', 'farm', 'warehouse'].includes(b.type) && finite(b.x) && finite(b.y) && b.x <= 32 && b.y <= 22)) return null;
+    if (!raw.buildings.every(b => (['hut', 'fire', 'farm', 'warehouse'].includes(b.type) || PROJECTS[b.type]?.historical) && finite(b.x) && finite(b.y) && b.x <= 32 && b.y <= 22)) return null;
     if (new Set(raw.workers.map(w => w.id)).size !== raw.workers.length) return null;
     if (!raw.workers.every(w => Number.isInteger(w.id) && w.id >= 1 && w.id <= 8 && (w.job === 'idle' || JOBS[w.job]) && (w.nextJob === null || w.nextJob === 'idle' || JOBS[w.nextJob]) && finite(w.x) && finite(w.y) && w.x <= 32 && w.y <= 22 && finite(w.progress) && (!w.cargo || (RESOURCES[w.cargo.type] && finite(w.cargo.amount))) && (!w.depot || (finite(w.depot.x) && finite(w.depot.y) && w.depot.x <= 32 && w.depot.y <= 22)))) return null;
     if (raw.project && (!PROJECTS[raw.project.type] || !finite(raw.project.progress) || !raw.project.site || !finite(raw.project.site.x) || !finite(raw.project.site.y) || raw.project.site.x > 32 || raw.project.site.y > 22 || JSON.stringify(raw.project.cost) !== JSON.stringify(PROJECTS[raw.project.type].cost))) return null;
     if (!finite(raw.manual.progress) || (raw.manual.node !== null && !NODES[raw.manual.node])) return null;
+    const h = raw.history;
+    if (!h || !History.byId(h.active) || !Array.isArray(h.completed) || new Set(h.completed).size !== h.completed.length || !h.completed.every(id => History.byId(id)) || !h.answers || typeof h.answers !== 'object' || Array.isArray(h.answers) || !Object.entries(h.answers).every(([id, v]) => History.byId(id) && typeof v === 'boolean') || !h.produced || !h.actions || !Array.isArray(h.reported) || !h.reported.every(id => History.byId(id))) return null;
+    if (Array.isArray(h.produced) || Array.isArray(h.actions) || typeof h.feedback !== 'string') return null;
+    if (!Object.entries(h.produced).every(([k, n]) => RESOURCES[k] && finite(n)) || !Object.entries(h.actions).every(([k, n]) => ['woodPrinted', 'typePrinted'].includes(k) && finite(n))) return null;
+    if (!['woodblock', 'type'].includes(h.printMode) || (h.printMode === 'type' && !raw.buildings.some(b => b.type === 'movableType'))) return null;
+    for (const w of raw.workers) if (w.reserved && JSON.stringify(w.reserved) !== JSON.stringify(JOBS[w.job]?.cost)) return null;
     const s = JSON.parse(JSON.stringify(raw));
     s.events = (Array.isArray(s.events) ? s.events : []).filter(e => finite(e.time) && typeof e.text === 'string').slice(0, 20);
     s.workers.forEach(w => { w.name = NAMES[w.id - 1]; });
     return s;
   }
-  return { VERSION, CAMP, RESOURCES, NODES, JOBS, PROJECTS, initial, count, capacity, storageCap, population,
+  return { VERSION, History, CAMP, RESOURCES, NODES, JOBS, PROJECTS, initial, count, capacity, storageCap, population,
     unlocked, finished, projectReason, startProject, cancelProject, assign, assigned, jobLimit, station, depot, workTime,
     rates, rateFor, recruitReason, recruit, harvest, requirements, tick, restore };
 });
