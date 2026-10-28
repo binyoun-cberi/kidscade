@@ -195,7 +195,7 @@ function chooseMode(value){
     ? '평소 가장 편한 음으로 “아~~~” 해주세요.<br>그 음을 기준으로 계단을 시작하므로 일부러 높게 부를 필요가 없어요.'
     : '높이려고 애쓰지 말고 평소 가장 편한 음을 길게 내면<br>게임이 그 목소리에 맞춰 도~높은 도 범위를 정해요.';
   ui.calibrateBtn.textContent=stair?'🎤 내 음역 맞추고 계단 시작':'🎤 내 음역 맞추고 시작';
-  ui.defaultBtn.textContent=stair?'기본 음역으로 체험':'바로 체험';
+  ui.defaultBtn.textContent=loadPracticeRange()?'저장 음역으로 시작':stair?'기본 음역으로 체험':'바로 체험';
 }
 ui.modeList.addEventListener('click',e=>{
   const b=e.target.closest('.mode-btn');if(b)chooseMode(b.dataset.mode);
@@ -309,6 +309,10 @@ function stairNoteName(step){
   const octave=Math.floor(step/7);
   return (octave===0?'':octave===1?'높은 ':octave===2?'더 높은 ':'+'+octave+'옥타브 ')+names[step%7];
 }
+function loadPracticeRange(){
+  try{const r=window.KidscadeStorage?.getJson?window.KidscadeStorage.getJson('kidscade_vocal_range_v1',null):JSON.parse(localStorage.getItem('kidscade_vocal_range_v1')||'null');return r&&Number.isInteger(r.low)&&Number.isInteger(r.high)&&r.low>=39&&r.high<=83&&r.high-r.low>=2?r:null}catch{return null}
+}
+function activeNoteCount(){return Math.max(1,Math.min(cfg().noteCount,SCALE.filter(s=>state.rangeCeiling==null||state.rootMidi+s<=state.rangeCeiling).length))}
 function targetMidi(index){return state.rootMidi+(state.gameMode==='stair'?stairSemitone(index):SCALE[index])}
 function targetFrequency(index){return midiToHz(targetMidi(index))}
 function noteErrorCents(index){
@@ -323,7 +327,7 @@ function nextTargetIndex(){
     state.sequenceIndex++;
     state.phraseQueue=phrase.slice();
   }
-  return state.phraseQueue.shift();
+  return Math.min(state.phraseQueue.shift(),activeNoteCount()-1);
 }
 function spawnGate(initial=false){
   const target=nextTargetIndex(),w=state.viewW||900;
@@ -375,6 +379,7 @@ function updateTargetHud(){
 
 function startGame(){
   state.ballMotion=null;
+  const practiceRange=!state.calibrated?loadPracticeRange():null;state.rangeCeiling=practiceRange?.high??null;if(practiceRange)state.rootMidi=practiceRange.low;
   cancelAnimationFrame(state.calRaf);
   if(state.gameMode==='stair'){startStairGame();return}
   const c=cfg();
@@ -456,6 +461,7 @@ function stairMiss(now){
 }
 function stairGameLoop(now){
   if(state.phase!=='game'||state.gameMode!=='stair')return;
+  if(state.rangeCeiling!=null&&targetMidi(state.stairStep)>state.rangeCeiling){endGame('range');return;}
   if(state.resizeNeeded)resizeCanvas();
   updatePitch(now);
   const dt=Math.min(.05,(now-state.lastFrame)/1000||0);state.lastFrame=now;
@@ -643,7 +649,7 @@ function draw(){
     ctx.beginPath();ctx.arc(cx-30,cy-9,22,0,TAU);ctx.arc(cx+5,cy-13,29,0,TAU);ctx.arc(cx+34,cy-6,19,0,TAU);ctx.fill();
   }
   ctx.globalAlpha=1;
-  const count=c.noteCount;
+  const count=activeNoteCount();
   for(let i=0;i<count;i++){
     const y=laneYBySemitone(SCALE[i]);
     ctx.strokeStyle=i===0||i===count-1?'#b39bc755':'#b39bc733';ctx.lineWidth=1;
@@ -702,7 +708,7 @@ function endGame(reason='time'){
   ui.perfectCount.textContent=state.perfect;ui.goodCount.textContent=state.good;ui.accuracyText.textContent=accuracy+'%';ui.maxComboText.textContent=state.maxCombo;
   const rootName=nearestNoteName(midiToHz(state.rootMidi));
   if(state.gameMode==='stair'){
-    ui.resultTitle.textContent=reason==='ceiling'?'고음 계단 정상 도착!':'고음 계단 기록';
+    ui.resultTitle.textContent=reason==='range'?'내 편한 음역 완주!':reason==='ceiling'?'고음 계단 정상 도착!':'고음 계단 기록';
     ui.resultGrade.textContent='최고 '+state.stairPeak+'층 · '+(state.stairPeak?stairNoteName(state.stairPeak-1):'시작음')+'까지 올라갔어요';
     ui.accuracyLabel.textContent='성공률';ui.maxComboLabel.textContent='최대 연속';
     ui.resultComment.textContent=(state.calibrated?'내 편한 목소리를 기준으로 시작했어요. ':'기본 C 음역으로 시작했어요. ')+
@@ -743,3 +749,4 @@ window.addEventListener('pagehide',stopMic);
 window.addEventListener('beforeunload',stopMic);
 
 })();
+
