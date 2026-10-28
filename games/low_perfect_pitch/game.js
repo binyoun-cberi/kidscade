@@ -286,6 +286,20 @@ function pitchY(){
   const clamped=Math.max(-1,Math.min(13,semi));
   return laneYBySemitone(clamped);
 }
+// Animate only the drawing. Recognition and scoring keep their measured pitch.
+function ballPosition(targetY,anchorX,now){
+  let m=state.ballMotion;
+  if(!m){m=state.ballMotion={y:state.viewH*.72,velocity:0,time:now};}
+  const dt=Math.max(0,Math.min(.05,(now-m.time)/1000));m.time=now;
+  // Exact critically damped spring: smooth acceleration, no overshoot,
+  // and the same travel time on 30/60/120 Hz displays.
+  const omega=22,offset=m.y-targetY,c=m.velocity+omega*offset,decay=Math.exp(-omega*dt);
+  m.y=targetY+(offset+c*dt)*decay;
+  m.velocity=(m.velocity-omega*c*dt)*decay;
+  // A small forward bow makes a pitch change read as a curved hop.
+  const bow=Math.min(14,Math.abs(m.velocity)*.018);
+  return {x:anchorX+bow,y:m.y};
+}
 function stairSemitone(step){
   const s=Math.max(0,Math.floor(step));
   return Math.floor(s/7)*12+MAJOR_SCALE[s%7];
@@ -360,6 +374,7 @@ function updateTargetHud(){
 }
 
 function startGame(){
+  state.ballMotion=null;
   cancelAnimationFrame(state.calRaf);
   if(state.gameMode==='stair'){startStairGame();return}
   const c=cfg();
@@ -493,9 +508,10 @@ function drawStair(now){
     ctx.fillText((floor+1)+'층',x+stepW/2,y+stepH*.62);
   }
   ctx.globalAlpha=1;
-  const targetY=baseY-1.7*stepH-20,px=baseX+1.7*stepW+stepW*.5;
+  const targetY=baseY-1.7*stepH-20,anchorX=baseX+1.7*stepW+stepW*.5;
   let py=targetY;
   if(state.stairLastError!==null)py=targetY-Math.max(-150,Math.min(150,state.stairLastError))*.18;
+  const ballPos=ballPosition(py,anchorX,now);py=ballPos.y;const px=ballPos.x;
   ctx.save();ctx.shadowBlur=22;ctx.shadowColor=state.voiced?'#f1a7cd':'#b8abc4';
   const ball=ctx.createRadialGradient(px-7,py-8,3,px,py,22);ball.addColorStop(0,'#fff');ball.addColorStop(.32,state.voiced?'#fff4a2':'#f5edf6');ball.addColorStop(1,state.voiced?'#f39fc7':'#bcb1c9');
   ctx.fillStyle=ball;ctx.beginPath();ctx.arc(px,py,20,0,TAU);ctx.fill();ctx.restore();
@@ -635,7 +651,7 @@ function draw(){
     ctx.fillStyle='#756886';ctx.font='900 11px system-ui';ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText(NOTE_NAMES[i],10,y-7);
   }
   for(const g of state.gates)drawGate(ctx,g,w,h);
-  const py=pitchY(),px=w*.22;
+  const ballPos=ballPosition(pitchY(),w*.22,now),py=ballPos.y,px=ballPos.x;
   ctx.save();
   if(state.voiced){
     const halo=ctx.createRadialGradient(px,py,5,px,py,42);halo.addColorStop(0,'#ffd1e58a');halo.addColorStop(.6,'#fff0ad4d');halo.addColorStop(1,'#ffffff00');
