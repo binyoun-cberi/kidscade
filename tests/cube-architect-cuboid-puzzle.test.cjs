@@ -8,8 +8,11 @@ const html=fs.readFileSync(path.join(root,'games/cube3d/index.html'),'utf8');
 const js=fs.readFileSync(path.join(root,'games/cube3d/cube-architect-cuboid-puzzle.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'games/cube3d/cube-architect-cuboid-puzzle.css'),'utf8');
 
-test('cube architect exposes the cuboid gravity puzzle from the home screen',()=>{
-  assert.match(html,/data-mode="cuboidPuzzle"/);
+test('cube architect exposes the cuboid gravity puzzle through the unified studio',()=>{
+  assert.match(html,/data-mode="studio"/);
+  const studio=fs.readFileSync(path.join(root,'games/cube3d/cube-geometry-studio.js'),'utf8');
+  assert.match(studio,/value="cuboidPuzzle"/);
+  assert.match(studio,/CubeArchitectCuboidPuzzle.enter\(\)/);
   assert.match(html,/직육면체 퍼즐/);
   assert.match(html,/mode-card-featured/);
   assert.match(html,/cube-architect-cuboid-puzzle\.css/);
