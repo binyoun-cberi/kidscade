@@ -32,7 +32,7 @@ function gradeLevel(n){return LEVELS[n]?Number(n):6}
 function profile(n){return LEVELS[gradeLevel(n)]}
 function shapeLabel(kind,grade){return gradeLevel(grade)<=4?{cuboid:'상자 모양',cylinder:'둥근 기둥 모양',sphere:'공 모양'}[kind]||SHAPES[kind]?.name:SHAPES[kind]?.name}
 function quizKinds(grade,tab,shape){const p=profile(grade);if(tab==='stack')return p.stack.slice();if(!p.shapes.includes(shape))return [];
-return ['name',...(gradeLevel(grade)>=5&&SHAPES[shape].faces?['faces','edges','vertices']:[]),...(gradeLevel(grade)===6&&['cube','cuboid'].includes(shape)?['volume','area']:[])]}
+return ['name',...(gradeLevel(grade)>=5&&['cube','cuboid'].includes(shape)?['pickVertex','pickEdge','pickFace','parallelFace','incidentEdge','incidentFace','edgeVertex','netVertex','netEdge']:[]),...(gradeLevel(grade)>=5&&SHAPES[shape].faces?['faces','edges','vertices']:[]),...(gradeLevel(grade)===6&&['cube','cuboid'].includes(shape)?['volume','area','faceArea']:[])]}
 function fitsGrade(points,grade){const p=profile(grade),cells=normalize(points);return cells.length<=p.maxBlocks&&cells.every(c=>c.every(v=>v<p.maxSize))}
 function projections(points){const cells=normalize(points);return Object.fromEntries(['top','front','side'].map(k=>[k,[...new Set(cells.map(p=>k==='top'?key([p[0],p[2]]):k==='front'?key([p[0],p[1]]):key([p[2],p[1]])))].sort()]))}
 function grounded(points){const cells=normalize(points),set=new Set(cells.map(key));return cells.every(([x,y,z])=>{for(let h=0;h<y;h++)if(!set.has(key([x,h,z])))return false;return true})}

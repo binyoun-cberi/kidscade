@@ -123,6 +123,18 @@ jobs:
         run: npm run health:strict
       - name: Build Cloudflare static artifact
         run: npm run build
+      - name: Cube studio actual Chrome geometry quiz playthrough
+        run: node tests/cube-geometry-visual-browser-audit.cjs
+        env:
+          KIDSCADE_CUBE_AUDIT_OUT: ${{ runner.temp }}/cube-geometry-visual-quiz
+      - name: Upload cube geometry quiz screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cube-geometry-visual-quiz
+          path: ${{ runner.temp }}/cube-geometry-visual-quiz/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Run all regression tests and audits
         run: npm run test:ci
       - name: Openmon expedition real-browser mobile and desktop audit

@@ -53,7 +53,8 @@ assert.ok(!L.quizKinds(grade,'stack').includes('area'));assert.ok(!L.quizKinds(g
 assert.equal(L.shapeLabel('cylinder',1),'둥근 기둥 모양');
 });
 test('grade 5 focuses on cube/cuboid properties while grade 6 calculates only those solids',()=>{
-assert.deepEqual(L.quizKinds(5,'solid','cuboid'),['name','faces','edges','vertices']);
+for(const kind of ['name','faces','edges','vertices','pickVertex','pickEdge','pickFace','parallelFace','netVertex','netEdge'])assert.ok(L.quizKinds(5,'solid','cuboid').includes(kind));
+assert.ok(!L.quizKinds(5,'solid','cuboid').includes('faceArea'));
 for(const shape of Object.keys(L.SHAPES)){
 const kinds=L.quizKinds(6,'solid',shape);
 assert.equal(kinds.includes('area'),['cube','cuboid'].includes(shape),shape);
@@ -86,10 +87,10 @@ assert.equal(L.matchesBuild(L.box(4,2,3),L.box(3,2,2),'sameVolume'),false);
 function studioHarness(){
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),elements=new Map(),saved=new Map();
 const context2d=new Proxy({}, {get:()=>()=>{}});
-function element(){return {value:'',hidden:false,textContent:'',children:[],setAttribute(k,v){this[k]=v},replaceChildren(...nodes){this.children=nodes;this.value=nodes[0]?.value||''},querySelector(){return this.button||(this.button=element())},getContext(){return context2d},focus(){}}}
+function element(){return {value:'',hidden:false,textContent:'',children:[],style:{},classList:{toggle(){}},setAttribute(k,v){this[k]=v},replaceChildren(...nodes){this.children=nodes;this.value=nodes[0]?.value||''},querySelector(){return this.button||(this.button=element())},getContext(){return context2d},focus(){}}}
 const document={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id)},createElement:element};
 const source=fs.readFileSync(path.resolve(__dirname,'../games/cube3d/cube-geometry-studio.js'),'utf8').replace('window.CubeGeometryStudio={enter,exit};',`root={querySelectorAll:()=>[]};window.testStudio={state:()=>state,quiz:()=>quiz,score:()=>score,setGrade,syncUI,askQuestion,answerName,editCells,checkBuild,revealBuild,save,restore};`);
-const sandbox={window:{CubeGeometryLogic:L},document,console,localStorage:{setItem:(k,v)=>saved.set(k,v),getItem:k=>saved.get(k)}};
+const sandbox={window:{CubeGeometryLogic:L},document,console,setTimeout:()=>1,clearTimeout:()=>{},localStorage:{setItem:(k,v)=>saved.set(k,v),getItem:k=>saved.get(k)}};
 vm.createContext(sandbox);vm.runInContext(source,sandbox);return {api:sandbox.window.testStudio,element:id=>document.getElementById(id)};
 }
 test('simulated UI: changing grades changes options and hides advanced measurements',()=>{
