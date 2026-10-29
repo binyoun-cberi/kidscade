@@ -18,5 +18,29 @@ case 'cone':volume=Math.PI*r*r*h/3;area=Math.PI*r*(r+Math.hypot(r,h));break;
 case 'sphere':volume=4*Math.PI*r*r*r/3;area=4*Math.PI*r*r;break}
 return {...SHAPES[kind],volume,area}}
 function question(points,kind){const m=metrics(points);const q={volume:['쌓기나무는 모두 몇 개일까요?',m.volume,'개'],area:['겉으로 드러난 단위 정사각형은 모두 몇 개일까요?',m.area,'개'],top:['위에서 본 모습은 몇 칸일까요?',m.top,'칸'],front:['앞에서 본 모습은 몇 칸일까요?',m.front,'칸'],side:['오른쪽에서 본 모습은 몇 칸일까요?',m.side,'칸'],height:['가장 높은 곳은 몇 층일까요?',m.height,'층']}[kind];return q?{prompt:q[0],answer:q[1],unit:q[2]}:null}
-return {normalize,metrics,box,SHAPES,solidMetrics,question};
+// Grades are recommended lesson levels within the national 1–2 / 3–4 / 5–6 bands.
+// Grades 3–4 revisit spatial play; this is not a claim of a new solid-geometry unit.
+const LEVELS={
+1:{maxSize:2,maxBlocks:8,shapes:['cuboid','cylinder','sphere'],stack:['volume','height'],note:'모양 찾기 · 8개까지 세기 · 위아래 관찰'},
+2:{maxSize:3,maxBlocks:16,shapes:['cuboid','cylinder','sphere'],stack:['volume','height','buildCopy'],note:'쌓기나무 만들기 · 층 수 · 모양 따라 만들기'},
+3:{maxSize:3,maxBlocks:27,shapes:['cuboid','cylinder','sphere'],stack:['volume','height','buildCopy'],note:'공간 놀이 복습 · 층별로 세기 · 모양 따라 만들기'},
+4:{maxSize:4,maxBlocks:48,shapes:['cuboid','cylinder','sphere'],stack:['volume','height','buildCopy'],note:'공간 감각 확장 · 복잡한 모양 따라 만들기'},
+5:{maxSize:4,maxBlocks:64,shapes:['cube','cuboid'],stack:['volume','height','buildCopy'],note:'직육면체·정육면체의 면 · 모서리 · 꼭짓점'},
+6:{maxSize:6,maxBlocks:125,shapes:['cube','cuboid','prism','pyramid','cylinder','cone','sphere'],stack:['volume','height','top','front','side','buildCopy','buildViews','sameVolume'],note:'입체도형의 성질 · 부피와 겉넓이 · 세 방향 모습 복원'}
+};
+function gradeLevel(n){return LEVELS[n]?Number(n):6}
+function profile(n){return LEVELS[gradeLevel(n)]}
+function shapeLabel(kind,grade){return gradeLevel(grade)<=4?{cuboid:'상자 모양',cylinder:'둥근 기둥 모양',sphere:'공 모양'}[kind]||SHAPES[kind]?.name:SHAPES[kind]?.name}
+function quizKinds(grade,tab,shape){const p=profile(grade);if(tab==='stack')return p.stack.slice();if(!p.shapes.includes(shape))return [];
+return ['name',...(gradeLevel(grade)>=5&&SHAPES[shape].faces?['faces','edges','vertices']:[]),...(gradeLevel(grade)===6&&['cube','cuboid'].includes(shape)?['volume','area']:[])]}
+function fitsGrade(points,grade){const p=profile(grade),cells=normalize(points);return cells.length<=p.maxBlocks&&cells.every(c=>c.every(v=>v<p.maxSize))}
+function projections(points){const cells=normalize(points);return Object.fromEntries(['top','front','side'].map(k=>[k,[...new Set(cells.map(p=>k==='top'?key([p[0],p[2]]):k==='front'?key([p[0],p[1]]):key([p[2],p[1]])))].sort()]))}
+function grounded(points){const cells=normalize(points),set=new Set(cells.map(key));return cells.every(([x,y,z])=>{for(let h=0;h<y;h++)if(!set.has(key([x,h,z])))return false;return true})}
+function matchesBuild(points,target,kind){const a=normalize(points),b=normalize(target);if(!a.length||!grounded(a))return false;
+if(kind==='buildViews')return JSON.stringify(projections(a))===JSON.stringify(projections(b));
+if(kind==='sameVolume'){const am=metrics(a),bm=metrics(b);return am.volume===bm.volume&&am.area!==bm.area}
+return a.map(key).sort().join('|')===b.map(key).sort().join('|')}
+function sample(grade,random=Math.random){const p=profile(grade),size=Math.min(p.maxSize,gradeLevel(grade)<3?2:3),out=[];
+for(let x=0;x<size;x++)for(let z=0;z<size;z++){const height=1+Math.floor(Math.min(.999999,Math.max(0,random()))*Math.min(size,3));for(let y=0;y<height&&out.length<p.maxBlocks;y++)out.push([x,y,z])}return out}
+return {LEVELS,gradeLevel,profile,shapeLabel,quizKinds,fitsGrade,projections,grounded,matchesBuild,sample,normalize,metrics,box,SHAPES,solidMetrics,question};
 });
