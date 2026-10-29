@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#173f36">
   <title>한 줌에서 문명까지 · 정착 이야기</title>
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
   <div class="app">
@@ -27,7 +27,7 @@
       </section>
       <aside class="management" aria-label="마을 운영">
         <div class="village-summary"><div><small>함께 사는 사람들</small><strong id="population">2 <span>/ 2명</span></strong></div><button id="recruitBtn" type="button">＋ 주민 맞이</button><p id="recruitHint"></p></div>
-        <nav class="tabs" aria-label="운영 메뉴"><button type="button" data-tab="life" aria-pressed="true">🔥 생활</button><button type="button" data-tab="build" aria-pressed="false">⌂ 건설</button><button type="button" data-tab="city" aria-pressed="false">⌂ 도시</button><button type="button" data-tab="workers" aria-pressed="false">♟ 일꾼</button><button type="button" data-tab="production" aria-pressed="false">⚒ 생산</button><button type="button" data-tab="history" aria-pressed="false">📜 역사</button></nav>
+        <nav class="tabs" aria-label="운영 메뉴"><button type="button" data-tab="life" aria-pressed="true">🔥 생활</button><button type="button" data-tab="build" aria-pressed="false">⌂ 건설</button><button type="button" data-tab="bronze" aria-pressed="false">🌾 청동기</button><button type="button" data-tab="city" aria-pressed="false">⌂ 도시</button><button type="button" data-tab="workers" aria-pressed="false">♟ 일꾼</button><button type="button" data-tab="production" aria-pressed="false">⚒ 생산</button><button type="button" data-tab="history" aria-pressed="false">📜 역사</button></nav>
         <div id="panel" class="panel"></div>
         <footer class="panel-footer"><span id="saveStatus">자동 저장 준비</span><button id="saveBtn" type="button">저장</button></footer>
       </aside>
@@ -41,14 +41,16 @@
   <dialog id="inheritDialog"><form method="dialog"><button class="dialog-close" aria-label="계승 취소">×</button></form><h2>새 터전에 무엇을 가져갈까요?</h2><p id="inheritPreview"></p><p>선택하면 새 도시를 시작해요. 현재 도시에서 계속하려면 닫아 주세요.</p><div class="inherit-choices"><button type="button" data-inherit="craft">제작법 · 기초 도구와 석기 작업터</button><button type="button" data-inherit="farm">농경 지식 · 강가 지식과 간석기 준비</button><button type="button" data-inherit="logistics">운송 지식 · 길과 공동 저장고</button></div><form method="dialog"><button>이 도시에서 계속 살기</button></form></dialog>
   <script src="../../../kidscade-storage.js"></script>
   <script src="../../../kidscade-game-sdk.js" data-game-id="high_human_history_cards" data-title="한 줌에서 문명까지" data-shell="true" data-orientation="landscape"></script>
-  <script src="history.js?v=4"></script>
-  <script src="civilization.js?v=4"></script>
-  <script src="prehistory.js?v=4"></script>
-  <script src="sim.js?v=4"></script>
-  <script src="view.js?v=4"></script>
-  <script src="history-ui.js?v=4"></script>
-  <script src="prehistory-ui.js?v=4"></script>
-  <script src="civilization-ui.js?v=4"></script>
-  <script src="game.js?v=4"></script>
+  <script src="history.js?v=5"></script>
+  <script src="civilization.js?v=5"></script>
+  <script src="prehistory.js?v=5"></script>
+  <script src="bronze.js?v=5"></script>
+  <script src="sim.js?v=5"></script>
+  <script src="view.js?v=5"></script>
+  <script src="history-ui.js?v=5"></script>
+  <script src="prehistory-ui.js?v=5"></script>
+  <script src="civilization-ui.js?v=5"></script>
+  <script src="bronze-ui.js?v=5"></script>
+  <script src="game.js?v=5"></script>
 </body>
 </html>

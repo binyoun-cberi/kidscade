@@ -53,7 +53,7 @@
   function updateProduction(s) {
     for (const [id, d] of Object.entries({ ...C.SIDE_JOBS, ...S.History.JOBS })) {
       const t = s.civilization.tasks[id];
-      const status = t ? t.phase === 'work' ? `가공 중 ${Math.floor(t.progress / t.duration * 100)}% · 원료 투입 완료` : '운반·입고 대기 · 공간이 생기면 이어가요' : !C.recipeReady(s, id, d, S.cityContext) ? '시설·도구·그물을 먼저 연결해요' : !s.civilization.research.production ? '가공을 연결하기 연구 필요' : !s.civilization.automatic ? '자동 생산 멈춤' : '원료·생활 비축·저장 공간 확인';
+      const status = t ? t.phase === 'work' ? `가공 중 ${Math.floor(t.progress / t.duration * 100)}% · 원료 투입 완료` : '운반·입고 대기 · 공간이 생기면 이어가요' : !C.recipeReady(s, id, d, S.cityContext) ? '시설·도구·그물을 먼저 연결해요' : (id === 'bronze' && s.bronze) ? s.bronze.research.casting ? '청동기 메뉴에서 비축 목표·원료 확인' : '청동기 메뉴에서 한 묶음 제작 후 장인 연구' : !s.civilization.research.production ? '가공을 연결하기 연구 필요' : !s.civilization.automatic ? '자동 생산 멈춤' : '원료·생활 비축·저장 공간 확인';
       document.getElementById(`auto-job-${id}`).textContent = `${status} · 재고 ${Math.floor(s.resources[d.resource])}`;
     }
   }

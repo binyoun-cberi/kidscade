@@ -1,11 +1,11 @@
 (function (root, factory) {
   'use strict';
-  const api = factory(typeof module === 'object' && module.exports ? require('./history.js') : root.SettlementHistory, typeof module === 'object' && module.exports ? require('./prehistory.js') : root.SettlementPrehistory, typeof module === 'object' && module.exports ? require('./civilization.js') : root.SettlementCivilization);
+  const api = factory(typeof module === 'object' && module.exports ? require('./history.js') : root.SettlementHistory, typeof module === 'object' && module.exports ? require('./prehistory.js') : root.SettlementPrehistory, typeof module === 'object' && module.exports ? require('./civilization.js') : root.SettlementCivilization, typeof module === 'object' && module.exports ? require('./bronze.js') : root.SettlementBronze);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.SettlementSim = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (History, Prehistory, Civilization) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (History, Prehistory, Civilization, Bronze) {
   'use strict';
-  const VERSION = 4;
+  const VERSION = 5;
   const CAMP = { x: 16, y: 11 };
   const RESOURCES = { wood: '목재', stone: '돌', food: '식량', clay: '점토', ...History.RESOURCES, ...Civilization.RESOURCES };
   const NODES = {
@@ -31,13 +31,13 @@
     pottery: { name: '토기 만들기', icon: '♜', cost: { clay: 8, wood: 4 }, time: 18, max: 1, effect: '자원별 저장 한도 60 → 120', sites: [{ x: 18, y: 13 }] },
     road: { name: '마을길 연결', icon: '╋', cost: { stone: 10, wood: 4 }, time: 18, max: 1, effect: '주민 이동 속도 +50%', sites: [{ x: 17, y: 11 }] },
     warehouse: { name: '공동 저장고', icon: '▤', cost: { wood: 18, stone: 8, clay: 4 }, time: 25, max: 1, effect: '저장 한도 +120 · 가까운 입고 지점', sites: [{ x: 10, y: 9 }] },
-    ...History.PROJECTS, ...Prehistory.PROJECTS, ...Civilization.PROJECTS
+    ...History.PROJECTS, ...Prehistory.PROJECTS, ...Civilization.PROJECTS, ...Bronze.PROJECTS
   };
   const NAMES = ['나루', '보리', '두리', '하루', '여울', '도담', '산들', '소담'];
   const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const count = (s, type) => s.buildings.filter(b => b.type === type).length;
   const capacity = s => 2 + count(s, 'hut') * 2 + s.civilization.homes * 2;
-  const storageCap = s => (s.flags.pottery ? 120 : 60) + count(s, 'warehouse') * 120 + s.civilization.homes * 20 + (count(s, 'fort') ? 60 : 0);
+  const storageCap = s => (s.flags.pottery ? 120 : 60) + count(s, 'warehouse') * 120 + s.civilization.homes * 20 + (count(s, 'fort') ? 60 : 0) + Bronze.storageBonus(s);
   const speed = s => s.flags.road ? 2.7 : 1.8;
   const population = s => s.workers.length + s.civilization.citizens;
   function worker(id) {
@@ -48,7 +48,7 @@
       workers: [worker(1), worker(2)], buildings: [], flags: { tools: false, survey: false, pottery: false, road: false },
       project: null, manual: { node: null, progress: 0 }, foodStable: 0, recruitStable: 0,
       lastRecruit: -45, era: 'paleolithic', events: [{ time: 0, text: '두 사람의 야영지. 돌을 떼어 첫 도구를 만들어 보세요.' }],
-      stats: { manual: 0, delivered: 0, recruits: 0 }, milestoneReported: false, history: History.initial(), prehistory: Prehistory.initial(), civilization: Civilization.initial() };
+      stats: { manual: 0, delivered: 0, recruits: 0 }, milestoneReported: false, history: History.initial(), prehistory: Prehistory.initial(), civilization: Civilization.initial(), bronze: Bronze.initial() };
   }
   function log(s, text) { s.events.unshift({ time: s.time, text }); s.events.length = Math.min(20, s.events.length); }
   function addResource(s, type, amount) {
@@ -57,6 +57,7 @@
     return added;
   }
   function unlocked(s, id) {
+    if (Bronze.PROJECTS[id]) return Bronze.open(s) && Bronze.PROJECTS[id].needs.every(n => History.gate(s, n));
     if (Civilization.PROJECTS[id]) return Civilization.unlocked(s, id, History.gate);
     if (Prehistory.PROJECTS[id]) return Prehistory.unlocked(s, id);
     if (PROJECTS[id]?.historical) return PROJECTS[id].needs.every(n => History.gate(s, n));
@@ -74,6 +75,7 @@
     if (finished(s, id) >= d.max) return '이미 완료했어요.';
     if (!unlocked(s, id)) {
       if (id === 'survey') return '막집과 모닥불을 먼저 마련해요.';
+      if (Bronze.PROJECTS[id]) return '먼저 연결하기: ' + Bronze.PROJECTS[id].needs.map(n => PROJECTS[n]?.name || History.byId(n)?.title || n).join(' · ');
       if (Civilization.PROJECTS[id]) return '먼저 연결하기: ' + Civilization.PROJECTS[id].needs.map(n => PROJECTS[n]?.name || History.byId(n)?.title || n).join(' · ') + (id === 'neighborhood' ? ' · 토기 자동화 연구' : '');
       if (Prehistory.PROJECTS[id]) return ({ sharedGathering: '첫 거처를 먼저 마련해요.', flintWorkshop: '기초 뗀석기를 먼저 만들어요.', hearth: '모닥불을 먼저 마련해요.', granary: '밭·간석기·토기를 먼저 갖춰요.' })[id];
       if (id === 'farm') return '강가 조사와 간석기 다듬기를 먼저 마쳐요.';
@@ -121,6 +123,7 @@
   function assigned(s, job, exclude) { return s.workers.filter(w => w.id !== exclude && (w.nextJob || w.job) === job).length; }
   function jobLimit(s, job) {
     if (job === 'idle') return 8;
+    if (job === 'bronze' && !Civilization.recipeReady(s, job, JOBS[job], cityContext)) return 0;
     if (!JOBS[job] || (job === 'clay' && !s.flags.survey)) return 0;
     if (JOBS[job].facility && (!History.gate(s, JOBS[job].facility) || !(JOBS[job].needs || []).every(n => History.gate(s, n)))) return 0;
     return job === 'farm' ? count(s, 'farm') : JOBS[job].limit;
@@ -161,7 +164,7 @@
   }
   function rates(s) {
     const result = Object.fromEntries(Object.keys(RESOURCES).map(k => [k, 0]));
-    result.food = -Civilization.consumption(s);
+    result.food = -Civilization.consumption(s) + Bronze.foodRate(s, cityContext);
     for (const w of s.workers) {
       const d = JOBS[w.nextJob || w.job];
       if (d?.resource) {
@@ -275,6 +278,7 @@
       const step = Math.min(.1, remaining); remaining -= step; s.time += step;
       Prehistory.tick(s, step, lifeContext);
       Civilization.tick(s, step, cityContext);
+      Bronze.tick(s, step, cityContext);
       if (input.grind) Prehistory.grind(s, step * 2);
       s.resources.food = Math.max(0, s.resources.food - Civilization.consumption(s) / 60 * step);
       if (input.harvest) harvest(s, input.harvest, step * 2);
@@ -292,7 +296,7 @@
   }
   function restore(raw) {
     // Reject malformed/future saves rather than silently granting or removing progress.
-    if (!raw || ![1, 2, 3, VERSION].includes(raw.version) || !Array.isArray(raw.workers) || !Array.isArray(raw.buildings)) return null;
+    if (!raw || ![1, 2, 3, 4, VERSION].includes(raw.version) || !Array.isArray(raw.workers) || !Array.isArray(raw.buildings)) return null;
     if (!raw.resources || typeof raw.resources !== 'object' || Array.isArray(raw.resources) || !raw.workers.every(w => w && typeof w === 'object')) return null;
     raw = JSON.parse(JSON.stringify(raw));
     if (raw.version === 1) {
@@ -305,13 +309,18 @@
       for (const k of Object.keys(Civilization.RESOURCES)) if (!(k in raw.resources)) raw.resources[k] = 0;
       raw.civilization = Civilization.initial();
     }
+    if (raw.version < 5) {
+      raw.bronze = Bronze.initial();
+      if (Array.isArray(raw.history?.completed) && raw.history.completed.includes('bronze')) for (const id of Object.keys(Bronze.RESEARCH)) raw.bronze.research[id] = true;
+    }
+    if (!Bronze.valid(raw.bronze)) return null;
     if (raw.workers.length < 2 || raw.workers.length > 8 || !raw.flags || !raw.resources || !raw.stats || !raw.manual) return null;
     const finite = n => typeof n === 'number' && Number.isFinite(n) && n >= 0;
     if (!['time', 'foodStable', 'recruitStable'].every(k => finite(raw[k])) || !Number.isFinite(raw.lastRecruit)) return null;
     if (!Object.keys(RESOURCES).every(k => finite(raw.resources[k]) && raw.resources[k] <= 100000)) return null;
     if (!['paleolithic', 'neolithic', 'bronze', 'iron'].includes(raw.era) || !Object.values(raw.stats).every(finite)) return null;
     if (!['tools', 'survey', 'pottery', 'road'].every(k => typeof raw.flags[k] === 'boolean')) return null;
-    if (!raw.buildings.every(b => (['hut', 'fire', 'farm', 'warehouse'].includes(b.type) || PROJECTS[b.type]?.historical || Prehistory.PROJECTS[b.type] || Civilization.PROJECTS[b.type]) && finite(b.x) && finite(b.y) && b.x <= 48 && b.y <= 32)) return null;
+    if (!raw.buildings.every(b => (['hut', 'fire', 'farm', 'warehouse'].includes(b.type) || PROJECTS[b.type]?.historical || Prehistory.PROJECTS[b.type] || Civilization.PROJECTS[b.type] || Bronze.PROJECTS[b.type]) && finite(b.x) && finite(b.y) && b.x <= 48 && b.y <= 32)) return null;
     if (new Set(raw.workers.map(w => w.id)).size !== raw.workers.length) return null;
     if (!raw.workers.every(w => Number.isInteger(w.id) && w.id >= 1 && w.id <= 8 && (w.job === 'idle' || JOBS[w.job]) && (w.nextJob === null || w.nextJob === 'idle' || JOBS[w.nextJob]) && finite(w.x) && finite(w.y) && w.x <= 48 && w.y <= 32 && finite(w.progress) && (!w.cargo || (RESOURCES[w.cargo.type] && finite(w.cargo.amount))) && (!w.depot || (finite(w.depot.x) && finite(w.depot.y) && w.depot.x <= 48 && w.depot.y <= 32)))) return null;
     if (raw.project && (!PROJECTS[raw.project.type] || !finite(raw.project.progress) || !raw.project.site || !finite(raw.project.site.x) || !finite(raw.project.site.y) || raw.project.site.x > 48 || raw.project.site.y > 32 || JSON.stringify(raw.project.cost) !== JSON.stringify(PROJECTS[raw.project.type].cost))) return null;
@@ -333,11 +342,17 @@
     return s;
   }
   const lifeContext = { add: addResource, record: History.record, cap: storageCap };
-  const cityContext = { ...lifeContext, P: Prehistory, history: History, gate: History.gate, resources: RESOURCES, projects: PROJECTS, jobs: History.JOBS };
+  const cityContext = { ...lifeContext, P: Prehistory, C: Civilization, history: History, gate: History.gate, resources: RESOURCES, projects: PROJECTS, jobs: History.JOBS };
   const cityAction = (s, id) => Civilization.action(s, id, cityContext);
-  const inherit = (s, focus) => Civilization.inherit(s, focus, initial);
+  const inherit = (s, focus) => {
+    const learned = [...new Set([...s.bronze.learned, ...Object.keys(s.bronze.research).filter(id => s.bronze.research[id])])];
+    const result = Civilization.inherit(s, focus, initial);
+    if (result.ok) s.bronze.learned = learned;
+    return result;
+  };
+  const bronzeAction = (s, id, index) => Bronze.action(s, id, cityContext, index);
   const lifeAction = (s, id, index) => Prehistory.action(s, id, lifeContext, index);
-  return { VERSION, History, Prehistory, Civilization, cityAction, inherit, cityContext, lifeAction, CAMP, RESOURCES, NODES, JOBS, PROJECTS, initial, count, capacity, storageCap, population,
+  return { VERSION, History, Prehistory, Civilization, Bronze, bronzeAction, cityAction, inherit, cityContext, lifeAction, CAMP, RESOURCES, NODES, JOBS, PROJECTS, initial, count, capacity, storageCap, population,
     unlocked, finished, projectReason, startProject, cancelProject, assign, assigned, jobLimit, station, depot, workTime,
     rates, rateFor, recruitReason, recruit, harvest, requirements, tick, restore };
 });

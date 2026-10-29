@@ -171,10 +171,42 @@
               label(c, x, y + 41, d.name);
             }
           }
+          if (S.Bronze.PROJECTS[b.type]) {
+            if (b.type === 'broadField') {
+              rect(c, x - 98, y - 38, 196, 82, '#aa8053');
+              for (let i = 0; i < 12; i++) {
+                const xx = x - 80 + i % 6 * 32, yy = y - 18 + Math.floor(i / 6) * 36;
+                const ripe = s.bronze.crops[i] >= S.Bronze.growthTime(s, i);
+                rect(c, xx - 1, yy - 9, 3, 22, '#687944');
+                rect(c, xx - 7, yy - 13, 15, 8, ripe ? '#efcf77' : '#8da651');
+                if (ripe) rect(c, xx - 4, yy - 18, 9, 9, '#eed78b');
+              }
+              label(c, x, y + 65, `넓은 밭 · 수확 묶음 ${s.bronze.bundles}`);
+            } else if (b.type === 'mumunStore') {
+              hut(c, x, y, 0);
+              for (let i = 0; i < 3; i++) { rect(c, x - 30 + i * 23, y + 9, 17, 26, '#b48a5e'); ellipse(c, x - 21 + i * 23, y + 9, 7, 3, '#735b40'); }
+              label(c, x, y + 58, `토기·저장 곡물 ${s.bronze.grain}`);
+            } else if (b.type === 'castingWorkshop') {
+              rect(c, x - 27, y - 10, 54, 30, '#b49c70'); rect(c, x - 30, y - 20, 60, 12, '#94764d');
+              rect(c, x - 22, y + 9, 44, 8, '#705d42'); rect(c, x - 13, y + 6, 22, 6, '#a99d62');
+              const task = s.civilization.tasks.bronze;
+              label(c, x, y + 50, task ? `청동 제작 ${task.phase === 'delivery' ? '입고' : Math.floor(task.progress / task.duration * 100) + '%'}` : '거푸집 주조 작업터');
+            } else if (b.type === 'villageFence') {
+              for (let i = 0; i < 10; i++) rect(c, x - 75 + i * 16, y - 15, 6, 36, '#917047');
+              rect(c, x - 75, y - 5, 150, 5, '#c1a16b'); label(c, x, y + 48, '공동 울타리 모형');
+            } else if (b.type === 'riceField') {
+              rect(c, x - 40, y - 26, 80, 58, '#85a694'); farm(c, x, y, t, true); label(c, x, y + 54, '일부 지역 · 벼농사 시험');
+            } else { rect(c, x - 28, y - 4, 56, 22, '#b49666'); rect(c, x - 35, y - 18, 70, 15, '#b98358'); label(c, x, y + 49, '여유분 물물교환'); }
+          }
           if (S.History.PROJECTS[b.type]) historic(c, b, s, t);
         } }));
         s.workers.forEach(w => drawables.push({ y: w.y, draw: () => person(c, w, t) }));
         drawables.sort((a, b) => a.y - b.y).forEach(d => d.draw());
+        if (s.bronze.delivery) {
+          const start = S.PROJECTS.broadField.sites[0], end = S.PROJECTS.mumunStore.sites[0], ratio = Math.min(1, s.bronze.delivery.progress / 2);
+          const x = (start.x + (end.x - start.x) * ratio) * TILE, y = (start.y + (end.y - start.y) * ratio) * TILE;
+          rect(c, x - 7, y - 9, 14, 20, '#ba895c'); ellipse(c, x, y - 9, 6, 3, '#7c6346');
+        }
         if (s.flags.pottery) { ellipse(c, 582, 445, 9, 5, '#aa7850'); rect(c, 574, 429, 16, 16, '#b6865a'); rect(c, 577, 426, 10, 4, '#886c48'); ellipse(c, 604, 447, 6, 4, '#b7855b'); }
         if (s.flags.tools) { rect(c, 461, 372, 15, 5, '#99815c'); rect(c, 467, 356, 3, 18, '#775e3e'); rect(c, 462, 354, 11, 6, '#9aab98'); }
         if (s.project) {
@@ -213,6 +245,11 @@
           const huntTool = S.Civilization.toolFor(s, 'hunt', S.Prehistory), radius = ['arrowhead', 'stoneSpear', 'point'].includes(huntTool) ? 1.8 : 1.15;
           if (s.prehistory.rabbit.respawn <= 0 && Math.hypot(point.x - rabbitPoint(s, motionReduced).x, point.y - rabbitPoint(s, motionReduced).y) < radius) return 'rabbit';
           if (s.prehistory.shellVisible && Math.hypot(point.x - 27, point.y - 12) < 1) return 'shell';
+          const bronzeField = s.buildings.find(b => b.type === 'broadField');
+          if (bronzeField && Math.abs(point.x - bronzeField.x) < 3 && Math.abs(point.y - bronzeField.y) < 1.25) {
+            const col = Math.max(0, Math.min(5, Math.round(point.x - bronzeField.x + 2.5)));
+            return `bronzeCrop:${col + (point.y > bronzeField.y ? 6 : 0)}`;
+          }
           const field = s.buildings.find(b => b.type === 'farm');
           if (field && Math.abs(point.x - field.x) < 1.3 && Math.abs(point.y - field.y) < 1) {
             const col = Math.max(0, Math.min(2, Math.round((point.x - field.x) / .84) + 1));
