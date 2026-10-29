@@ -49,7 +49,7 @@ test('overlapping and self-intersecting paper nets are rejected',()=>{
 });
 test('the research room uses correct equal-size square faces and hinges, not arbitrary translations',()=>{
  assert.match(main,/new THREE\.BoxGeometry\(2\.2,2\.2,2\.2\)/);
- assert.match(main,/window\.CubeArchitectMath\.unfoldedLayout\(NET_LAYOUT\)/);
+ assert.match(main,/window\.CubeArchitectMath\.unfoldedLayout\(activeLayout\)/);
  assert.match(main,/pivot\.position\.set\(dx\*size\/2,-dy\*size\/2,0\)/);
  assert.match(main,/h\.pivot\.rotation\[h\.axis\]=h\.sign\*e\*Math\.PI\/2/);
  assert.doesNotMatch(main,/new THREE\.BoxGeometry\(2\.8,1\.9,1\.55\)/);

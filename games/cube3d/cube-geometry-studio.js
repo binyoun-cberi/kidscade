@@ -1,0 +1,150 @@
+(()=>{
+'use strict';
+const L=window.CubeGeometryLogic,KEY='cubeArchitectGeometryStudio_v1';
+let root,canvas,renderer,scene,camera,group,plane,grid,edges,vertices,drag=null;
+let active=false,activity='studio',theta=.65,phi=.95,radius=19,history=[],future=[],quiz=null,score={correct:0,total:0};
+let state={tab:'stack',shape:'cuboid',w:3,h:2,d:2,cells:L.box(3,2,2),tool:'add',measure:true,structure:'solid'};
+const $=id=>document.getElementById(id),show=(id,on)=>{$(id).hidden=!on};
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));$('gsSave').textContent='자동 저장됨'}catch(_){$('gsSave').textContent='저장 공간을 사용할 수 없어요'}}
+function restore(){try{const p=JSON.parse(localStorage.getItem(KEY));if(!p||!Array.isArray(p.cells))return;
+state={...state,tab:p.tab==='solid'?'solid':'stack',shape:L.SHAPES[p.shape]?p.shape:'cuboid',w:validSize(p.w),h:validSize(p.h),d:validSize(p.d),cells:L.normalize(p.cells),tool:['add','remove','rotate'].includes(p.tool)?p.tool:'add',measure:p.measure!==false,structure:['solid','edges','vertices'].includes(p.structure)?p.structure:'solid'}
+}catch(_){}}
+function validSize(n){return Number.isInteger(n)&&n>=1&&n<=8?n:2}
+function buildUI(){
+if(root)return;
+root=document.createElement('section');root.id='geometryStudio';root.hidden=true;
+root.innerHTML=`<canvas id="gsCanvas" class="gs-canvas" aria-label="입체도형 작업 공간. 드래그로 회전, 클릭으로 쌓거나 지우기" tabindex="0"></canvas>
+<header class="gs-bar"><button id="gsHome" aria-label="큐브 아키텍트 시작 화면">⌂</button><div class="gs-brand"><b>입체도형 스튜디오</b><small>만들기 · 관찰하기 · 문제 풀기</small></div><label><span class="sr-only">활동</span><select id="gsActivity" aria-label="스튜디오 활동"><option value="studio">도형 만들기 · 퀴즈</option><option value="net">전개도 탐구</option><option value="challenge">설계도 복원</option><option value="cuboidPuzzle">중력 퍼즐</option><option value="creative">자유 건축 월드</option></select></label><button id="gsReturn" hidden>작업대로</button></header>
+<aside id="gsPanel" class="gs-panel"><h2>내 도형 작업대</h2><div class="gs-row"><button data-gs-tab="stack">쌓기나무</button><button data-gs-tab="solid">입체도형</button></div>
+<div id="gsStackTools"><div class="gs-row"><button data-gs-tool="add">쌓기</button><button data-gs-tool="remove">지우기</button><button data-gs-tool="rotate">관찰</button></div><p>바닥이나 블록의 면을 눌러 쌓아요. 드래그하면 도형이 돌아가요. 한 칸은 1 cm예요.</p></div>
+<div id="gsSolidTools" hidden><label>도형<select id="gsShape">${Object.entries(L.SHAPES).map(([key,v])=>`<option value="${key}">${v.name}</option>`).join('')}</select></label><p id="gsShapeNote"></p></div>
+<h2>크기 설정</h2>${[['w','가로'],['h','높이'],['d','세로']].map(([k,t])=>`<label id="gsSizeLabel${k}"><span id="gsSizeName${k}">${t}</span> <b id="gsSizeValue${k}"></b> cm<input id="gsSize${k}" type="range" min="1" max="8" step="1" aria-label="${t}"></label>`).join('')}
+<button id="gsBox">이 크기로 새 직육면체 만들기</button>
+<div class="gs-row"><button id="gsUndo">↶ 되돌리기</button><button id="gsRedo">↷ 다시 실행</button></div><button id="gsClear">작업대 비우기</button><p id="gsSave" class="gs-notice" role="status">작품 자동 저장</p>
+<h2>관찰 도구</h2><div class="gs-row"><button data-gs-structure="solid">면</button><button data-gs-structure="edges">모서리</button><button data-gs-structure="vertices">꼭짓점</button></div><p id="gsStructureNote"></p><button id="gsMeasure" aria-pressed="true">측정값 보기</button><div id="gsStats" class="gs-stats"></div>
+<h2>이 도형으로 퀴즈</h2><label>문제 종류<select id="gsQuizKind"></select></label><button id="gsQuestion">문제 내기</button><p id="gsScore">0 / 0 정답</p><p id="gsPrompt">도형을 만들고 문제를 풀어 보세요.</p><form id="gsAnswerForm" class="gs-answer" hidden><input id="gsAnswer" type="number" step="any" min="0" inputmode="decimal" aria-label="퀴즈 정답" required><button type="submit">확인</button></form><p id="gsFeedback" class="gs-feedback" aria-live="polite">관찰한 도형의 크기와 모양으로 문제가 만들어져요.</p><button id="gsReveal" hidden>풀이 보기</button></aside>
+<div id="gsViews" class="gs-views">${[['top','위'],['front','앞'],['side','오른쪽']].map(([k,t])=>`<figure><figcaption>${t}에서 본 모습</figcaption><canvas id="gsView${k}" width="160" height="160" aria-label="${t}에서 본 쌓기나무 그림"></canvas></figure>`).join('')}</div>
+<p id="gsBanner" class="gs-banner">드래그로 회전 · 휠로 확대 · 위·앞·오른쪽 모습도 함께 관찰해요.</p>
+<nav id="gsViewButtons" class="gs-bottom" aria-label="도형 시점"><button data-gs-view="iso">입체</button><button data-gs-view="top">위</button><button data-gs-view="front">앞</button><button data-gs-view="side">오른쪽</button><button id="gsZoomIn" aria-label="확대">＋</button><button id="gsZoomOut" aria-label="축소">－</button></nav>`;
+document.getElementById('app').append(root);canvas=$('gsCanvas');
+$('gsHome').onclick=exit;$('gsReturn').onclick=()=>switchActivity('studio');$('gsActivity').onchange=e=>switchActivity(e.target.value);
+root.querySelectorAll('[data-gs-tab]').forEach(b=>b.onclick=()=>{state.tab=b.dataset.gsTab;cancelQuiz();syncUI();renderModel();save()});
+root.querySelectorAll('[data-gs-tool]').forEach(b=>b.onclick=()=>{state.tool=b.dataset.gsTool;syncUI();save()});
+root.querySelectorAll('[data-gs-structure]').forEach(b=>b.onclick=()=>{state.structure=b.dataset.gsStructure;renderModel();syncUI();save()});
+$('gsShape').onchange=e=>{state.shape=e.target.value;cancelQuiz();syncUI();renderModel();save()};
+for(const k of ['w','h','d'])$('gsSize'+k).oninput=e=>{state[k]=Number(e.target.value);if(state.tab==='solid')cancelQuiz();syncUI();if(state.tab==='solid')renderModel();save()};
+$('gsBox').onclick=()=>editCells(L.box(state.w,state.h,state.d));$('gsClear').onclick=()=>editCells([]);
+$('gsUndo').onclick=()=>{if(!history.length)return;future.push(state.cells);state.cells=history.pop();changed()};
+$('gsRedo').onclick=()=>{if(!future.length)return;history.push(state.cells);state.cells=future.pop();changed()};
+$('gsMeasure').onclick=()=>{state.measure=!state.measure;syncUI();save()};
+$('gsQuestion').onclick=askQuestion;$('gsReveal').onclick=()=>reveal(false);
+$('gsAnswerForm').onsubmit=e=>{e.preventDefault();checkAnswer()};
+root.querySelectorAll('[data-gs-view]').forEach(b=>b.onclick=()=>{const v=b.dataset.gsView;theta=v==='side'?Math.PI/2:v==='iso'?.65:0;phi=v==='top'?.001:v==='iso'?.95:Math.PI/2;positionCamera()});
+$('gsZoomIn').onclick=()=>{radius=Math.max(6,radius*.85);positionCamera()};$('gsZoomOut').onclick=()=>{radius=Math.min(38,radius/ .85);positionCamera()};
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('pointerdown',e=>{if(e.button!==0||drag)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,moved:false};canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.lx,dy=e.clientY-drag.ly;drag.lx=e.clientX;drag.ly=e.clientY;
+if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>5)drag.moved=true;if(drag.moved){theta-=dx*.008;phi=Math.max(.001,Math.min(Math.PI/2,phi+dy*.008));positionCamera()}});
+canvas.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;const click=!drag.moved;drag=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(click)editAt(e)});
+canvas.addEventListener('pointercancel',()=>{drag=null});canvas.addEventListener('lostpointercapture',()=>{drag=null});
+canvas.addEventListener('wheel',e=>{e.preventDefault();radius=Math.max(6,Math.min(38,radius*(e.deltaY>0?1.1:.9)));positionCamera()},{passive:false});
+window.addEventListener('resize',resize);
+// Older activities keep their own controls, with the studio bar remaining above them.
+$('homeBtn').addEventListener('click',()=>{if(active&&activity!=='studio')exit()});
+restore();syncUI();
+}
+function syncUI(){
+root.querySelectorAll('[data-gs-tab]').forEach(b=>b.setAttribute('aria-pressed',String(state.tab===b.dataset.gsTab)));
+root.querySelectorAll('[data-gs-tool]').forEach(b=>b.setAttribute('aria-pressed',String(state.tool===b.dataset.gsTool)));
+root.querySelectorAll('[data-gs-structure]').forEach(b=>b.setAttribute('aria-pressed',String(state.structure===b.dataset.gsStructure)));
+show('gsStackTools',state.tab==='stack');show('gsSolidTools',state.tab==='solid');show('gsBox',state.tab==='stack');show('gsUndo',state.tab==='stack');show('gsRedo',state.tab==='stack');show('gsClear',state.tab==='stack');
+$('gsUndo').disabled=!history.length;$('gsRedo').disabled=!future.length;$('gsShape').value=state.shape;
+const round=['cylinder','cone','sphere'].includes(state.shape),cube=state.shape==='cube';
+for(const k of ['w','h','d']){$('gsSize'+k).value=state[k];$('gsSizeValue'+k).textContent=state[k];show('gsSizeLabel'+k,state.tab==='stack'||(k==='w'||(!cube&&state.shape!=='sphere'&&(k!=='d'||!round))))}
+$('gsSizeNamew').textContent=state.tab==='solid'?(round?'직경':cube?'한 모서리':'가로'):'가로';
+$('gsShapeNote').textContent=state.shape==='prism'?'밑면이 직각삼각형인 기둥이에요. 가로·세로는 밑면의 직각을 이루는 두 변이에요.':state.shape==='pyramid'?'직사각형 밑면의 중심 위에 꼭짓점이 있는 각뿔이에요.':round?'직경은 원의 중심을 지나는 지름이에요. 곡면의 선은 화면 표현용이에요.':'모서리 길이를 바꾸며 입체도형을 관찰해요.';
+$('gsMeasure').setAttribute('aria-pressed',String(state.measure));$('gsMeasure').textContent=state.measure?'측정값 숨기기':'측정값 보기';
+const hidden=!!quiz&&!quiz.revealed;show('gsStats',state.measure&&!hidden);show('gsViews',state.tab==='stack'&&!hidden&&activity==='studio');
+const m=state.tab==='stack'?L.metrics(state.cells):L.solidMetrics(state.shape,state.w,state.h,state.d);
+const vals=state.tab==='stack'?[['쌓기나무',m.volume+'개'],['겉넓이',m.area+' cm²'],['부피',m.volume+' cm³'],['높이',m.height+' cm']]:[['부피',format(m.volume)+' cm³'],['겉넓이',format(m.area)+' cm²'],...(m.faces?[['면',m.faces+'개'],['모서리 / 꼭짓점',m.edges+' / '+m.vertices+'개']]:[])];
+$('gsStats').innerHTML=vals.map(([label,value])=>`<div class="gs-stat">${label}<b>${value}</b></div>`).join('');
+$('gsStructureNote').textContent=state.tab==='stack'?'붙어 있는 블록 사이의 면은 겉넓이에 포함하지 않아요.':round?'곡면 도형은 모서리·꼭짓점 활동 대신 면으로 관찰해요.':'면을 옅게 하여 모서리 또는 꼭짓점을 강조할 수 있어요.';
+root.querySelectorAll('[data-gs-structure]').forEach(b=>{b.disabled=state.tab==='solid'&&round&&b.dataset.gsStructure!=='solid'});
+const kinds=state.tab==='stack'?{volume:'쌓기나무 개수',area:'겉넓이',top:'위에서 본 칸 수',front:'앞에서 본 칸 수',side:'오른쪽에서 본 칸 수',height:'층 수'}:{volume:'부피',area:'겉넓이',...(m.faces?{faces:'면 수',edges:'모서리 수',vertices:'꼭짓점 수'}:{})};
+const prev=$('gsQuizKind').value;$('gsQuizKind').replaceChildren(...Object.entries(kinds).map(([k,t])=>{const o=document.createElement('option');o.value=k;o.textContent=t;return o}));if(kinds[prev])$('gsQuizKind').value=prev;
+}
+function format(n){return Number(n.toFixed(2)).toLocaleString('ko-KR')}
+function cancelQuiz(){quiz=null;show('gsAnswerForm',false);show('gsReveal',false);$('gsPrompt').textContent='도형을 만들고 문제를 풀어 보세요.';$('gsFeedback').textContent='도형을 바꾸면 새 문제를 낼 수 있어요.'}
+function changed(){cancelQuiz();renderModel();syncUI();save()}
+function editCells(cells){history.push(state.cells);if(history.length>50)history.shift();future=[];state.cells=L.normalize(cells);changed()}
+function initScene(){
+if(renderer)return;
+renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'low-power'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+scene=new THREE.Scene();scene.background=new THREE.Color('#eaf1f9');scene.add(new THREE.HemisphereLight(0xffffff,0x7b8fa8,2));
+const light=new THREE.DirectionalLight(0xffffff,2.1);light.position.set(8,15,10);scene.add(light);
+camera=new THREE.PerspectiveCamera(38,1,.1,120);grid=new THREE.GridHelper(8,8,0x6584b7,0xc0cedf);grid.position.set(0,.001,0);scene.add(grid);
+plane=new THREE.Mesh(new THREE.PlaneGeometry(8,8),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.5,side:THREE.DoubleSide}));plane.rotation.x=-Math.PI/2;scene.add(plane);resize();
+}
+function disposeGroup(){if(!group)return;scene.remove(group);group.traverse(o=>{o.geometry?.dispose();const mats=Array.isArray(o.material)?o.material:[o.material];mats.filter(Boolean).forEach(m=>m.dispose())})}
+function prismGeometry(){// Right triangular base lies in XZ, extrusion is vertical.
+const s=new THREE.Shape();s.moveTo(-state.w/2,-state.d/2);s.lineTo(state.w/2,-state.d/2);s.lineTo(-state.w/2,state.d/2);s.closePath();const g=new THREE.ExtrudeGeometry(s,{depth:state.h,bevelEnabled:false,steps:1});g.rotateX(-Math.PI/2);g.translate(0,0,0);return g}
+function pyramidGeometry(){const w=state.w/2,d=state.d/2,h=state.h;const p=[[-w,0,-d],[w,0,-d],[w,0,d],[-w,0,d],[0,h,0]],indices=[0,1,2,0,2,3,0,4,1,1,4,2,2,4,3,3,4,0];const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(indices.flatMap(i=>p[i]),3));g.computeVertexNormals();return g}
+function renderModel(){
+if(!renderer)return;disposeGroup();group=new THREE.Group();scene.add(group);grid.visible=plane.visible=state.tab==='stack';
+const round=state.tab==='solid'&&['cylinder','cone','sphere'].includes(state.shape),structure=state.tab==='solid'&&round?'solid':state.structure;
+const add=(geo,pos)=>{const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x5d8de2,roughness:.5,transparent:structure!=='solid',opacity:structure==='solid'?1:.18,side:THREE.DoubleSide}));mesh.position.copy(pos);group.add(mesh);
+const wire=new THREE.LineSegments(new THREE.EdgesGeometry(geo,25),new THREE.LineBasicMaterial({color:structure==='edges'?0xd24937:0x29496d,transparent:true,opacity:.9}));mesh.add(wire);
+if(structure==='vertices'&&!round){const a=geo.attributes.position,points=[],seen=new Set();for(let i=0;i<a.count;i++){const p=[a.getX(i),a.getY(i),a.getZ(i)],k=p.map(v=>v.toFixed(3)).join(',');if(!seen.has(k)){seen.add(k);points.push(...p)}}const dots=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(points,3)),new THREE.PointsMaterial({color:0xc72b6a,size:.22,depthTest:false}));mesh.add(dots)}return mesh};
+if(state.tab==='stack'){for(const p of state.cells){const mesh=add(new THREE.BoxGeometry(.98,.98,.98),new THREE.Vector3(p[0]-3.5,p[1]+.5,p[2]-3.5));mesh.userData.cell=p.slice()}}
+else{let g,y=state.h/2;const r=state.w/2;switch(state.shape){case 'cube':g=new THREE.BoxGeometry(state.w,state.w,state.w);y=r;break;case 'cuboid':g=new THREE.BoxGeometry(state.w,state.h,state.d);break;case 'prism':g=prismGeometry();y=0;break;case 'pyramid':g=pyramidGeometry();y=0;break;case 'cylinder':g=new THREE.CylinderGeometry(r,r,state.h,64);break;case 'cone':g=new THREE.ConeGeometry(r,state.h,64);break;case 'sphere':g=new THREE.SphereGeometry(r,48,32);y=r;break}add(g,new THREE.Vector3(0,y,0))}
+positionCamera();drawProjections();
+}
+function positionCamera(){if(!renderer||!camera)return;const focus=group&&group.children.length?new THREE.Box3().setFromObject(group).getCenter(new THREE.Vector3()):new THREE.Vector3(0,1,0);camera.position.set(focus.x+radius*Math.sin(phi)*Math.sin(theta),focus.y+radius*Math.cos(phi),focus.z+radius*Math.sin(phi)*Math.cos(theta));camera.lookAt(focus);
+// Reserve the left tool panel without moving the model away from the exact view axes.
+const rect=canvas.getBoundingClientRect(),panel=$('gsPanel').getBoundingClientRect();camera.setViewOffset(rect.width,rect.height,-(panel.right+16)/2,0,rect.width,rect.height);camera.updateProjectionMatrix();render()}
+function render(){if(active&&activity==='studio'&&renderer)renderer.render(scene,camera)}
+function resize(){if(!renderer)return;const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return;renderer.setSize(rect.width,rect.height,false);camera.aspect=rect.width/rect.height;positionCamera()}
+function editAt(e){if(state.tab!=='stack'||state.tool==='rotate')return;const rect=canvas.getBoundingClientRect(),v=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),ray=new THREE.Raycaster();ray.setFromCamera(v,camera);const hit=ray.intersectObjects([...group.children,plane],false)[0];if(!hit)return;
+if(state.tool==='remove'){if(hit.object.userData.cell)editCells(state.cells.filter(p=>p.join(',')!==hit.object.userData.cell.join(',')));return}
+const pos=hit.point.clone();if(hit.object!==plane)pos.addScaledVector(hit.face.normal,.05);const p=[Math.floor(pos.x+4),Math.floor(pos.y+.001),Math.floor(pos.z+4)];if(p.some(v=>v<0||v>=8)){notify('작업대는 가로·세로·높이 각각 8칸까지 쌓을 수 있어요.');return}if(state.cells.some(c=>c.join(',')===p.join(',')))return;editCells([...state.cells,p])}
+function drawProjections(){for(const kind of ['top','front','side']){const c=$('gsView'+kind),ctx=c.getContext('2d');ctx.clearRect(0,0,160,160);ctx.fillStyle='#f4f7fc';ctx.fillRect(0,0,160,160);const cells=new Set(state.cells.map(p=>kind==='top'?p[0]+','+p[2]:kind==='front'?p[0]+','+p[1]:p[2]+','+p[1]));
+for(let x=0;x<8;x++)for(let y=0;y<8;y++){const px=8+x*18,py=8+(kind==='top'?y:7-y)*18;ctx.fillStyle=cells.has(x+','+y)?'#628fdb':'#fff';ctx.fillRect(px,py,17,17);ctx.strokeStyle='#d5dfed';ctx.strokeRect(px,py,17,17)}}}
+function notify(s){$('gsFeedback').textContent=s}
+function askQuestion(){resetAnswerControls();if(state.tab==='stack'&&!state.cells.length){notify('쌓기나무를 하나 이상 만든 뒤 문제를 내 주세요.');return}
+const kind=$('gsQuizKind').value;
+if(state.tab==='stack')quiz={...L.question(state.cells,kind),kind,tab:'stack'};
+else{const m=L.solidMetrics(state.shape,state.w,state.h,state.d),label={volume:'부피',area:'겉넓이',faces:'면의 수',edges:'모서리의 수',vertices:'꼭짓점의 수'}[kind];quiz={prompt:m.name+'의 '+label+'는 얼마일까요?',answer:['volume','area'].includes(kind)?Math.round(m[kind]*100)/100:m[kind],unit:kind==='volume'?'cm³':kind==='area'?'cm²':'개',kind,tab:'solid'}}
+quiz.revealed=false;quiz.counted=false;quiz.correct=false;$('gsPrompt').textContent=quiz.prompt+(state.tab==='solid'&&['volume','area'].includes(kind)?' (π는 원주율을 사용하고 소수 둘째 자리까지 반올림)':'');
+$('gsAnswer').value='';show('gsAnswerForm',true);show('gsReveal',true);notify('도형을 돌려서 살펴보고 답을 적어 보세요.');syncUI();$('gsAnswer').focus();
+}
+function checkAnswer(){if(!quiz||quiz.revealed)return;const v=$('gsAnswer').value;if(!v.trim()||!Number.isFinite(Number(v))||Number(v)<0){notify('0 이상의 수로 답을 적어 주세요.');return}
+if(!quiz.counted){quiz.counted=true;score.total++}quiz.correct=Math.abs(Number(v)-quiz.answer)<.005;if(quiz.correct){score.correct++;reveal(true)}else notify('다시 관찰해 보세요. 풀이 보기에서 확인한 뒤 새 문제에 도전할 수 있어요.');
+$('gsScore').textContent=score.correct+' / '+score.total+' 정답';
+}
+function reveal(correct){if(!quiz)return;quiz.revealed=true;show('gsAnswerForm',false);show('gsReveal',false);let detail='';if(quiz.tab==='stack'){detail=quiz.kind==='area'?'블록 6면에서 서로 붙은 면을 빼서 세었어요.':quiz.kind==='volume'?'보이지 않는 블록도 포함한 전체 개수예요.':quiz.kind==='height'?'바닥부터 가장 높은 블록까지의 층 수예요.':'같은 방향으로 겹쳐 보이는 블록은 한 칸으로 세어요.'}else detail={volume:solidFormula('volume'),area:solidFormula('area'),faces:'평평한 면을 하나씩 세어 보세요.',edges:'두 면이 만나는 선을 하나씩 세어요.',vertices:'모서리들이 만나는 점을 하나씩 세어요.'}[quiz.kind];notify((correct?'정답이에요! ':'풀이 · ')+quiz.answer+' '+quiz.unit+'. '+detail);syncUI()}
+function solidFormula(kind){
+const w=state.w,h=state.h,d=state.d,r=w/2;
+const formula={
+cube:{volume:`${w} × ${w} × ${w}`,area:`6 × ${w} × ${w}`},
+cuboid:{volume:`${w} × ${h} × ${d}`,area:`2 × (${w} × ${h} + ${h} × ${d} + ${w} × ${d})`},
+prism:{volume:`(${w} × ${d} ÷ 2) × ${h}`,area:`${w} × ${d} + ${h} × (${w} + ${d} + √(${w}² + ${d}²))`},
+pyramid:{volume:`${w} × ${d} × ${h} ÷ 3`,area:'밑면의 넓이 + 옆면 삼각형 4개의 넓이'},
+cylinder:{volume:`π × ${r}² × ${h}`,area:`2π × ${r} × (${r} + ${h})`},
+cone:{volume:`π × ${r}² × ${h} ÷ 3`,area:`π × ${r} × (${r} + √(${r}² + ${h}²))`},
+sphere:{volume:`4π × ${r}³ ÷ 3`,area:`4π × ${r}²`}};
+return formula[state.shape][kind]+'로 구해요.';
+}
+function resetAnswerControls(){$('gsAnswer').disabled=false;$('gsAnswerForm').querySelector('button').disabled=false}
+function stopLegacy(){if(activity==='cuboidPuzzle')window.CubeArchitectCuboidPuzzle?.exit();if(activity!=='studio')window.CubeArchitect.showHome()}
+function switchActivity(next){if(!['studio','net','challenge','cuboidPuzzle','creative'].includes(next))return;
+stopLegacy();activity=next;const studio=next==='studio';document.body.classList.toggle('geometry-legacy',!studio);
+for(const id of ['gsCanvas','gsPanel','gsViewButtons','gsBanner'])show(id,studio);show('gsViews',studio&&state.tab==='stack'&&(!quiz||quiz.revealed));show('gsReturn',!studio);$('gsActivity').value=next;
+window.CubeArchitectExternalPause=studio;
+try{if(studio){$('homeScreen').classList.add('hidden');$('topbar').classList.add('hidden');resize();syncUI();render()}
+else if(next==='cuboidPuzzle'){window.CubeArchitectCuboidPuzzle.enter();const home=$('cuboidPuzzleHome');if(home)home.onclick=()=>switchActivity('studio')}
+else window.CubeArchitect.enterMode(next)}catch(err){notify('활동을 시작하지 못했어요. 작업대로 돌아왔어요.');if(next!=='studio')switchActivity('studio');console.error(err)}
+}
+function enter(){buildUI();root.hidden=false;active=true;try{window.CubeArchitect.showHome();initScene();renderModel();switchActivity('studio')}catch(err){exit();throw err}}
+function exit(){stopLegacy();active=false;root.hidden=true;window.CubeArchitectExternalPause=false;document.body.classList.remove('geometry-legacy');window.CubeArchitect.showHome()}
+window.CubeGeometryStudio={enter,exit};
+})();
