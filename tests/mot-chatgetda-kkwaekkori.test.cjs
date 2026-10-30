@@ -245,3 +245,24 @@ test('sought face and prop stay unique when a walking pose hides the old activit
     }
   }
 });
+
+test('delivery browser observation allows the initial errand pause and tracks real rendered movement',async()=>{
+  const {makeTown,movePeople}=await simPromise;
+  const {findWalkingDelivery}=require('./helpers/kkwaekkori-motion.cjs');
+  const town=makeTown('small',42);
+  const snapshot=()=>({time:town.time,residents:town.people.filter(p=>p.routine==='deliver').map(p=>({id:p.id,state:p.state,rendered:[p.position.x,p.position.z],simulated:[p.position.x,p.position.z]}))});
+  const before=snapshot();
+  for(let i=0;i<17;i++)movePeople(town,.1);
+  assert.equal(findWalkingDelivery(before,snapshot()),null,'an initial activity pause is valid');
+  let after;
+  for(let i=0;i<300;i++){movePeople(town,.1);after=snapshot();if(findWalkingDelivery(before,after))break;}
+  assert.ok(findWalkingDelivery(before,after),'delivery must eventually start naturally');
+  const frozen=structuredClone(after);
+  for(const p of frozen.residents)p.rendered=before.residents.find(q=>q.id===p.id).rendered;
+  assert.equal(findWalkingDelivery(before,frozen),null,'a frozen 3D holder must fail even if the simulation moves');
+  const changedIds=structuredClone(after);changedIds.residents.forEach(p=>p.id+='-other');
+  assert.equal(findWalkingDelivery(before,changedIds),null,'switching residents must not fake movement');
+  assert.equal(findWalkingDelivery(before,{...after,time:before.time}),null,'no advancing frames means no verified walk');
+  const misplaced=structuredClone(after);misplaced.residents.forEach(p=>p.rendered=[999,999]);
+  assert.equal(findWalkingDelivery(before,misplaced),null,'rendered movement must agree with the simulation');
+});
