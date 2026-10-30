@@ -182,7 +182,7 @@ test('3D picking, honest prop fallbacks and rotated-camera ground dragging are p
   assert.match(code,/challengeLevel\+1/);
   assert.match(code,/finishChallenge\(/);
   assert.match(html,/20초 연속 찾기 도전/);
-  assert.match(code,/sim\.mjs\?v=5/);
+  assert.match(code,/sim\.mjs\?v=6/);
   assert.match(code,/pinchCenter/);
   assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
 });
@@ -243,5 +243,44 @@ test('sought face and prop stay unique when a walking pose hides the old activit
       const p=town.people.find(p=>p.id===id);
       assert.equal(town.people.filter(q=>q.modelVariant===p.modelVariant&&q.propVariant===p.propVariant).length,1);
     }
+  }
+});
+
+test('delivery browser observation allows the initial errand pause and tracks real rendered movement',async()=>{
+  const {makeTown,movePeople}=await simPromise;
+  const {findWalkingDelivery}=require('./helpers/kkwaekkori-motion.cjs');
+  const town=makeTown('small',42);
+  const snapshot=()=>({time:town.time,residents:town.people.filter(p=>p.routine==='deliver').map(p=>({id:p.id,state:p.state,rendered:[p.position.x,p.position.z],simulated:[p.position.x,p.position.z]}))});
+  const before=snapshot();
+  for(let i=0;i<5;i++)movePeople(town,.1);
+  assert.equal(findWalkingDelivery(before,snapshot()),null,'an initial activity pause is valid');
+  let after;
+  for(let i=0;i<300;i++){movePeople(town,.1);after=snapshot();if(findWalkingDelivery(before,after))break;}
+  assert.ok(findWalkingDelivery(before,after),'delivery must eventually start naturally');
+  const frozen=structuredClone(after);
+  for(const p of frozen.residents)p.rendered=before.residents.find(q=>q.id===p.id).rendered;
+  assert.equal(findWalkingDelivery(before,frozen),null,'a frozen 3D holder must fail even if the simulation moves');
+  const changedIds=structuredClone(after);changedIds.residents.forEach(p=>p.id+='-other');
+  assert.equal(findWalkingDelivery(before,changedIds),null,'switching residents must not fake movement');
+  assert.equal(findWalkingDelivery(before,{...after,time:before.time}),null,'no advancing frames means no verified walk');
+  const misplaced=structuredClone(after);misplaced.residents.forEach(p=>p.rendered=[999,999]);
+  assert.equal(findWalkingDelivery(before,misplaced),null,'rendered movement must agree with the simulation');
+});
+
+test('delivery residents depart early across 100 seeded towns without changing saved looks',async()=>{
+  const {makeTown,movePeople}=await simPromise;
+  const {findWalkingDelivery}=require('./helpers/kkwaekkori-motion.cjs');
+  for(let seed=1;seed<=100;seed++){
+    const town=makeTown('small',seed),before={time:town.time,residents:town.people.filter(p=>p.routine==='deliver').map(p=>({id:p.id,rendered:[p.position.x,p.position.z]}))};
+    assert.ok(town.people.filter(p=>p.routine==='deliver').every(p=>p.routineAt>=.8&&p.routineAt<1.8));
+    assert.ok(town.people.filter(p=>p.routine!=='deliver').every(p=>p.routineAt>=3&&p.routineAt<12));
+    const looks=town.people.map(p=>[p.id,p.modelVariant,p.propVariant]);
+    let moved=null;
+    for(let tick=0;tick<40&&!moved;tick++){
+      movePeople(town,.1);
+      moved=findWalkingDelivery(before,{time:town.time,residents:town.people.filter(p=>p.routine==='deliver').map(p=>({id:p.id,state:p.state,rendered:[p.position.x,p.position.z],simulated:[p.position.x,p.position.z]}))});
+    }
+    assert.ok(moved,'delivery should be visible near the start: seed '+seed);
+    assert.deepEqual(town.people.map(p=>[p.id,p.modelVariant,p.propVariant]),looks);
   }
 });

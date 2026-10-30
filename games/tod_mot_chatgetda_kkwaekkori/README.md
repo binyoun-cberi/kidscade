@@ -42,3 +42,17 @@
 2. 시민들을 Chibi 제작실의 공용 캐릭터 규격과 연결해 옷차림·가방·소품·걷기 애니메이션의 자연스러움 개선
 3. 버스 승하차와 신호에 따른 보행·차량 정지, 저사양 기기 성능 검수
 4. 계절·날씨·행사, 동물과 물건 찾기 모드, 특별 스테이지
+
+### 2026-10-30: early delivery and honest browser motion checks
+
+Delivery residents begin their first errand after 0.8–1.8 simulated seconds,
+before browsing/resting residents (3–12 seconds) reserve shared corridors.
+The same single RNG draw is consumed per resident, preserving seeded looks and
+saved target order. Path reservations, collision clearance and normal activity
+routines remain in force. A 100-seed regression checks visible early departure;
+existing long town simulations continue to check spacing and cross-block travel.
+
+The actual Chrome audit now follows stable delivery IDs until natural departure,
+then compares rendered 3D coordinates with the simulation. It no longer assumes
+one current activity/slot must move within a fixed 1.7-second wall-clock window.
+Frozen rendering, mismatched identities and simulation-only movement still fail.

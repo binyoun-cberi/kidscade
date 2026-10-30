@@ -8,6 +8,7 @@ const http=require('node:http');
 const cp=require('node:child_process');
 const assert=require('node:assert/strict');
 const {once}=require('node:events');
+const {findWalkingDelivery}=require('./helpers/kkwaekkori-motion.cjs');
 const ROOT=path.resolve(__dirname,'..');
 const OUT=path.resolve(process.env.KIDSCADE_KKWA_AUDIT_OUT||path.join(os.tmpdir(),'kkwaekkori-real-play'));
 const CHROME=[process.env.KIDSCADE_CHROMIUM,'/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].find(x=>x&&fs.existsSync(x));
@@ -23,8 +24,12 @@ const server=http.createServer((req,res)=>{
   fs.readFile(file,(err,body)=>{
     if(err){res.writeHead(404);res.end('Missing '+url.pathname);return}
     if(url.pathname.endsWith('/tod_mot_chatgetda_kkwaekkori/game.js')){
-      const expose="\nwindow.__KK_TEST__={\n  snapshot:()=>({active,mode,stage:town?.stageName,people:town?.people.length,targets:town?.order.length,\n    found:found.length,level:challengeLevel,time:timeRemaining,viewSize,look:[cameraLook.x,cameraLook.z],\n    currentTarget:getTarget()?.id,celebration:!!celebration,preview:!!previewActor,\n    shown:!document.querySelector('#start').classList.contains('hidden')}),\n  targetTap:()=>{const t=getTarget(),h=citizenMeshes.get(t?.id)?.holder;if(!h)return null;\n    scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);\n    const p=h.position.clone();p.y+=.85;p.project(camera);\n    const r=canvas.getBoundingClientRect();\n    return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2,z:p.z};},\n  deliveryPosition:()=>{const p=town?.people.find(q=>q.activity==='deliver'&&q.slot===1);\n    const h=citizenMeshes.get(p?.id)?.holder;return h?[h.position.x,h.position.z]:null;}\n};";
-      body=Buffer.concat([body,Buffer.from('\n'+expose)]);
+      const expose="\nwindow.__KK_TEST__={\n  snapshot:()=>({active,mode,stage:town?.stageName,people:town?.people.length,targets:town?.order.length,\n    found:found.length,level:challengeLevel,time:timeRemaining,viewSize,look:[cameraLook.x,cameraLook.z],\n    currentTarget:getTarget()?.id,celebration:!!celebration,preview:!!previewActor,\n    shown:!document.querySelector('#start').classList.contains('hidden')}),\n  targetTap:()=>{const t=getTarget(),h=citizenMeshes.get(t?.id)?.holder;if(!h)return null;\n    scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);\n    const p=h.position.clone();p.y+=.85;p.project(camera);\n    const r=canvas.getBoundingClientRect();\n    return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2,z:p.z};},\n  deliverySnapshot:()=>({seed:town?.seed,time:town?.time,residents:(town?.people||[]).filter(p=>p.routine==='deliver').map(p=>{\n    const h=citizenMeshes.get(p.id)?.holder;return {id:p.id,state:p.state,rendered:h?[h.position.x,h.position.z]:null,simulated:[p.position.x,p.position.z]};})})\n};";
+      // Seed only the audit's initial quick-start; normal gameplay stays random.
+      const original=body.toString('utf8');
+      const quickStart="startTown('small',getSeed(),[],'easy')";
+      assert.ok(original.includes(quickStart),'quick-start seed hook must match the game');
+      body=Buffer.from(original.replace(quickStart,"startTown('small',42,[],'easy')")+'\n'+expose);
     }
     res.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream'});
     res.end(body);
@@ -93,10 +98,19 @@ let chrome,ws,profile,serverOpen=false,passed=0;
   await wait("window.__KK_TEST__.snapshot().active",65000);
   assert.equal(await evaluate("__KK_TEST__.snapshot().people"),18);
   assert.equal(await evaluate("__KK_TEST__.snapshot().preview"),true);
-  const startPos=await evaluate("__KK_TEST__.deliveryPosition()");
-  await sleep(1700);
-  const endPos=await evaluate("__KK_TEST__.deliveryPosition()");
-  assert.ok(startPos&&endPos&&Math.hypot(startPos[0]-endPos[0],startPos[1]-endPos[1])>.03,'delivery residents must really walk in 3D');
+  const deliveryStart=await evaluate("__KK_TEST__.deliverySnapshot()");
+  assert.ok(deliveryStart.residents.length>0,'the town must contain delivery residents');
+  // Deliveries depart after a short activity pause and may yield to traffic. Wait for their natural departure; never fast-forward or
+  // change positions to make this check pass. Slow WebGL runners get wall time.
+  const movementDeadline=Date.now()+90000;
+  let deliveryEnd=deliveryStart,walkingDelivery=null;
+  while(Date.now()<movementDeadline&&!walkingDelivery){
+    await sleep(160);
+    deliveryEnd=await evaluate("__KK_TEST__.deliverySnapshot()");
+    walkingDelivery=findWalkingDelivery(deliveryStart,deliveryEnd);
+  }
+  assert.ok(walkingDelivery,'delivery residents must really walk in 3D: '+JSON.stringify({before:deliveryStart,after:deliveryEnd}));
+  console.log('Natural delivery walk verified: '+JSON.stringify({id:walkingDelivery.id,seed:deliveryEnd.seed,time:deliveryEnd.time}));
   await screenshot('01-desktop-existing-game');passed++;
   // Test direct controls through CDP input, not via game's internal pick function.
   const look0=await evaluate("__KK_TEST__.snapshot().look");

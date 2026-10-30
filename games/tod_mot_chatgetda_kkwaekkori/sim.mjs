@@ -178,7 +178,9 @@ export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=t
     const block=blocks[i%blocks.length],slot=Math.floor(i/blocks.length),activity=block.activities[slot%3];
     const choices=shuffled(Array.from({length:36},(_,n)=>({modelVariant:n%12,propVariant:Math.floor(n/12)})),random);
     const look=choices.find(v=>!used.has(signature({...v,activity})));
-    const person={id:`person-${i}`,block,slot,...look,activity,action:activity,elapsed:0,routineAt:3+random()*9,reserved:false,found:false,
+    // Delivery starts before the longer browsing/resting activities reserve the
+    // shared corridors. Keep one RNG draw per resident so saved appearances stay stable.
+    const person={id:`person-${i}`,block,slot,...look,activity,action:activity,elapsed:0,routineAt:activity==='deliver'?.8+random():3+random()*9,reserved:false,found:false,
       challengeSpeed:challenge?.speed||0,phase:i*2.39996+(seed%19)*.37};
     used.add(signature(person));return person;
   });
