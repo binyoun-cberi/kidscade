@@ -3,17 +3,19 @@
 'use strict';
 const Q=window.CubeGeometryQuiz;
 const V=p=>new THREE.Vector3(...p);
-const palette={plain:0x557cad,reference:0xf39a21,correct:0x14946d,wrong:0xd33d51};
+const palette={plain:0x73634e,fill:0xffdfa6,reference:0xf39a21,correct:0x14946d,wrong:0xd33d51};
 function faceGeometry(points){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute([0,1,2,0,2,3].flatMap(i=>points[i]),3));g.computeVertexNormals();return g}
 function create({parent,dims,question,labels,onPick}){
 const root=new THREE.Group();parent.add(root);const topology=Q.topology(...dims),targets=[],items=new Map(),labelItems=[],hinges=[];
 let foldValue=0;const netSemantic=new Map();const leaders=document.createElementNS('http://www.w3.org/2000/svg','svg');leaders.setAttribute('class','gs-label-leaders');labels.append(leaders);
 function mark(object,id,type){object.userData.quizId=id;object.userData.quizType=type;targets.push(object);items.set(id,object);return object}
 function color(id){return question?.selected?.includes(id)?palette.correct:question?.wrongId===id?palette.wrong:question?.reference===id?palette.reference:palette.plain}
+function faceColor(id){const chosen=color(id);return chosen===palette.plain?palette.fill:chosen}
+function faceOpacity(id){return id===question?.reference||question?.selected?.includes(id)||id===question?.wrongId ? .48 : question?.net ? .12 : .045}
 function label(text,object,point,id,className='gs-vertex-label',aria){const node=document.createElement(id?'button':'span');node.className=className;node.textContent=text;if(id){node.type='button';node.dataset.quizElement=id;node.setAttribute('aria-label',aria||'점 '+text);node.onclick=e=>{e.stopPropagation();onPick(id)};const enabled=question?.targetType===(id.startsWith('nv')?'netVertex':'vertex');node.disabled=!enabled;if(!enabled)node.style.pointerEvents='none'}labels.append(node);const leader=document.createElementNS('http://www.w3.org/2000/svg','line');leaders.append(leader);labelItems.push({node,object,point:V(point),id,leader});return node}
 function dot(group,point,id,type,name){const mesh=new THREE.Mesh(new THREE.SphereGeometry(.105,16,12),new THREE.MeshBasicMaterial({color:color(id),depthTest:false}));mesh.position.copy(V(point));mesh.renderOrder=10;group.add(mesh);mark(mesh,id,type);if(name)label(name,mesh,[0,0,0],id,'gs-vertex-label',type==='netVertex'?'전개도 꼭짓점 '+id.slice(2):'점 '+name);return mesh}
 function line(group,a,b,id,type){const start=V(a),end=V(b),length=start.distanceTo(end);const mesh=new THREE.Mesh(new THREE.CylinderGeometry(.042,.042,length,10),new THREE.MeshBasicMaterial({color:color(id),transparent:true,opacity:.95,depthTest:false}));mesh.position.copy(start).add(end).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),end.sub(start).normalize());mesh.renderOrder=8;const dash=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-length/2,0),new THREE.Vector3(0,length/2,0)]),new THREE.LineDashedMaterial({color:color(id),dashSize:.12,gapSize:.10,depthTest:false}));dash.computeLineDistances();dash.visible=false;mesh.add(dash);mesh.userData.hiddenLine=dash;group.add(mesh);mark(mesh,id,type);return mesh}
-function face(group,points,id,type){const mesh=new THREE.Mesh(faceGeometry(points),new THREE.MeshBasicMaterial({color:color(id),side:THREE.DoubleSide,transparent:true,opacity:id===question?.reference ? .56 : question?.net ? .20 : .10,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));group.add(mesh);mark(mesh,id,type);return mesh}
+function face(group,points,id,type){const mesh=new THREE.Mesh(faceGeometry(points),new THREE.MeshBasicMaterial({color:faceColor(id),side:THREE.DoubleSide,transparent:true,opacity:faceOpacity(id),depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}));group.add(mesh);mark(mesh,id,type);return mesh}
 if(question?.net){const data=Q.netElements(...dims),groups=[];
 data.panels.forEach(p=>{const g=new THREE.Group();g.position.copy(V(p.position));(p.parent<0?root:groups[p.parent]).add(g);groups.push(g);hinges.push({group:g,axis:p.axis,sign:p.sign});face(g,p.points,'nf'+p.face,'netFace')});
 for(const e of data.edges)line(groups[e.panel],e.a,e.b,e.id,'netEdge');
@@ -33,7 +35,7 @@ const marks=[
 for(const m of marks){const a=V(m.a),b=V(m.b),offset=V(m.offset),start=a.clone().add(offset),end=b.clone().add(offset),control=start.clone().add(end).multiplyScalar(.5).add(V(m.bend));dashed([a,start],mat());dashed([b,end],mat());const curve=new THREE.QuadraticBezierCurve3(start,control,end);dashed(curve.getPoints(40),mat());label(m.value+' cm',root,curve.getPoint(.5).toArray(),null,'gs-dimension-label');
 for(const p of [start,end]){const tick=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),new THREE.MeshBasicMaterial({color:0x7952c4}));tick.position.copy(p);root.add(tick)}}
 }
-function updateColors(){for(const [id,m] of items){m.material.color.setHex(color(id));if(m.userData.quizType==='face')m.material.opacity=id===question?.reference||question?.selected?.includes(id) ? .56 : .10}
+function updateColors(){for(const [id,m] of items){const isFace=m.userData.quizType==='face'||m.userData.quizType==='netFace';m.material.color.setHex(isFace?faceColor(id):color(id));if(isFace)m.material.opacity=faceOpacity(id)}
 for(const l of labelItems){if(l.id){l.node.classList.toggle('is-reference',l.id===question?.reference);l.node.classList.toggle('is-correct',!!question?.selected?.includes(l.id));l.node.classList.toggle('is-wrong',l.id===question?.wrongId)}}}
 function layout(camera,canvas){root.updateWorldMatrix(true,true);const rect=canvas.getBoundingClientRect(),placed=[],foldedSeen=new Set();
 for(const l of labelItems){const world=l.object.localToWorld(l.point.clone()),p=world.clone().project(camera),x=(p.x+1)*rect.width/2,y=(1-p.y)*rect.height/2;l.node.hidden=p.z< -1||p.z>1;
