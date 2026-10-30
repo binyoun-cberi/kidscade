@@ -100,8 +100,7 @@ let chrome,ws,profile,serverOpen=false,passed=0;
   assert.equal(await evaluate("__KK_TEST__.snapshot().preview"),true);
   const deliveryStart=await evaluate("__KK_TEST__.deliverySnapshot()");
   assert.ok(deliveryStart.residents.length>0,'the town must contain delivery residents');
-  // Residents act for 3–12 simulated seconds before requesting a route, and may
-  // yield to traffic. Wait for their natural departure; never fast-forward or
+  // Deliveries depart after a short activity pause and may yield to traffic. Wait for their natural departure; never fast-forward or
   // change positions to make this check pass. Slow WebGL runners get wall time.
   const movementDeadline=Date.now()+90000;
   let deliveryEnd=deliveryStart,walkingDelivery=null;
