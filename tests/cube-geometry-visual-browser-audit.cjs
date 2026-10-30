@@ -147,6 +147,7 @@ async function run(){
   assert.equal(await evaluate('document.querySelector("#gsPickProgress").textContent'),'찾은 곳 3 / 3');
   await question('volume');
   assert.equal(await evaluate('document.querySelectorAll(".gs-dimension-label").length'),3);
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.gs-dimension-label')).map(e=>e.textContent)`),['가로 2 cm','세로 2 cm','높이 2 cm']);
   await screenshot('02-curved-length-volume');
   await evaluate(`document.querySelector('#gsAnswer').value='8';document.querySelector('#gsAnswerForm').requestSubmit()`);
   assert.ok((await evaluate('document.querySelector("#gsSelectionFeedback").textContent')).includes('정답'));
