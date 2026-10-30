@@ -17,3 +17,15 @@
 /* Fixed orientation compass; the projected axes follow only the user's camera. */
 .gs-orientation{position:absolute;right:18px;top:230px;width:112px;padding:5px 5px 7px;z-index:4;pointer-events:auto;border:1px solid #dce4ef;border-radius:14px;background:#ffffffd9;box-shadow:0 3px 12px #233f5b09;text-align:center}.gs-orientation svg{display:block;width:100%;height:78px}.gs-orientation line{stroke-width:2.2;stroke-linecap:round}.gs-orientation .gs-axis-back{stroke-width:1.4;stroke-dasharray:3 3;opacity:.45}.gs-orientation text{font:700 12px sans-serif;text-anchor:middle;dominant-baseline:middle}.gs-orientation p{font-size:9px;white-space:nowrap;margin:2px 0 5px;color:#60738b}.gs-orientation button{font:inherit;font-size:11px;min-height:30px;border:1px solid #ced9e8;border-radius:8px;background:#f6f8fc;color:#486184;padding:4px 9px;cursor:pointer}.gs-settings-open .gs-orientation{display:none}
 @media(max-width:750px){.gs-orientation{right:10px;width:90px;border-radius:12px;padding:4px}.gs-orientation svg{height:59px}.gs-orientation p{font-size:7px;margin:1px 0 4px}.gs-orientation button{font-size:10px;min-height:28px;padding:3px 7px}}
+
+/* Keep tablet questions compact so the solid gets the main stage. */
+@media (min-width:751px) and (max-width:1366px){
+.gs-question-card{left:18px;right:18px;top:86px;padding:10px 16px;border-radius:14px}
+.gs-question-card h2{font-size:20px;line-height:1.35;margin:4px 0}
+.gs-question-card p{font-size:12px;line-height:1.4}
+.gs-question-meta{font-size:11px}
+.gs-answer-dock{padding:9px 14px;gap:6px;bottom:68px}
+.gs-orientation{right:10px;width:90px;padding:4px}
+.gs-orientation svg{height:59px}
+}
+@media (pointer:coarse){.gs-bottom #gsZoomIn,.gs-bottom #gsZoomOut{min-width:48px;min-height:44px;font-size:22px}.gs-bottom{gap:6px}}

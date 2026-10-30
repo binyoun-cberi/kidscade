@@ -29,10 +29,10 @@ if(question?.dimensions)addDimensions();
 function dashed(points,material){const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),material);line.computeLineDistances();root.add(line);return line}
 function addDimensions(){const [w,h,d]=dims,mat=()=>new THREE.LineDashedMaterial({color:0x7952c4,dashSize:.16,gapSize:.10,depthTest:false});
 const marks=[
-{a:[-w/2,0,d/2],b:[w/2,0,d/2],offset:[0,-.48,.65],bend:[0,-.45,.3],value:w},
-{a:[w/2,0,d/2],b:[w/2,0,-d/2],offset:[.7,-.38,0],bend:[.55,-.2,0],value:d},
-{a:[w/2,0,-d/2],b:[w/2,h,-d/2],offset:[.85,0,-.55],bend:[.55,0,-.3],value:h}];
-for(const m of marks){const a=V(m.a),b=V(m.b),offset=V(m.offset),start=a.clone().add(offset),end=b.clone().add(offset),control=start.clone().add(end).multiplyScalar(.5).add(V(m.bend));dashed([a,start],mat());dashed([b,end],mat());const curve=new THREE.QuadraticBezierCurve3(start,control,end);dashed(curve.getPoints(40),mat());label(m.value+' cm',root,curve.getPoint(.5).toArray(),null,'gs-dimension-label');
+{a:[-w/2,0,d/2],b:[w/2,0,d/2],offset:[0,-.48,.65],bend:[0,-.45,.3],value:w,name:'가로'},
+{a:[w/2,0,d/2],b:[w/2,0,-d/2],offset:[.7,-.38,0],bend:[.55,-.2,0],value:d,name:'세로'},
+{a:[w/2,0,-d/2],b:[w/2,h,-d/2],offset:[.85,0,-.55],bend:[.55,0,-.3],value:h,name:'높이'}];
+for(const m of marks){const a=V(m.a),b=V(m.b),offset=V(m.offset),start=a.clone().add(offset),end=b.clone().add(offset),control=start.clone().add(end).multiplyScalar(.5).add(V(m.bend));dashed([a,start],mat());dashed([b,end],mat());const curve=new THREE.QuadraticBezierCurve3(start,control,end);dashed(curve.getPoints(40),mat());label(m.name+' '+m.value+' cm',root,curve.getPoint(.5).toArray(),null,'gs-dimension-label');
 for(const p of [start,end]){const tick=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),new THREE.MeshBasicMaterial({color:0x7952c4}));tick.position.copy(p);root.add(tick)}}
 }
 function updateColors(){for(const [id,m] of items){const isFace=m.userData.quizType==='face'||m.userData.quizType==='netFace';m.material.color.setHex(isFace?faceColor(id):color(id));if(isFace)m.material.opacity=faceOpacity(id)}
@@ -44,7 +44,14 @@ l.node.dataset.screenX=x;l.node.dataset.screenY=y;placed.push({l,x,y,lx:x,ly:y-(
 }
 // Separate overlapping names, with a leader back to each exact 3D point.
 const named=placed.filter(p=>p.l.id&&!p.l.node.hidden);for(let n=0;n<12;n++)for(let i=0;i<named.length;i++)for(let j=i+1;j<named.length;j++){const a=named[i],b=named[j],dx=b.lx-a.lx,dy=b.ly-a.ly,dist=Math.hypot(dx,dy);if(dist<35){const nx=dist?dx/dist:1,ny=dist?dy/dist:0,shift=(35-dist)/2;a.lx-=nx*shift;a.ly-=ny*shift;b.lx+=nx*shift;b.ly+=ny*shift}}
-for(const p of placed){p.l.node.style.left=p.lx+'px';p.l.node.style.top=p.ly+'px';p.l.leader.setAttribute('x1',p.x);p.l.leader.setAttribute('y1',p.y);p.l.leader.setAttribute('x2',p.lx);p.l.leader.setAttribute('y2',p.ly);p.l.leader.style.display=p.l.node.hidden||!p.l.id?'none':''}
+// Keep length numbers readable even when the user zooms past the diagram bounds.
+const board=document.getElementById('gsQuizBoard'),card=board&&!board.hidden?board.querySelector('.gs-question-card')?.getBoundingClientRect():null,dock=board&&!board.hidden?document.getElementById('gsAnswerDock')?.getBoundingClientRect():null;
+const lengths=placed.filter(p=>!p.l.id&&!p.l.node.hidden);
+for(const p of lengths){const size=p.l.node.getBoundingClientRect(),hx=size.width/2+10,hy=size.height/2+10,minY=card?card.bottom-rect.top+hy:hy,maxY=dock?dock.top-rect.top-hy:rect.height-hy;
+p.lx=Math.max(hx,Math.min(rect.width-hx,p.x));p.ly=Math.max(minY,Math.min(Math.max(minY,maxY),p.y));
+for(const other of lengths){if(other===p)break;if(Math.abs(p.lx-other.lx)<(size.width+other.l.node.getBoundingClientRect().width)/2+8&&Math.abs(p.ly-other.ly)<size.height+8)p.ly=Math.max(minY,Math.min(maxY,other.ly-size.height-10))}
+p.l.leader.setAttribute('stroke','#7952c4');}
+for(const p of placed){p.l.node.style.left=p.lx+'px';p.l.node.style.top=p.ly+'px';p.l.leader.setAttribute('x1',p.x);p.l.leader.setAttribute('y1',p.y);p.l.leader.setAttribute('x2',p.lx);p.l.leader.setAttribute('y2',p.ly);p.l.leader.style.display=p.l.node.hidden||(!p.l.id&&Math.hypot(p.lx-p.x,p.ly-p.y)<2)?'none':''}
 for(const [id,m] of items){const pos=m.getWorldPosition(new THREE.Vector3());if(m.userData.quizType==='face')new THREE.Box3().setFromObject(m).getCenter(pos);pos.project(camera);m.userData.screen=[(pos.x+1)*rect.width/2,(1-pos.y)*rect.height/2];
 if(!question?.net&&m.userData.quizType==='edge'){const edge=Q.EDGES[Number(id.slice(1))],toCamera=camera.position.clone().sub(new THREE.Vector3(0,dims[1]/2,0)),hidden=Q.FACES.map((f,i)=>edge.every(v=>f.includes(v))?i:-1).filter(i=>i>=0).every(i=>V(Q.NORMALS[i]).dot(toCamera)<0),highlight=id===question?.reference||question?.selected?.includes(id)||id===question?.wrongId;m.material.opacity=hidden&&!highlight ? .08 : .95;m.userData.hiddenLine.visible=hidden&&!highlight;m.userData.hiddenLine.material.color.setHex(color(id));if(highlight)m.material.opacity=.95}}
 }

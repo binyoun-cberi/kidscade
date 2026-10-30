@@ -147,6 +147,7 @@ async function run(){
   assert.equal(await evaluate('document.querySelector("#gsPickProgress").textContent'),'찾은 곳 3 / 3');
   await question('volume');
   assert.equal(await evaluate('document.querySelectorAll(".gs-dimension-label").length'),3);
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.gs-dimension-label')).map(e=>e.textContent)`),['가로 2 cm','세로 2 cm','높이 2 cm']);
   await screenshot('02-curved-length-volume');
   await evaluate(`document.querySelector('#gsAnswer').value='8';document.querySelector('#gsAnswerForm').requestSubmit()`);
   assert.ok((await evaluate('document.querySelector("#gsSelectionFeedback").textContent')).includes('정답'));
@@ -159,6 +160,29 @@ async function run(){
     assert.equal(await evaluate('document.querySelector("#gsFoldControl").hidden'),false,'fold slider unavailable after a correct net answer');
     await evaluate(`(()=>{const e=document.querySelector('#gsFold');e.value='100';e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
     await screenshot('04-'+kind+'-folded');
+  }
+  for(const [w,h] of [[1024,768],[820,1180]]){
+    await viewport(w,h,1,true);await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
+    await question('volume');
+    const span=()=>evaluate(`(()=>{const a=[...document.querySelectorAll('.gs-vertex-label')].map(e=>e.getBoundingClientRect().top);return Math.max(...a)-Math.min(...a)})()`);
+    const before=await span(),scoreBefore=await evaluate(`document.querySelector('#gsScore').textContent`);
+    assert.ok(before>h*.25,'tablet solid should occupy at least a quarter of screen height');
+    assert.ok(await evaluate(`document.querySelector('.gs-question-card').getBoundingClientRect().height<130`),'tablet question should be compact');
+    const cy=await evaluate(`(document.querySelector('.gs-question-card').getBoundingClientRect().bottom+document.querySelector('#gsAnswerDock').getBoundingClientRect().top)/2`);
+    const points=d=>[{x:w/2-d,y:cy,id:31},{x:w/2+d,y:cy,id:32}];
+    await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:points(70)});
+    await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:points(100)});
+    await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    assert.ok(await span()>before*1.2,'pinch spread must enlarge the solid');
+    assert.equal(await evaluate(`document.querySelector('#gsScore').textContent`),scoreBefore,'pinch must not submit an answer');
+    await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:points(100)});
+    await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:points(70)});
+    await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    assert.ok(Math.abs(await span()/before-1)<.08,'pinch close must restore size');
+    await click('#gsZoomIn');assert.ok(await span()>before*1.1,'zoom button must work');
+    await click('#gsResetView');assert.ok(Math.abs(await span()/before-1)<.08,'reset must restore fitted size');
+    assert.ok(await evaluate(`Array.from(document.querySelectorAll('.gs-dimension-label')).every(e=>{const r=e.getBoundingClientRect(),card=document.querySelector('.gs-question-card').getBoundingClientRect(),dock=document.querySelector('#gsAnswerDock').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>card.bottom&&r.bottom<dock.top})`),'tablet dimension labels must stay inside the model area');
+    await screenshot('07-tablet-'+w+'x'+h);
   }
   await viewport(390,844,1,true);await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
   await question('pickVertex');await nativePick('v0',true);

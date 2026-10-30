@@ -33,7 +33,7 @@ for(let grade=1;grade<=4;grade++)for(const shape of L.profile(grade).shapes)asse
 assert.ok(!L.quizKinds(5,'solid','cuboid').includes('faceArea'));assert.ok(L.quizKinds(6,'solid','cuboid').includes('faceArea'));assert.ok(!L.quizKinds(6,'solid','cone').includes('area'));
 });
 test('diagram projection and actual Three.js raycasting use the same face identity',()=>{
-const T=three(),makeNode=()=>({style:{},dataset:{},classList:{toggle(){}},setAttribute(){},append(){},remove(){}}),sandbox={window:{CubeGeometryQuiz:Q},THREE:T,document:{createElement:makeNode,createElementNS:makeNode}};
+const T=three(),makeNode=()=>({style:{},dataset:{},classList:{toggle(){}},setAttribute(){},append(){},remove(){}}),sandbox={window:{CubeGeometryQuiz:Q},THREE:T,document:{getElementById:()=>null,createElement:makeNode,createElementNS:makeNode}};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../games/cube3d/cube-geometry-diagram.js'),'utf8'),sandbox);
 const parent=new T.Group(),q=Q.makeQuestion('pickFace',[2,2,2],()=>0),picked=[];
 const d=sandbox.window.CubeGeometryDiagram.create({parent,dims:[2,2,2],question:q,labels:makeNode(),onPick:id=>picked.push(id)});
