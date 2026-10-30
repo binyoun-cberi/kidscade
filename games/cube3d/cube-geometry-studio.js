@@ -131,7 +131,10 @@ if(quiz?.net)diagram.fold(Number($('gsFold').value||0)/100);
 positionCamera(true);drawProjections();syncQuizHud();
 }
 function positionCamera(autoFit=false){if(!renderer||!camera)return;
-const extent=L.profile(state.grade).maxSize,box=group&&group.children.length?new THREE.Box3().setFromObject(group):null,focus=state.tab==='stack'?new THREE.Vector3(extent/2-4,extent/3,extent/2-4):box?box.getCenter(new THREE.Vector3()):new THREE.Vector3(0,1,0);
+const extent=L.profile(state.grade).maxSize;let box=group&&group.children.length?new THREE.Box3().setFromObject(group):null;
+// Dimension curves are annotations, not part of the solid's fitted size.
+if(studentMode&&state.tab==='solid'&&!quiz?.net&&['cube','cuboid'].includes(state.shape)){const w=state.w,h=state.shape==='cube'?w:state.h,d=state.shape==='cube'?w:state.d;box=new THREE.Box3(new THREE.Vector3(-w/2,0,-d/2),new THREE.Vector3(w/2,h,d/2))}
+const focus=state.tab==='stack'?new THREE.Vector3(extent/2-4,extent/3,extent/2-4):box?box.getCenter(new THREE.Vector3()):new THREE.Vector3(0,1,0);
 const rect=canvas.getBoundingClientRect(),panel=$('gsPanel').getBoundingClientRect();let left=0,right=rect.width,top=0,bottom=rect.height;
 if(studentMode&&!settingsOpen){const card=$('gsQuizBoard').querySelector('.gs-question-card').getBoundingClientRect(),dock=$('gsAnswerDock').getBoundingClientRect();left=22;right=rect.width-22;top=card.bottom+18;bottom=dock.top-18}
 else left=panel.right+16;
@@ -140,7 +143,7 @@ camera.setViewOffset(rect.width,rect.height,rect.width/2-cx,rect.height/2-cy,rec
 camera.zoom=1;
 const pose=()=>{camera.position.set(focus.x+radius*Math.sin(phi)*Math.sin(theta),focus.y+radius*Math.cos(phi),focus.z+radius*Math.sin(phi)*Math.cos(theta));camera.lookAt(focus);camera.updateMatrixWorld(true);camera.updateProjectionMatrix()};pose();
 if(studentMode&&!settingsOpen&&box){const corners=[];for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z])corners.push(new THREE.Vector3(x,y,z));
-for(let n=0;n<3;n++){const points=corners.map(p=>p.clone().project(camera)),width=(Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x)))*rect.width/2,height=(Math.max(...points.map(p=>p.y))-Math.min(...points.map(p=>p.y)))*rect.height/2,ratio=Math.max(width/Math.max(80,right-left-70),height/Math.max(80,bottom-top-70));if(!autoFit&&ratio<=1.01)break;if(autoFit&&Math.abs(ratio-1)<.025)break;radius=Math.max(2,radius*ratio*1.02);pose()}}
+for(let n=0;n<3;n++){const points=corners.map(p=>p.clone().project(camera)),width=(Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x)))*rect.width/2,height=(Math.max(...points.map(p=>p.y))-Math.min(...points.map(p=>p.y)))*rect.height/2,ratio=Math.max(width/Math.max(80,right-left-160),height/Math.max(80,bottom-top-150));if(!autoFit&&ratio<=1.01)break;if(autoFit&&Math.abs(ratio-1)<.025)break;radius=Math.max(2,radius*ratio*1.02);pose()}}
 camera.zoom=viewZoom;camera.updateProjectionMatrix();render();
 }
 function render(){if(active&&activity==='studio'&&renderer){renderer.render(scene,camera);updateOrientation();diagram?.layout(camera,canvas);for(const c of diagram?.choices()||[]){const b=$('gsElementChoices').querySelector('[data-quiz-choice="'+c.id+'"]');if(b&&c.screen){b.dataset.screenX=c.screen[0];b.dataset.screenY=c.screen[1]}}}}
