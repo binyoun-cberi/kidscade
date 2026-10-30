@@ -123,6 +123,11 @@ jobs:
         run: npm run health:strict
       - name: Build Cloudflare static artifact
         run: npm run build
+      - name: Install Korean font for game UI screenshot review
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends fonts-noto-cjk
+          fc-cache -f
       - name: Cube studio actual Chrome geometry quiz playthrough
         run: node tests/cube-geometry-visual-browser-audit.cjs
         env:
@@ -161,11 +166,6 @@ jobs:
           path: ${{ runner.temp }}/gigacity-visual-audit/
           if-no-files-found: ignore
           retention-days: 7
-      - name: Install Korean font for farming UI screenshot review
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends fonts-noto-cjk
-          fc-cache -f
       - name: Korean Farm real-browser desktop and mobile playthrough
         run: node tests/korean-farm-browser-audit.cjs
         env:

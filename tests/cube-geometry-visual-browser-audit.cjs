@@ -28,6 +28,7 @@ const server=http.createServer((req,res)=>{
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 let chrome,ws,profile;
 const errors=[],steps=[],requests=[];
+let diagnoseFailure=null;
 async function run(){
   server.listen(0,'127.0.0.1');await once(server,'listening');
   let endpoint,stderr='';
@@ -102,6 +103,7 @@ async function run(){
   const viewport=(w,h,deviceScaleFactor=1,mobile=false)=>send('Emulation.setDeviceMetricsOverride',{width:w,height:h,deviceScaleFactor,mobile});
   await send('Page.enable');await send('Runtime.enable');await send('Log.enable');await send('Network.enable');
 
+  diagnoseFailure=async()=>{await screenshot('99-failure');return evaluate(`({prompt:document.querySelector('#gsQuestionText')?.textContent,feedback:document.querySelector('#gsSelectionFeedback')?.textContent,rootClass:document.querySelector('#geometryStudio')?.className})`)};
   await viewport(1365,900,1,false);
   await send('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/games/cube3d/index.html'});
   await waitFor('window.CubeGeometryStudio && window.CubeArchitectReady');
@@ -116,11 +118,12 @@ async function run(){
     await waitFor('document.querySelector("#gsQuestionText").textContent.length>4');
   }
   async function point(id){return evaluate(`(()=>{const e=document.querySelector('[data-quiz-choice="${id}"]')||document.querySelector('[data-quiz-element="${id}"]');return{x:Number(e.dataset.screenX),y:Number(e.dataset.screenY)}})()`)}
-  async function nativePick(id,touch=false){const p=await point(id);assert.ok(Number.isFinite(p.x)&&Number.isFinite(p.y));
+  async function nativePick(id,touch=false){const p=await point(id);record('native-pick-'+id,{...p,hit:await evaluate('(()=>{const e=document.elementFromPoint('+p.x+','+p.y+');return e?{tag:e.tagName,id:e.id,text:e.textContent?.slice(0,50)}:null})()')});assert.ok(Number.isFinite(p.x)&&Number.isFinite(p.y));
     if(touch){await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:p.x,y:p.y,id:1}]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})}
     else {await send('Input.dispatchMouseEvent',{type:'mousePressed',x:p.x,y:p.y,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:p.x,y:p.y,button:'left',clickCount:1})}
   }
   await question('pickVertex');
+  await screenshot('00-desktop-question');
   await nativePick('v1');
   assert.equal(await evaluate('document.querySelector("#gsAnswerMarker").textContent'),'×','wrong vertex should show X');
   await nativePick('v0');
@@ -158,5 +161,5 @@ async function run(){
   return {result:'PASS',steps,errors,requests};
 }
 run().then(result=>{fs.writeFileSync(path.join(OUTPUT,'report.json'),JSON.stringify(result,null,2));console.log('CUBE_PLAY_RESULT PASS')})
-.catch(err=>{fs.writeFileSync(path.join(OUTPUT,'report.json'),JSON.stringify({result:'FAIL',error:String(err.stack||err),steps,errors,requests},null,2));console.error('CUBE_PLAY_RESULT FAIL',err.stack||err);process.exitCode=1})
+.catch(async err=>{let diagnostic;try{diagnostic=await diagnoseFailure?.()}catch{};fs.writeFileSync(path.join(OUTPUT,'report.json'),JSON.stringify({result:'FAIL',error:String(err.stack||err),diagnostic,steps,errors,requests},null,2));console.error('CUBE_PLAY_RESULT FAIL',err.stack||err);process.exitCode=1})
 .finally(async()=>{try{ws?.close()}catch{};try{chrome?.kill('SIGTERM')}catch{};try{server.close()}catch{};try{fs.rmSync(profile,{force:true,recursive:true})}catch{}});
