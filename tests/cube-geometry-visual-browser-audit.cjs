@@ -180,6 +180,7 @@ async function run(){
     assert.ok(Math.abs(await span()/before-1)<.08,'pinch close must restore size');
     await click('#gsZoomIn');assert.ok(await span()>before*1.1,'zoom button must work');
     await click('#gsResetView');assert.ok(Math.abs(await span()/before-1)<.08,'reset must restore fitted size');
+    assert.ok(await evaluate(`Array.from(document.querySelectorAll('.gs-dimension-label')).every(e=>{const r=e.getBoundingClientRect(),card=document.querySelector('.gs-question-card').getBoundingClientRect(),dock=document.querySelector('#gsAnswerDock').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>card.bottom&&r.bottom<dock.top})`),'tablet dimension labels must stay inside the model area');
     await screenshot('07-tablet-'+w+'x'+h);
   }
   await viewport(390,844,1,true);await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
