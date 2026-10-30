@@ -170,7 +170,7 @@
       'high_little_world','high_factory_tycoon','gigacity_lite','cube3d'
     ]),
     creation:Object.freeze([
-      'high_story_builder','low_sand_art_studio','high_melody_workshop','toddler_photo_coloring',
+      'doodle_aquarium','high_story_builder','low_sand_art_studio','high_melody_workshop','toddler_photo_coloring',
       'high_3d_block_painter','high_little_sculptor','piano_studio','pixel_editor'
     ]),
     collection:Object.freeze([

@@ -2,6 +2,34 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "doodle_aquarium",
+      "addedAt": "2026-10-30T18:30:00+09:00",
+      "title": "낙서 바다 연구소",
+      "href": "games/doodle-aquarium/index.html",
+      "category": "trivia",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🐠",
+      "cover": "assets/gate-image/doodle_aquarium_cover.svg",
+      "description": "내 그림이 살아 움직이는 작은 바다! 물고기를 그리고 먹이를 주며, 수초와 장식으로 나만의 수족관을 꾸며요.",
+      "subject": "arts",
+      "genre": "sandbox",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "low_parabola_battle",
       "addedAt": "2026-10-23T22:39:00+09:00",
       "title": "포물선 대작전",
