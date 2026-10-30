@@ -89,8 +89,8 @@ const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),elem
 const context2d=new Proxy({}, {get:()=>()=>{}});
 function element(){return {value:'',hidden:false,textContent:'',children:[],style:{},classList:{toggle(){}},setAttribute(k,v){this[k]=v},replaceChildren(...nodes){this.children=nodes;this.value=nodes[0]?.value||''},querySelector(){return this.button||(this.button=element())},getContext(){return context2d},focus(){}}}
 const document={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id)},createElement:element};
-const source=fs.readFileSync(path.resolve(__dirname,'../games/cube3d/cube-geometry-studio.js'),'utf8').replace('window.CubeGeometryStudio={enter,exit};',`root={querySelectorAll:()=>[]};window.testStudio={state:()=>state,quiz:()=>quiz,score:()=>score,setGrade,syncUI,askQuestion,answerName,editCells,checkBuild,revealBuild,save,restore};`);
-const sandbox={window:{CubeGeometryLogic:L},document,console,setTimeout:()=>1,clearTimeout:()=>{},localStorage:{setItem:(k,v)=>saved.set(k,v),getItem:k=>saved.get(k)}};
+const source=fs.readFileSync(path.resolve(__dirname,'../games/cube3d/cube-geometry-studio.js'),'utf8').replace('window.CubeGeometryStudio={enter,exit};',`root={querySelectorAll:()=>[]};window.testStudio={state:()=>state,quiz:()=>quiz,score:()=>score,setGrade,syncUI,askQuestion,answerName,pickDiagram,editCells,checkBuild,revealBuild,save,restore};`);
+const sandbox={window:{CubeGeometryLogic:L,CubeGeometryQuiz:require('../games/cube3d/cube-geometry-quiz.js')},document,console,setTimeout:()=>1,clearTimeout:()=>{},localStorage:{setItem:(k,v)=>saved.set(k,v),getItem:k=>saved.get(k)}};
 vm.createContext(sandbox);vm.runInContext(source,sandbox);return {api:sandbox.window.testStudio,element:id=>document.getElementById(id)};
 }
 test('simulated UI: changing grades changes options and hides advanced measurements',()=>{
@@ -116,4 +116,15 @@ test('simulated UI: a lower grade preserves a large existing work and persists t
 const {api,element}=studioHarness();api.state().cells=L.box(4,4,4);api.setGrade(1);assert.equal(api.state().cells.length,64);
 api.askQuestion();assert.equal(api.quiz(),null);assert.ok(element('gsFeedback').textContent.includes('저장된 작품'));
 api.save();api.state().grade=6;api.restore();assert.equal(api.state().grade,1);assert.equal(api.state().cells.length,64);
+});
+
+test('simulated visual quiz: multiple correct selections finish once and a reference is not an answer',()=>{
+const {api,element}=studioHarness();api.state().tab='solid';api.setGrade(5);element('gsQuizKind').value='incidentEdge';api.askQuestion();const q=api.quiz();
+api.pickDiagram(q.reference);assert.equal(api.score().total,0);api.pickDiagram(q.answers[0]);assert.equal(api.quiz().revealed,false);assert.equal(api.score().correct,0);
+for(const id of q.answers)api.pickDiagram(id);assert.equal(api.quiz().revealed,true);assert.equal(api.score().correct,1);assert.equal(api.score().total,1);
+api.pickDiagram(q.answers[0]);assert.equal(api.score().correct,1);
+});
+test('simulated visual quiz: a wrong selection never enters the accepted answer set',()=>{
+const {api,element}=studioHarness();api.state().tab='solid';api.setGrade(5);element('gsQuizKind').value='pickVertex';api.askQuestion();const q=api.quiz(),wrong='v'+((Number(q.answers[0].slice(1))+1)%8);
+api.pickDiagram(wrong);assert.equal(api.quiz().selected.length,0);assert.equal(element('gsAnswerMarker').textContent,'×');api.pickDiagram(q.answers[0]);assert.equal(element('gsAnswerMarker').textContent,'○');assert.equal(api.score().correct,1);
 });

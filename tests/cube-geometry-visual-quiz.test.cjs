@@ -32,3 +32,12 @@ test('new diagram questions remain unavailable in lower elementary grades',()=>{
 for(let grade=1;grade<=4;grade++)for(const shape of L.profile(grade).shapes)assert.deepEqual(L.quizKinds(grade,'solid',shape),['name']);
 assert.ok(!L.quizKinds(5,'solid','cuboid').includes('faceArea'));assert.ok(L.quizKinds(6,'solid','cuboid').includes('faceArea'));assert.ok(!L.quizKinds(6,'solid','cone').includes('area'));
 });
+test('diagram projection and actual Three.js raycasting use the same face identity',()=>{
+const T=three(),makeNode=()=>({style:{},dataset:{},classList:{toggle(){}},setAttribute(){},append(){},remove(){}}),sandbox={window:{CubeGeometryQuiz:Q},THREE:T,document:{createElement:makeNode,createElementNS:makeNode}};
+vm.createContext(sandbox);vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../games/cube3d/cube-geometry-diagram.js'),'utf8'),sandbox);
+const parent=new T.Group(),q=Q.makeQuestion('pickFace',[2,2,2],()=>0),picked=[];
+const d=sandbox.window.CubeGeometryDiagram.create({parent,dims:[2,2,2],question:q,labels:makeNode(),onPick:id=>picked.push(id)});
+const camera=new T.PerspectiveCamera(38,1000/700,.1,120);camera.position.set(8,8,10);camera.lookAt(0,1,0);camera.updateMatrixWorld(true);
+const canvas={getBoundingClientRect:()=>({left:0,top:0,width:1000,height:700})};d.layout(camera,canvas);
+const front=d.choices().find(e=>e.id==='f0');d.pickAt(...front.screen,camera,canvas);assert.equal(picked[0],'f0');d.dispose();
+});

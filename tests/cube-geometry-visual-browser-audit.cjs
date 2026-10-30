@@ -144,7 +144,7 @@ async function run(){
   assert.ok((await evaluate('document.querySelector("#gsSelectionFeedback").textContent')).includes('정답'));
   const Q=require('../games/cube3d/cube-geometry-quiz.js');
   for(const kind of ['netEdge','netVertex']){
-    await question(kind);await screenshot('03-'+kind+'-flat');const q=Q.makeQuestion(kind,[2,2,2],()=>.05);
+    await question(kind);await screenshot('03-'+kind+'-flat');if(kind==='netVertex')assert.ok(await evaluate(`(()=>{const r=document.querySelector('.gs-vertex-label.is-reference').getBoundingClientRect(),top=document.querySelector('.gs-question-card').getBoundingClientRect().bottom,bottom=document.querySelector('#gsAnswerDock').getBoundingClientRect().top;return r.top>top&&r.bottom<bottom})()`),'net reference must stay between the problem and answer dock');const q=Q.makeQuestion(kind,[2,2,2],()=>.05);
     for(const id of q.answers)await nativePick(id);
     assert.equal(await evaluate('document.querySelector("#gsFoldControl").hidden'),false,'fold slider unavailable after a correct net answer');
     await evaluate(`(()=>{const e=document.querySelector('#gsFold');e.value='100';e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
@@ -155,7 +155,9 @@ async function run(){
   assert.ok((await evaluate('document.querySelector("#gsSelectionFeedback").textContent')).includes('정답'),'phone touch vertex failed');
   assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth'),'phone horizontal overflow');
   await screenshot('05-phone-vertex');
-  await question('volume');await screenshot('06-phone-volume');
+  await question('volume');
+  const dimensionsInside=await evaluate(`Array.from(document.querySelectorAll('.gs-dimension-label')).every(e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth})`);
+  assert.ok(dimensionsInside,'phone length labels must not be clipped');await screenshot('06-phone-volume');
   assert.equal(errors.length,0,'Browser exceptions: '+errors.slice(0,8).join(' | '));
   assert.deepEqual(requests.filter(x=>/cube-geometry|three-r160|cube-architect/.test(x.url)),[],'Missing cube quiz resources');
   return {result:'PASS',steps,errors,requests};

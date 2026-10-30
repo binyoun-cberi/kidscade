@@ -30,7 +30,7 @@ root.innerHTML=`<canvas id="gsCanvas" class="gs-canvas" aria-label="입체도형
 <p id="gsBanner" class="gs-banner">드래그로 회전 · 휠로 확대 · 위·앞·오른쪽 모습도 함께 관찰해요.</p>
 <nav id="gsViewButtons" class="gs-bottom" aria-label="도형 시점"><button data-gs-view="iso">입체</button><button data-gs-view="top">위</button><button data-gs-view="front">앞</button><button data-gs-view="bottom">아래</button><button data-gs-view="side">오른쪽</button><button id="gsZoomIn" aria-label="확대">＋</button><button id="gsZoomOut" aria-label="축소">－</button></nav>`;
 document.getElementById('app').append(root);canvas=$('gsCanvas');
-$('gsQuizToggle').onclick=()=>setStudentMode(true);$('gsExploreToggle').onclick=()=>setStudentMode(false);$('gsQuizSettings').onclick=()=>{settingsOpen=!settingsOpen;root.classList.toggle('gs-settings-open',settingsOpen);$('gsQuizSettings').setAttribute('aria-expanded',String(settingsOpen));resize()};$('gsNextQuestion').onclick=nextRound;$('gsFold').oninput=e=>{diagram?.fold(Number(e.target.value)/100);render()};
+$('gsQuizToggle').onclick=()=>setStudentMode(true);$('gsExploreToggle').onclick=()=>setStudentMode(false);$('gsQuizSettings').onclick=()=>{settingsOpen=!settingsOpen;root.classList.toggle('gs-settings-open',settingsOpen);$('gsQuizSettings').setAttribute('aria-expanded',String(settingsOpen));resize()};$('gsNextQuestion').onclick=nextRound;$('gsFold').oninput=e=>{diagram?.fold(Number(e.target.value)/100);positionCamera()};
 $('gsGrade').onchange=e=>setGrade(Number(e.target.value));$('gsSample').onclick=newSample;
 $('gsHome').onclick=exit;$('gsReturn').onclick=()=>switchActivity('studio');$('gsActivity').onchange=e=>switchActivity(e.target.value);
 root.querySelectorAll('[data-gs-tab]').forEach(b=>b.onclick=()=>{state.tab=b.dataset.gsTab;cancelQuiz();syncUI();renderModel();save()});
@@ -122,9 +122,18 @@ if(quiz?.net)diagram.fold(Number($('gsFold').value||0)/100);
 }
 positionCamera();drawProjections();syncQuizHud();
 }
-function positionCamera(){if(!renderer||!camera)return;const extent=L.profile(state.grade).maxSize,focus=state.tab==='stack'?new THREE.Vector3(extent/2-4,extent/3,extent/2-4):group&&group.children.length?new THREE.Box3().setFromObject(group).getCenter(new THREE.Vector3()):new THREE.Vector3(0,1,0);camera.position.set(focus.x+radius*Math.sin(phi)*Math.sin(theta),focus.y+radius*Math.cos(phi),focus.z+radius*Math.sin(phi)*Math.cos(theta));camera.lookAt(focus);
-// Reserve the left tool panel without moving the model away from the exact view axes.
-const rect=canvas.getBoundingClientRect(),panel=$('gsPanel').getBoundingClientRect();camera.setViewOffset(rect.width,rect.height,studentMode&&!settingsOpen?0:-(panel.right+16)/2,0,rect.width,rect.height);camera.updateProjectionMatrix();render()}
+function positionCamera(){if(!renderer||!camera)return;
+const extent=L.profile(state.grade).maxSize,box=group&&group.children.length?new THREE.Box3().setFromObject(group):null,focus=state.tab==='stack'?new THREE.Vector3(extent/2-4,extent/3,extent/2-4):box?box.getCenter(new THREE.Vector3()):new THREE.Vector3(0,1,0);
+const rect=canvas.getBoundingClientRect(),panel=$('gsPanel').getBoundingClientRect();let left=0,right=rect.width,top=0,bottom=rect.height;
+if(studentMode&&!settingsOpen){const card=$('gsQuizBoard').querySelector('.gs-question-card').getBoundingClientRect(),dock=$('gsAnswerDock').getBoundingClientRect();left=22;right=rect.width-22;top=card.bottom+18;bottom=dock.top-18}
+else left=panel.right+16;
+const cx=(left+right)/2,cy=(top+bottom)/2;
+camera.setViewOffset(rect.width,rect.height,rect.width/2-cx,rect.height/2-cy,rect.width,rect.height);
+const pose=()=>{camera.position.set(focus.x+radius*Math.sin(phi)*Math.sin(theta),focus.y+radius*Math.cos(phi),focus.z+radius*Math.sin(phi)*Math.cos(theta));camera.lookAt(focus);camera.updateMatrixWorld(true);camera.updateProjectionMatrix()};pose();
+if(studentMode&&!settingsOpen&&box){const corners=[];for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z])corners.push(new THREE.Vector3(x,y,z));
+for(let n=0;n<3;n++){const points=corners.map(p=>p.clone().project(camera)),width=(Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x)))*rect.width/2,height=(Math.max(...points.map(p=>p.y))-Math.min(...points.map(p=>p.y)))*rect.height/2,ratio=Math.max(width/Math.max(80,right-left-70),height/Math.max(80,bottom-top-70));if(ratio<=1.01)break;radius*=ratio*1.04;pose()}}
+render();
+}
 function render(){if(active&&activity==='studio'&&renderer){renderer.render(scene,camera);diagram?.layout(camera,canvas);for(const c of diagram?.choices()||[]){const b=$('gsElementChoices').querySelector('[data-quiz-choice="'+c.id+'"]');if(b&&c.screen){b.dataset.screenX=c.screen[0];b.dataset.screenY=c.screen[1]}}}}
 function resize(){if(!renderer)return;const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return;renderer.setSize(rect.width,rect.height,false);camera.aspect=rect.width/rect.height;positionCamera()}
 function editAt(e){if(state.tab!=='stack'||state.tool==='rotate')return;const rect=canvas.getBoundingClientRect(),v=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),ray=new THREE.Raycaster();ray.setFromCamera(v,camera);const hit=ray.intersectObjects([...group.children,plane],false)[0];if(!hit)return;
@@ -190,9 +199,9 @@ const verdict=Q.classify(quiz,id,quiz.selected);if(verdict==='reference'){notify
 if(!quiz.counted){quiz.counted=true;score.total++}
 if(verdict==='correct'){quiz.selected.push(id);quiz.wrongId=null;answerMark(true,id);if(quiz.selected.length===quiz.answers.length){score.correct++;quiz.revealed=true;show('gsReveal',false);notify('정답이에요! '+(quiz.net?'이제 전개도를 접어 겹치는 위치를 확인해 보세요.':'조건에 맞는 곳을 모두 찾았어요.'))}else notify('맞았어요! 나머지 '+(quiz.answers.length-quiz.selected.length)+'곳도 찾아보세요.')}
 else{quiz.wrongId=id;answerMark(false,id);notify('× 이곳은 조건과 달라요. 주황색 기준과 꼭짓점 이름을 다시 살펴보세요.')}
-diagram?.updateColors();updateScore();syncQuizHud();render();
+diagram?.updateColors();updateScore();syncQuizHud();positionCamera();
 }
-function revealVisual(correct){quiz.revealed=true;quiz.selected=quiz.answers.slice();quiz.wrongId=null;show('gsReveal',false);notify(correct?'정답이에요!':'초록색으로 표시한 곳이 정답이에요. 기준 요소와 어떤 관계인지 확인해 보세요.');diagram?.updateColors();syncQuizHud();render()}
+function revealVisual(correct){quiz.revealed=true;quiz.selected=quiz.answers.slice();quiz.wrongId=null;show('gsReveal',false);notify(correct?'정답이에요!':'초록색으로 표시한 곳이 정답이에요. 기준 요소와 어떤 관계인지 확인해 보세요.');diagram?.updateColors();syncQuizHud();positionCamera()}
 function answerMark(ok,id){const el=$('gsAnswerMarker');if(!el)return;clearTimeout(markerTimer);const at=id?diagram?.choices().find(c=>c.id===id)?.screen:null;el.style.left=at?at[0]+'px':'50%';el.style.top=at?at[1]+'px':'50%';el.textContent=ok?'○':'×';el.classList.toggle('is-wrong',!ok);el.hidden=false;markerTimer=setTimeout(()=>{el.hidden=true},950)}
 function syncQuizHud(){if(!$('gsQuizBoard'))return;
 $('gsQuestionText').textContent=$('gsPrompt').textContent;$('gsRoundLabel').textContent='초등 '+state.grade+'학년 수준 · 문제 '+Math.max(1,questionNumber);$('gsQuestionHelp').textContent=quiz?.instruction||'도형을 돌려 관찰하고 답해 보세요.';
