@@ -123,6 +123,16 @@ async function run(){
     else {await send('Input.dispatchMouseEvent',{type:'mousePressed',x:p.x,y:p.y,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:p.x,y:p.y,button:'left',clickCount:1})}
   }
   await question('pickVertex');
+  const compassBefore=await evaluate(`({x:document.querySelector('#gsAxisX').getAttribute('x2'),box:document.querySelector('#gsOrientation').getBoundingClientRect().toJSON()})`);
+  await send('Input.dispatchMouseEvent',{type:'mousePressed',x:950,y:450,button:'left',clickCount:1});
+  await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:1070,y:450,button:'left',buttons:1});
+  await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:1070,y:450,button:'left',clickCount:1});
+  const compassAfter=await evaluate(`({x:document.querySelector('#gsAxisX').getAttribute('x2'),box:document.querySelector('#gsOrientation').getBoundingClientRect().toJSON()})`);
+  assert.notEqual(compassBefore.x,compassAfter.x,'XYZ axis direction must track rotation');
+  assert.equal(compassBefore.box.x,compassAfter.box.x,'XYZ guide must stay fixed on screen');
+  assert.equal(compassBefore.box.y,compassAfter.box.y,'XYZ guide must not travel with the model');
+  await click('#gsResetView');
+  assert.ok(Math.abs(Number(await evaluate(`document.querySelector('#gsAxisX').getAttribute('x2')`))-Number(compassBefore.x))<.01,'reset must restore orientation');
   await screenshot('00-desktop-question');
   await nativePick('v1');
   assert.equal(await evaluate('document.querySelector("#gsAnswerMarker").textContent'),'×','wrong vertex should show X');
@@ -154,6 +164,7 @@ async function run(){
   await question('pickVertex');await nativePick('v0',true);
   assert.ok((await evaluate('document.querySelector("#gsSelectionFeedback").textContent')).includes('정답'),'phone touch vertex failed');
   assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth'),'phone horizontal overflow');
+  assert.ok(await evaluate(`(()=>{const r=document.querySelector('#gsOrientation').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<document.querySelector('#gsAnswerDock').getBoundingClientRect().top})()`),'phone XYZ guide must remain inside the view');
   await screenshot('05-phone-vertex');
   await question('volume');
   const dimensionsInside=await evaluate(`Array.from(document.querySelectorAll('.gs-dimension-label')).every(e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth})`);

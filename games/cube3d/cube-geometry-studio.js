@@ -24,6 +24,7 @@ root.innerHTML=`<canvas id="gsCanvas" class="gs-canvas" aria-label="입체도형
 <div class="gs-row"><button id="gsUndo">↶ 되돌리기</button><button id="gsRedo">↷ 다시 실행</button></div><button id="gsClear">작업대 비우기</button><p id="gsSave" class="gs-notice" role="status">작품 자동 저장</p>
 <h2>관찰 도구</h2><div id="gsStructureTools" class="gs-row"><button data-gs-structure="solid">면</button><button data-gs-structure="edges">모서리</button><button data-gs-structure="vertices">꼭짓점</button></div><p id="gsStructureNote"></p><button id="gsMeasure" aria-pressed="true">측정값 보기</button><div id="gsStats" class="gs-stats"></div>
 <h2>학년별 도형 퀴즈</h2><label>문제 종류<select id="gsQuizKind"></select></label><button id="gsQuestion">문제 내기</button><div id="gsQuizWorkbench"><p id="gsScore">0 / 0 정답</p><p id="gsPrompt">도형을 만들고 문제를 풀어 보세요.</p><div id="gsChoices" class="gs-row" role="group" aria-label="모양 정답 선택" hidden></div><div id="gsBuildTarget" hidden><canvas id="gsTargetIso" width="240" height="190" aria-label="따라 만들 목표 쌓기나무"></canvas><canvas id="gsTargetHeights" width="160" height="160" aria-label="목표를 위에서 본 칸별 층 수"></canvas><p id="gsBuildHint"></p><button id="gsBuildCheck">만든 모양 확인</button></div><form id="gsAnswerForm" class="gs-answer" hidden><input id="gsAnswer" type="number" step="any" min="0" inputmode="decimal" aria-label="퀴즈 정답" required><button type="submit">확인</button></form><p id="gsFeedback" class="gs-feedback" aria-live="polite">관찰한 도형의 크기와 모양으로 문제가 만들어져요.</p><button id="gsReveal" hidden>풀이 보기</button></div></aside>
+<aside id="gsOrientation" class="gs-orientation" aria-label="XYZ 방향 안내: X 가로, Y 높이, Z 깊이"><svg viewBox="0 0 112 82" aria-label="현재 시점의 좌표축"><circle cx="56" cy="40" r="32" fill="#ffffff" fill-opacity=".7" stroke="#e1e7ef"/>${['X','Y','Z'].map((a,i)=>`<line id="gsAxis${a}Back" class="gs-axis-back" x1="56" y1="40" x2="56" y2="40" stroke="${['#cf6255','#3d9373','#597fbb'][i]}"/><g><line id="gsAxis${a}" x1="56" y1="40" x2="56" y2="40" stroke="${['#cf6255','#3d9373','#597fbb'][i]}"/><circle id="gsAxis${a}Tip" cx="56" cy="40" r="3" fill="${['#cf6255','#3d9373','#597fbb'][i]}"/><text id="gsAxis${a}Label" x="56" y="40" fill="${['#ad4539','#277253','#38629b'][i]}">${a}</text></g>`).join('')}<circle cx="56" cy="40" r="2.5" fill="#64758b"/></svg><p>X 가로 · Y 높이 · Z 깊이</p><button id="gsResetView" type="button">시점 복귀</button></aside>
 <div id="gsLabels" class="gs-labels" aria-label="도형의 점과 길이 표기"></div>
 <section id="gsQuizBoard" class="gs-quiz-board" hidden aria-label="도형 퀴즈 문제"><div class="gs-question-card"><div class="gs-question-meta"><span id="gsRoundLabel"></span><span id="gsPickProgress"></span></div><h2 id="gsQuestionText"></h2><p id="gsQuestionHelp"></p></div><div id="gsAnswerDock" class="gs-answer-dock"><div id="gsSelectionFeedback" aria-live="polite"></div><details id="gsNamedAnswers"><summary>이름으로 답 고르기</summary><div id="gsElementChoices" class="gs-element-choices"></div></details><label id="gsFoldControl" hidden>전개도 접기 <input id="gsFold" type="range" min="0" max="100" value="0" aria-label="전개도 접는 정도"></label><button id="gsNextQuestion" class="gs-next-question">다음 문제 →</button></div></section><div id="gsAnswerMarker" class="gs-answer-marker" hidden aria-live="polite"></div>
 <div id="gsViews" class="gs-views">${[['top','위'],['front','앞'],['side','오른쪽']].map(([k,t])=>`<figure><figcaption>${t}에서 본 모습</figcaption><canvas id="gsView${k}" width="160" height="160" aria-label="${t}에서 본 쌓기나무 그림"></canvas></figure>`).join('')}</div>
@@ -45,11 +46,12 @@ $('gsMeasure').onclick=()=>{state.measure=!state.measure;syncUI();save()};
 $('gsBuildCheck').onclick=checkBuild;$('gsQuestion').onclick=()=>{askQuestion();if(studentMode){settingsOpen=false;root.classList.remove('gs-settings-open');resize()}};$('gsReveal').onclick=()=>reveal(false);
 $('gsAnswerForm').onsubmit=e=>{e.preventDefault();checkAnswer()};
 root.querySelectorAll('[data-gs-view]').forEach(b=>b.onclick=()=>{const v=b.dataset.gsView;theta=v==='side'?Math.PI/2:v==='iso'?.65:0;phi=v==='top'?.001:v==='bottom'?Math.PI-.001:v==='iso'?.95:Math.PI/2;positionCamera()});
+$('gsResetView').onclick=()=>{theta=.65;phi=.95;radius=state.grade>=5?15:12;positionCamera()};
 $('gsZoomIn').onclick=()=>{radius=Math.max(6,radius*.85);positionCamera()};$('gsZoomOut').onclick=()=>{radius=Math.min(38,radius/ .85);positionCamera()};
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{if(e.button!==0||drag)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,moved:false};canvas.setPointerCapture(e.pointerId)});
 canvas.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.lx,dy=e.clientY-drag.ly;drag.lx=e.clientX;drag.ly=e.clientY;
-if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>5)drag.moved=true;if(drag.moved){theta-=dx*.008;phi=Math.max(.001,Math.min(state.tab==='solid'?Math.PI-.001:Math.PI/2,phi+dy*.008));positionCamera()}});
+if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>5)drag.moved=true;if(drag.moved){theta-=dx*.0055;phi=Math.max(.001,Math.min(state.tab==='solid'?Math.PI-.001:Math.PI/2,phi+dy*.0055));positionCamera()}});
 canvas.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;const click=!drag.moved;drag=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(click){if(quiz?.visual&&quiz.targetType)diagram?.pickAt(e.clientX,e.clientY,camera,canvas);else if(!studentMode||quiz?.construction)editAt(e)}});
 canvas.addEventListener('pointercancel',()=>{drag=null});canvas.addEventListener('lostpointercapture',()=>{drag=null});
 canvas.addEventListener('wheel',e=>{e.preventDefault();radius=Math.max(6,Math.min(38,radius*(e.deltaY>0?1.1:.9)));positionCamera()},{passive:false});
@@ -109,13 +111,13 @@ const extent=L.profile(state.grade).maxSize;
 if(grid.userData.extent!==extent){scene.remove(grid);grid.geometry.dispose();grid.material.dispose();grid=new THREE.GridHelper(extent,extent,0x6584b7,0xc0cedf);grid.userData.extent=extent;grid.position.set(extent/2-4,.001,extent/2-4);scene.add(grid);plane.geometry.dispose();plane.geometry=new THREE.PlaneGeometry(extent,extent);plane.position.set(extent/2-4,0,extent/2-4)}
 disposeGroup();group=new THREE.Group();scene.add(group);grid.visible=plane.visible=state.tab==='stack';
 const round=state.tab==='solid'&&['cylinder','cone','sphere'].includes(state.shape),structure=state.tab==='solid'&&round?'solid':state.structure;
-const add=(geo,pos)=>{const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x5d8de2,roughness:.5,transparent:structure!=='solid',opacity:structure==='solid'?1:.18,side:THREE.DoubleSide}));mesh.position.copy(pos);group.add(mesh);
-const wire=new THREE.LineSegments(new THREE.EdgesGeometry(geo,25),new THREE.LineBasicMaterial({color:structure==='edges'?0xd24937:0x29496d,transparent:true,opacity:.9}));mesh.add(wire);
+const add=(geo,pos)=>{const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0xffdba6,roughness:.6,transparent:true,opacity:structure==='solid'?.16:.07,depthWrite:false,side:THREE.DoubleSide}));mesh.position.copy(pos);group.add(mesh);
+const wire=new THREE.LineSegments(new THREE.EdgesGeometry(geo,25),new THREE.LineBasicMaterial({color:structure==='edges'?0xd24937:0x806746,transparent:true,opacity:.9}));mesh.add(wire);
 if(structure==='vertices'&&!round){const a=geo.attributes.position,points=[],seen=new Set();for(let i=0;i<a.count;i++){const p=[a.getX(i),a.getY(i),a.getZ(i)],k=p.map(v=>v.toFixed(3)).join(',');if(!seen.has(k)){seen.add(k);points.push(...p)}}const dots=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(points,3)),new THREE.PointsMaterial({color:0xc72b6a,size:.22,depthTest:false}));mesh.add(dots)}return mesh};
 if(state.tab==='stack'){for(const p of state.cells){const mesh=add(new THREE.BoxGeometry(.98,.98,.98),new THREE.Vector3(p[0]-3.5,p[1]+.5,p[2]-3.5));mesh.userData.cell=p.slice()}}
 else if(!quiz?.net){let g,y=state.h/2;const r=state.w/2;switch(state.shape){case 'cube':g=new THREE.BoxGeometry(state.w,state.w,state.w);y=r;break;case 'cuboid':g=new THREE.BoxGeometry(state.w,state.h,state.d);break;case 'prism':g=prismGeometry();y=0;break;case 'pyramid':g=pyramidGeometry();y=0;break;case 'cylinder':g=new THREE.CylinderGeometry(r,r,state.h,64);break;case 'cone':g=new THREE.ConeGeometry(r,state.h,64);break;case 'sphere':g=new THREE.SphereGeometry(r,48,32);y=r;break}add(g,new THREE.Vector3(0,y,0))}
 if(state.tab==='solid'&&['cube','cuboid'].includes(state.shape)&&Q&&window.CubeGeometryDiagram){
-if(quiz?.visual&&!quiz.net){const base=group.children.find(c=>c.isMesh);if(base){base.material.transparent=true;base.material.opacity=.18;base.material.depthWrite=false}}
+if(quiz?.visual&&!quiz.net){const base=group.children.find(c=>c.isMesh);if(base){base.material.transparent=true;base.material.opacity=.07;base.material.depthWrite=false}}
 const dims=state.shape==='cube'?[state.w,state.w,state.w]:[state.w,state.h,state.d];
 diagram=window.CubeGeometryDiagram.create({parent:group,dims,question:quiz?.visual?quiz:null,labels:$('gsLabels'),onPick:pickDiagram});
 if(quiz?.net)diagram.fold(Number($('gsFold').value||0)/100);
@@ -134,7 +136,18 @@ if(studentMode&&!settingsOpen&&box){const corners=[];for(const x of [box.min.x,b
 for(let n=0;n<3;n++){const points=corners.map(p=>p.clone().project(camera)),width=(Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x)))*rect.width/2,height=(Math.max(...points.map(p=>p.y))-Math.min(...points.map(p=>p.y)))*rect.height/2,ratio=Math.max(width/Math.max(80,right-left-70),height/Math.max(80,bottom-top-70));if(ratio<=1.01)break;radius*=ratio*1.04;pose()}}
 render();
 }
-function render(){if(active&&activity==='studio'&&renderer){renderer.render(scene,camera);diagram?.layout(camera,canvas);for(const c of diagram?.choices()||[]){const b=$('gsElementChoices').querySelector('[data-quiz-choice="'+c.id+'"]');if(b&&c.screen){b.dataset.screenX=c.screen[0];b.dataset.screenY=c.screen[1]}}}}
+function render(){if(active&&activity==='studio'&&renderer){renderer.render(scene,camera);updateOrientation();diagram?.layout(camera,canvas);for(const c of diagram?.choices()||[]){const b=$('gsElementChoices').querySelector('[data-quiz-choice="'+c.id+'"]');if(b&&c.screen){b.dataset.screenX=c.screen[0];b.dataset.screenY=c.screen[1]}}}}
+function updateOrientation(){
+const hud=$('gsOrientation');if(!hud||!camera)return;
+if(studentMode){const card=$('gsQuizBoard').querySelector('.gs-question-card');hud.style.top=(card.getBoundingClientRect().bottom+10)+'px'}else hud.style.top=state.tab==='stack'?'230px':'94px';
+const inverse=camera.quaternion.clone().invert();
+for(const [i,a] of ['X','Y','Z'].entries()){const vector=new THREE.Vector3(i===0?1:0,i===1?1:0,i===2?1:0).applyQuaternion(inverse),dx=vector.x*27,dy=-vector.y*27,x=56+dx,y=40+dy;
+for(const [id,px,py] of [['gsAxis'+a,x,y],['gsAxis'+a+'Back',56-dx,40-dy]]){const line=$(id);line.setAttribute('x2',String(px));line.setAttribute('y2',String(py))}
+$('gsAxis'+a+'Tip').setAttribute('cx',String(x));$('gsAxis'+a+'Tip').setAttribute('cy',String(y));
+const length=Math.hypot(dx,dy),tx=length>4?x+dx/length*10:x+11,ty=length>4?y+dy/length*10:y-9;
+$('gsAxis'+a+'Label').setAttribute('x',String(tx));$('gsAxis'+a+'Label').setAttribute('y',String(ty));
+}
+}
 function resize(){if(!renderer)return;const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return;renderer.setSize(rect.width,rect.height,false);camera.aspect=rect.width/rect.height;positionCamera()}
 function editAt(e){if(state.tab!=='stack'||state.tool==='rotate')return;const rect=canvas.getBoundingClientRect(),v=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),ray=new THREE.Raycaster();ray.setFromCamera(v,camera);const hit=ray.intersectObjects([...group.children,plane],false)[0];if(!hit)return;
 if(state.tool==='remove'){if(hit.object.userData.cell)editCells(state.cells.filter(p=>p.join(',')!==hit.object.userData.cell.join(',')));return}
@@ -175,7 +188,7 @@ if(L.matchesBuild(state.cells,quiz.target,quiz.kind)){score.correct++;quiz.revea
 function revealBuild(){quiz.revealed=true;show('gsReveal',false);show('gsBuildTarget',false);history.push(state.cells);future=[];state.cells=quiz.kind==='sameVolume'?L.box(4,1,3):quiz.target.map(p=>p.slice());notify(quiz.kind==='sameVolume'?'예시: 4 × 1 × 3은 부피 12 cm³, 겉넓이 38 cm²예요. 목표의 겉넓이는 32 cm²예요.':'목표 모양을 작업대에 놓았어요. 돌려 보며 내 모양과 비교해 보세요.');renderModel();syncUI();save()}
 function drawTargetHeights(points){const c=$('gsTargetHeights'),ctx=c.getContext('2d'),size=L.profile(state.grade).maxSize,cell=144/size;ctx.clearRect(0,0,160,160);ctx.font='bold 15px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';for(let x=0;x<size;x++)for(let z=0;z<size;z++){const n=points.filter(p=>p[0]===x&&p[2]===z).length;ctx.fillStyle=n?'#d4e4ff':'#f4f7fc';ctx.fillRect(8+x*cell,8+z*cell,cell-1,cell-1);if(n){ctx.fillStyle='#20324b';ctx.fillText(n,8+(x+.5)*cell,8+(z+.5)*cell)}}}
 function drawTargetIso(points){const c=$('gsTargetIso'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);if(!points.length)return;const size=12,project=([x,y,z])=>[120+(x-z)*size,150+(x+z)*size*.5-y*size];
-const faces=[{color:'#b9d4ff',v:[[0,1,0],[1,1,0],[1,1,1],[0,1,1]]},{color:'#769fdc',v:[[1,0,0],[1,0,1],[1,1,1],[1,1,0]]},{color:'#527ebd',v:[[0,0,1],[1,0,1],[1,1,1],[0,1,1]]}];
+const faces=[{color:'#fff0cb',v:[[0,1,0],[1,1,0],[1,1,1],[0,1,1]]},{color:'#f5d79f',v:[[1,0,0],[1,0,1],[1,1,1],[1,1,0]]},{color:'#e9bc7b',v:[[0,0,1],[1,0,1],[1,1,1],[0,1,1]]}];
 const raw=points.flatMap(p=>[[p[0],p[1],p[2]],[p[0]+1,p[1]+1,p[2]+1]]).map(project),minY=Math.min(...raw.map(p=>p[1])),maxY=Math.max(...raw.map(p=>p[1]));
 ctx.save();ctx.translate(0,(c.height-minY-maxY)/2);for(const p of points.slice().sort((a,b)=>(a[0]+a[2])-(b[0]+b[2])||a[1]-b[1]))for(const f of faces){ctx.beginPath();f.v.map(v=>project(v.map((n,i)=>n+p[i]))).forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=f.color;ctx.fill();ctx.strokeStyle='#29496d';ctx.stroke()}ctx.restore();
 }
@@ -227,7 +240,7 @@ function stopLegacy(){if(activity==='cuboidPuzzle')window.CubeArchitectCuboidPuz
 function switchActivity(next){if(!['studio','net','challenge','cuboidPuzzle','creative'].includes(next))return;
 stopLegacy();activity=next;const studio=next==='studio';document.body.classList.toggle('geometry-legacy',!studio);
 for(const id of ['gsCanvas','gsPanel','gsViewButtons','gsBanner'])show(id,studio);show('gsViews',studio&&state.tab==='stack'&&(!quiz||quiz.revealed||quiz.kind==='buildViews'));show('gsReturn',!studio);$('gsActivity').value=next;
-window.CubeArchitectExternalPause=studio;show('gsQuizBoard',studio&&studentMode);show('gsLabels',studio);
+window.CubeArchitectExternalPause=studio;show('gsQuizBoard',studio&&studentMode);show('gsLabels',studio);show('gsOrientation',studio);
 try{if(studio){$('homeScreen').classList.add('hidden');$('topbar').classList.add('hidden');resize();syncUI();render()}
 else if(next==='cuboidPuzzle'){window.CubeArchitectCuboidPuzzle.enter();const home=$('cuboidPuzzleHome');if(home)home.onclick=()=>switchActivity('studio')}
 else window.CubeArchitect.enterMode(next)}catch(err){notify('활동을 시작하지 못했어요. 작업대로 돌아왔어요.');if(next!=='studio')switchActivity('studio');console.error(err)}
