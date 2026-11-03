@@ -7,9 +7,43 @@ button,input,select{font:inherit}button{cursor:pointer;touch-action:manipulation
 .roll-status{display:grid;grid-template-columns:.8fr .8fr 1.5fr;gap:10px}.roll-status>div{padding:13px;border-radius:14px;background:#10243f;border:1px solid #29415e;display:flex;flex-direction:column;gap:5px}.roll-status small{color:var(--muted);font-size:.72rem}.roll-status strong{font-size:1.16rem;letter-spacing:-.035em}.history-block{margin-top:20px}.subhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:13px}.subhead h2{font-size:1.12rem}.subhead small,.subhead>span{font-size:.8rem}.history{display:flex;gap:7px;align-items:center;flex-wrap:wrap;min-height:35px}.chip{min-width:33px;min-height:33px;display:grid;place-items:center;background:#273d5b;border:1px solid #416084;border-radius:11px;font-weight:900;font-variant-numeric:tabular-nums}.chip.latest{background:#3e6bb1;border-color:#8ebdfd}.chip{min-height:44px;min-width:39px;grid-template-rows:12px 20px;gap:0;padding:4px}.chip small{font-size:.58rem;font-weight:800;color:#a9c8ef}.chip b{font-size:.95rem;line-height:1.15}
 .setting,.scoreboard,.select-panel{padding:18px 20px}.field-label{display:block;color:#b4c9e5;font-size:.78rem;font-weight:750;margin:12px 0 7px}select,input{width:100%;background:#0c1b31;border:1px solid #365575;border-radius:12px;color:var(--ink);padding:11px 12px;outline:none}select{appearance:auto}.duel-settings{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}.names{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:12px}.names label{font-size:.75rem;color:var(--muted);font-weight:750}.names input{display:block;margin-top:5px;font-weight:750}.link-btn{border:0;background:transparent;color:#9acaff;font-size:.84rem;text-decoration:underline;text-underline-offset:3px}.record-badge{background:#344875;color:#d7e6ff;border-radius:50px;padding:6px 10px}
 .scores{display:grid;gap:9px}.score-line{background:#0d1e35;border:1px solid #314c71;border-radius:13px;padding:12px;display:flex;justify-content:space-between;gap:15px;align-items:center}.score-line.player-active{border-color:#f0c370;background:#29364d}.score-left{display:flex;flex-direction:column;gap:2px;min-width:0}.score-left b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.score-left small{color:var(--muted);font-size:.73rem}.score-right{display:flex;gap:14px;align-items:baseline;text-align:right}.score-right div{display:flex;flex-direction:column;gap:3px}.score-right span{font-size:.68rem;color:var(--muted)}.score-right strong{font-size:1.4rem;color:var(--yellow);font-variant-numeric:tabular-nums}.score-right .point{font-size:1rem;color:var(--green)}.score-left .locked{color:var(--green)}
-.hint{color:var(--muted);line-height:1.5;font-size:.84rem;margin-bottom:14px}.number-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:16px}.number-grid button{height:clamp(44px,5.5vw,56px);border:1px solid #45628a;background:#1b3654;border-radius:14px;color:#edf7ff;font-size:1.25rem;font-weight:950;box-shadow:inset 0 3px 7px #ffffff0b}.number-grid button.selected{background:#fdce73;color:#272f44;border-color:#ffe7ad;box-shadow:0 0 0 2px #fff3,0 5px 20px #ffcc6333}.number-grid button:disabled{opacity:.45}.number-grid.locked button{pointer-events:none}
+.hint{color:var(--muted);line-height:1.5;font-size:.84rem;margin-bottom:14px}.number-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:16px}.number-grid button{height:clamp(44px,5.5vw,56px);border:1px solid #45628a;background:#1b3654;border-radius:14px;color:#edf7ff;font-size:1.25rem;font-weight:950;box-shadow:inset 0 3px 7px #ffffff0b}.number-grid button.selected{background:#fdce73;color:#272f44;border-color:#ffe7ad;box-shadow:0 0 0 2px #fff3,0 5px 20px #ffcc6333}.number-grid button:disabled{opacity:.65}.number-grid button:disabled.selected{opacity:1}.number-grid.locked button{pointer-events:none}
 .odds{border-radius:14px;padding:14px;background:#0d2036;border:1px solid #2c4768;margin-bottom:14px}.odds-row,.odds-bottom{display:flex;justify-content:space-between;align-items:center;gap:8px}.odds-row span{font-size:.86rem;color:#c9dbec}.odds-row strong{font-size:1.43rem;color:var(--green)}.meter{height:9px;border-radius:20px;background:#314359;overflow:hidden;margin:10px 0}.meter>div{height:100%;width:0;background:linear-gradient(90deg,#4fc7bd,#89eca3);border-radius:20px;transition:width .2s}.odds-bottom{color:var(--muted);font-size:.77rem}.primary,.outline{min-height:48px;border-radius:13px;border:1px solid #68b5fa;padding:11px 16px;font-weight:900}.primary{color:#0c223a;background:linear-gradient(135deg,#8fd2fa,#69acef)}.outline{background:#1e3758;color:#e4f3ff;border-color:#496d91}.full{width:100%;margin-top:7px}
 .bottom{margin-top:17px;padding:18px 20px}.lab{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.lab-card{display:flex;flex-direction:column;gap:6px;border-radius:15px;padding:15px;background:#0e2038;border:1px solid #2d4665}.lab-card small{color:var(--muted)}.lab-card b{font-size:1.4rem;color:#ffda92}.lab-card>span{color:#9fb5ce;font-size:.78rem}.bottom details{margin-top:16px;border-top:1px solid var(--line);padding:13px 0 0;color:#abc3df}.bottom summary{cursor:pointer;font-weight:750}.bottom details p{margin-top:10px;font-size:.87rem;line-height:1.75}footer{padding:18px 6px 0;color:#849cb7;font-size:.76rem;text-align:center}
-@media(max-width:1000px){.layout{grid-template-columns:1fr}.right{grid-template-columns:1fr 1fr;align-items:start}.select-panel{grid-column:1/-1}.arena{height:370px}.number-grid{grid-template-columns:repeat(8,minmax(0,1fr))}}
-@media(max-width:640px){.app{padding:12px 12px 24px}.top{flex-direction:column;align-items:stretch;gap:14px}.top p{font-size:.84rem}.modes{width:100%}.modes button{flex:1}.right{grid-template-columns:1fr}.select-panel{grid-column:auto}.panel{border-radius:17px}.dice-section,.setting,.scoreboard,.select-panel,.bottom{padding:15px}.arena{min-height:255px;height:290px;margin:10px 0}.arena-head h2{font-size:1.18rem}.shape-pill{max-width:140px}.number-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.number-grid button{height:46px}.roll-status{grid-template-columns:1fr 1fr}.roll-status>div:last-child{grid-column:1/-1}.lab{grid-template-columns:1fr}.lab-card{padding:12px}.subhead h2{font-size:1rem}}
+/* On tablets and phones, put the action first instead of burying
+   the number picker below an oversized arena and configuration panels. */
+.arena-next{display:none}
+@media(max-width:1000px){
+ .layout{display:flex;flex-direction:column;gap:14px}
+ .layout>.dice-section{order:2;width:100%}
+ .right{display:contents}
+ .select-panel{order:1;width:100%}
+ .scoreboard{order:3;width:100%}
+ .setting{order:4;width:100%}
+ .arena{height:370px}
+ .number-grid{grid-template-columns:repeat(8,minmax(0,1fr))}
+ .arena-next:not(.hidden){display:block;margin:14px 0 4px}
+}
+
+@media(max-width:640px){.app{padding:12px 12px 24px}.top{flex-direction:column;align-items:stretch;gap:14px}.top p{font-size:.84rem}.modes{width:100%}.modes button{flex:1} .right{display:contents}.select-panel{grid-column:auto}.panel{border-radius:17px}.dice-section,.setting,.scoreboard,.select-panel,.bottom{padding:15px}.arena{min-height:255px;height:290px;margin:10px 0}.arena-head h2{font-size:1.18rem}.shape-pill{max-width:140px}.number-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.number-grid button{height:46px}.roll-status{grid-template-columns:1fr 1fr}.roll-status>div:last-child{grid-column:1/-1}.lab{grid-template-columns:1fr}.lab-card{padding:12px}.subhead h2{font-size:1rem}}
 @media(prefers-reduced-motion:reduce){button,.meter>div{transition:none}}
+
+/* Always keep tap targets legible; a full width mobile confirmation
+   should remain within the student's first interaction viewport. */
+@media(max-width:640px){
+ .top{gap:10px;margin-bottom:12px}
+ .top .eyebrow{font-size:.68rem}
+ .top h1{font-size:1.95rem;margin:3px 0 5px}
+ .top p{font-size:.81rem;line-height:1.35}
+ .modes button{min-height:46px}
+ .number-grid button{min-width:0;font-size:1.12rem}
+ .select-panel .subhead{align-items:start}
+ .select-panel .subhead h2{max-width:75%;line-height:1.4}
+ .arena{height:275px;min-height:275px}
+ .arena-next{margin-top:11px}
+ .score-line{gap:8px}
+ .score-right{gap:10px}
+ .score-right strong{font-size:1.19rem}
+ .roll-status strong{font-size:1.07rem}
+ .record-badge{white-space:nowrap}
+}

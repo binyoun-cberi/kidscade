@@ -1,0 +1,35 @@
+name: Destiny Dice standalone smoke
+
+on:
+  pull_request:
+    paths:
+      - 'games/probability_dice_survival/**'
+      - 'tests/probability-dice-*.cjs'
+      - 'data/games.json'
+      - '.github/workflows/dice-survival-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dice-browser-and-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            games/probability_dice_survival/
+            tests/probability-dice-survival.test.cjs
+            tests/probability-dice-browser-audit.cjs
+            data/games.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate dice engine, polyhedra and catalogue
+        run: node --test tests/probability-dice-survival.test.cjs
+      - name: Play solo, local versus and mobile in real Chrome
+        run: node tests/probability-dice-browser-audit.cjs

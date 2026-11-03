@@ -12,7 +12,7 @@
     choiceCount:$('choiceCount'),turnHint:$('turnHint'),pickTitle:$('pickTitle'),
     chance:$('chanceLabel'),fill:$('chanceFill'),fraction:$('oddsFraction'),
     reward:$('rewardLabel'),lock:$('lockBtn'),roll:$('rollBtn'),next:$('nextBtn'),
-    labChance:$('labChance'),labExpected:$('labExpected'),labObserved:$('labObserved')};
+    labChance:$('labChance'),labExpected:$('labExpected'),labObserved:$('labObserved'),arenaNext:$('arenaNextBtn')};
   const renderer=new P.DiceRenderer($('diceCanvas'));
   const BEST_KEY='kidscade_dice_survival_best_v1';
   let bestSaved=0;
@@ -65,7 +65,10 @@
   }
   function displayNumbers(faces){
     const canPick=state.phase==='picking';
-    const hand=canPick?currentHand():new Set();
+    // Retain the student's submitted choices in solo mode when showing the result.
+    const showSoloPick=state.mode==='solo'&&state.hands[0]?.size>0;
+    const showOdds=canPick||showSoloPick;
+    const hand=canPick?currentHand():(showSoloPick?state.hands[0]:new Set());
     const previous=el.numbers.querySelectorAll('button');
     if(previous.length!==faces){
       el.numbers.innerHTML=Array.from({length:faces},(_,i)=>'<button type="button" data-number="'+(i+1)+'" aria-pressed="false">'+(i+1)+'</button>').join('');
@@ -78,13 +81,13 @@
       btn.disabled=!canPick;
     }
     const count=hand.size;
-    setText('choiceCount',canPick?count+'개 선택':state.mode==='duel'?'선택 비공개':'선택 완료');
+    setText('choiceCount',canPick?count+'개 선택':state.mode==='duel'?'선택 비공개':count+'개 선택 완료');
     const p=count/faces;
-    setText('chance',canPick?labelPct(p):'—');
-    el.fill.style.width=(canPick?p*100:0)+'%';
-    setText('fraction',canPick?count+' / '+faces:'공정한 무작위 결과');
-    setText('reward',canPick&&count?'성공 보상 +'+E.riskScore(count,faces)+'점':'선택해야 점수 확인');
-    setText('labChance',canPick&&count?count+' / '+faces+' = '+labelPct(p):'아직 선택 전');
+    setText('chance',showOdds?labelPct(p):'—');
+    el.fill.style.width=(showOdds?p*100:0)+'%';
+    setText('fraction',showOdds?count+' / '+faces:'선택 결과는 아래에서 확인');
+    setText('reward',showOdds&&count?'성공 보상 +'+E.riskScore(count,faces)+'점':'선택해야 점수 확인');
+    setText('labChance',showOdds&&count?count+' / '+faces+' = '+labelPct(p):'아직 선택 전');
   }
   function displayHistory(faces){
     const faceRolls=state.rolls.filter(r=>r.faces===faces).map(r=>r.value);
@@ -102,11 +105,11 @@
     el.solo.classList.toggle('active',!duel);el.duel.classList.toggle('active',duel);
     el.solo.setAttribute('aria-pressed',String(!duel));el.duel.setAttribute('aria-pressed',String(duel));
     el.settings.classList.toggle('hidden',!duel);
-    const level=duel?Math.min(4,Math.ceil(state.round/3)):
-      E.SOLO_STAGES.reduce((n,s)=>faces>=s.faces?n+1:n,0);
-    setText('stage','STAGE '+String(level).padStart(2,'0'));
-    setText('dieTitle',faces+'면체 주사위');
     const auto=el.dieMode.value==='stage';
+    const level=duel?Math.min(4,Math.ceil(state.round/3)):
+      Math.max(1,E.SOLO_STAGES.findIndex(stage=>stage.faces===faces)+1);
+    setText('stage',auto?'STAGE '+String(level).padStart(2,'0'):'FREE PLAY');
+    setText('dieTitle',faces+'면체 주사위');
     setText('stageNote',!auto?'주사위 면 수 고정':duel?'3라운드마다 주사위 변경':'연속 생존 3·6·10회에 변경');
     setText('round',duel?state.round+' / '+state.limit+'라운드':state.round+'번째 도전');
     setText('result',state.last?.value??'—');
@@ -126,7 +129,16 @@
     el.roll.textContent=rolling?'주사위가 굴러가는 중...':'3D 주사위 굴리기';
     el.next.classList.toggle('hidden',!done);
     el.next.textContent=state.phase==='ended'?'새 대전 시작':'다음 라운드';
-    if(!state.last&&picking){el.overlay.className='result-overlay';el.overlay.textContent='숫자를 선택하고 굴려 보세요';}
+    el.arenaNext.classList.toggle('hidden',!done);
+    el.arenaNext.textContent=el.next.textContent;
+    for(const control of [el.solo,el.duel,el.reset,el.startDuel,el.dieMode,el.roundLimit,$('name1'),$('name2'),$('name3'),$('name4')]){
+      control.disabled=rolling;
+    }
+    if(!state.last&&picking){
+      el.overlay.className='result-overlay';el.overlay.textContent='숫자를 선택하고 굴려 보세요';
+    }else if(!state.last&&ready){
+      el.overlay.className='result-overlay';el.overlay.textContent='모두 결정했어요! 굴려 보세요';
+    }
   }
   el.numbers.addEventListener('click',e=>{
     const btn=e.target.closest('button[data-number]');
@@ -155,6 +167,14 @@
     state.last=null;
     el.overlay.className='result-overlay';el.overlay.textContent='굴러가는 중...';
     sync();
+    // On mobile the number pad is deliberately shown first. Bring the actual
+    // moving 3D die into view as soon as the roll starts.
+    if(window.matchMedia?.('(max-width: 1000px)')?.matches){
+      const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      document.querySelector('.dice-section')?.scrollIntoView({
+        behavior:reduce?'auto':'smooth',block:'start'
+      });
+    }
     try{await renderer.roll(result);}catch(error){
       console.error(error);state.phase=state.mode==='duel'?'ready':'picking';sync();return;
     }
@@ -188,14 +208,20 @@
     sync();
   }
   el.roll.addEventListener('click',roll);
-  el.next.addEventListener('click',()=>{
+  function nextRound(){
     if(state.phase==='ended'){resetGame();return;}
     if(state.phase!=='revealed')return;
     state.round++;state.phase='picking';state.turn=0;
     state.hands=state.players.map(()=>new Set());
     state.last=null;
     sync();
-  });
+    if(window.matchMedia?.('(max-width: 1000px)')?.matches){
+      // Return the next player to the choice surface without a forced jump on desktop.
+      document.querySelector('.select-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+  }
+  el.next.addEventListener('click',nextRound);
+  el.arenaNext.addEventListener('click',nextRound);
   el.solo.addEventListener('click',()=>{if(state.phase==='rolling')return;state.mode='solo';resetGame();});
   el.duel.addEventListener('click',()=>{if(state.phase==='rolling')return;state.mode='duel';resetGame();});
   el.reset.addEventListener('click',()=>{if(state.phase==='rolling')return;resetGame();});
