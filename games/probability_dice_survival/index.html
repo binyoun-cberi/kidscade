@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#10182d">
-<title>운명의 주사위 — 확률 서바이벌 | 키즈케이드</title>
+<title>운명의 주사위 | 키즈케이드</title>
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 <main class="app">
   <header class="top">
-    <div><span class="eyebrow">KIDSCADE · 평균과 가능성</span><h1>운명의 주사위 <span>확률 서바이벌</span></h1><p>살아남을 숫자를 선택하세요. 빗나가면 연속 생존은 0부터!</p></div>
+    <div><span class="eyebrow">KIDSCADE · 평균과 가능성</span><h1>운명의 주사위</h1><p>살아남을 숫자를 고르고 3D 주사위를 굴려 보세요. 실패하면 연속 생존이 0으로 돌아가요!</p></div>
     <div class="modes" role="group" aria-label="게임 방식">
       <button id="soloMode" class="active" aria-pressed="true">혼자 도전</button>
       <button id="duelMode" aria-pressed="false">친구와 대전</button>
@@ -25,6 +25,7 @@
         <div id="resultOverlay" class="result-overlay" aria-live="polite">굴릴 준비 완료</div>
       </div>
       <div class="roll-status"><div><small>이번 결과</small><strong id="rollResult">—</strong></div><div><small>이번 판</small><strong id="roundLabel">1라운드</strong></div><div><small>이번 주사위 평균(실험 / 예상)</small><strong id="meanLabel">— / 3.5</strong></div></div>
+      <button id="arenaNextBtn" type="button" class="primary full arena-next hidden">다음 라운드</button>
       <div class="history-block"><div class="subhead"><b>최근 굴린 숫자</b><small id="rollCount">0회 시행</small></div><div id="history" class="history"><span class="muted">첫 번째 주사위를 굴려 보세요.</span></div></div>
     </section>
     <div class="right">
