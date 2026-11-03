@@ -167,6 +167,14 @@
     state.last=null;
     el.overlay.className='result-overlay';el.overlay.textContent='굴러가는 중...';
     sync();
+    // On mobile the number pad is deliberately shown first. Bring the actual
+    // moving 3D die into view as soon as the roll starts.
+    if(window.matchMedia?.('(max-width: 1000px)')?.matches){
+      const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      document.querySelector('.dice-section')?.scrollIntoView({
+        behavior:reduce?'auto':'smooth',block:'start'
+      });
+    }
     try{await renderer.roll(result);}catch(error){
       console.error(error);state.phase=state.mode==='duel'?'ready':'picking';sync();return;
     }
