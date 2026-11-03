@@ -73,13 +73,13 @@ const errors=[];
   for(let i=0;i<loops;i++){if(await evaluate(expr))return;await sleep(100);}
   throw Error('Timed out: '+label);
  };
- const select=async(n)=>evaluate("document.querySelector('#numberGrid [data-number=\\\""+n+"\\\"]').click()");
+  const select=async(n)=>evaluate("document.querySelectorAll('#numberGrid button')["+(n-1)+"].click()");
  await cmd('Page.enable');await cmd('Runtime.enable');
  await cmd('Emulation.setDeviceMetricsOverride',{width:1280,height:880,deviceScaleFactor:1,mobile:false});
  // The responsive reduced-motion animation still renders the 3D polygon.
  await cmd('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
  await cmd('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/index.html'});
- await waitFor("!!document.querySelector('#numberGrid [data-number=\\\"6\\\"]')",'desktop ready');
+  await waitFor("document.querySelectorAll('#numberGrid button').length===6",'desktop ready');
  assert.equal(await evaluate("document.title"),'운명의 주사위 | 키즈케이드');
  assert.equal(await evaluate("document.querySelector('h1').textContent"),'운명의 주사위');
  const desktop=await evaluate(`(()=>{
