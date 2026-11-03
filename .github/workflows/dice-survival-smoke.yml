@@ -18,6 +18,14 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            games/probability_dice_survival/
+            tests/probability-dice-survival.test.cjs
+            tests/probability-dice-browser-audit.cjs
+            data/games.json
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
