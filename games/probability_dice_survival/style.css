@@ -47,3 +47,12 @@ button,input,select{font:inherit}button{cursor:pointer;touch-action:manipulation
  .roll-status strong{font-size:1.07rem}
  .record-badge{white-space:nowrap}
 }
+
+/* Landed face stays distinguishable from the student's chosen faces.
+   Duel has no universal win/lose result; the shared roll is highlighted neutrally. */
+.number-grid button.landed-alive,.number-grid button.landed-fail,.number-grid button.landed-shared{
+  opacity:1;position:relative;outline:3px solid;outline-offset:2px;
+}
+.number-grid button.landed-alive{background:#087a5b;color:#fff;outline-color:#86f5c6;box-shadow:0 0 0 5px #1bbd8a33}
+.number-grid button.landed-fail{background:#a92e4c;color:#fff;outline-color:#ffa9b7;box-shadow:0 0 0 5px #ef537b33}
+.number-grid button.landed-shared{background:#7253a7;color:#fff;outline-color:#e1c0ff;box-shadow:0 0 0 5px #ae8bf633}
