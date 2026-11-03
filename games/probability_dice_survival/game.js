@@ -97,13 +97,13 @@
     el.history.innerHTML=recent.length?recent.map((r,i)=>'<span class="chip '+(i===0?'latest':'')+'" title="'+r.faces+'면체 결과" aria-label="'+r.faces+'면체 '+r.value+'">'+r.value+'</span>').join(''):'<span class="muted">첫 번째 주사위를 굴려 보세요.</span>';
   }
   function sync(){
-    const duel=state.mode==='duel',faces=facesNow();
+    const duel=state.mode==='duel',faces=state.last?state.last.faces:facesNow();
     if(lastFaces!==faces&&!renderer.busy){renderer.setFaces(faces);lastFaces=faces;}
     el.solo.classList.toggle('active',!duel);el.duel.classList.toggle('active',duel);
     el.solo.setAttribute('aria-pressed',String(!duel));el.duel.setAttribute('aria-pressed',String(duel));
     el.settings.classList.toggle('hidden',!duel);
     const level=duel?Math.min(4,Math.ceil(state.round/3)):
-      E.SOLO_STAGES.reduce((n,s)=>state.players[0].streak>=s.threshold?n+1:n,0);
+      E.SOLO_STAGES.reduce((n,s)=>faces>=s.faces?n+1:n,0);
     setText('stage','STAGE '+String(level).padStart(2,'0'));
     setText('dieTitle',faces+'면체 주사위');
     const auto=el.dieMode.value==='stage';
@@ -163,6 +163,7 @@
       const updated=E.resolveRoll(player,[...state.hands[i]],faces,result);
       outcomes.push({alive:updated.alive,chosen:[...state.hands[i]]});
       const {alive,...clean}=updated;
+      if(state.mode==='solo'&&!alive)clean.points=0;
       return clean;
     });
     state.last={value:result,faces,outcomes};
@@ -174,7 +175,7 @@
       if(state.phase==='ended'){
         const standings=E.rankPlayers(state.players);
         const highest=standings[0].points;
-        const winners=standings.filter(p=>p.points===highest&&p.best===standings[0].best);
+        const winners=standings.filter(p=>p.points===highest&&p.best===standings[0].best&&p.survived===standings[0].survived);
         el.overlay.textContent='최종 결과: '+winners.map(p=>p.name).join('·')+' 1위!';
       }else el.overlay.textContent=alive+'명 생존 / '+(outcomes.length-alive)+'명 탈락';
       el.overlay.className='result-overlay '+(alive?'success':'fail');
