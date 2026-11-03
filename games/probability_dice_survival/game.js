@@ -57,7 +57,7 @@
       const outcome=state.last?.outcomes?.[i];
       const subtitle=state.mode==='solo'?'최고 기록 '+Math.max(bestSaved,p.best)+'회 · 전체 생존 '+p.survived+'회':
         state.phase==='picking'?(ready?'선택 완료 · 비공개':active?'지금 숫자를 고를 차례':'선택 대기'):
-        outcome?(outcome.alive?'생존 성공 · 전체 '+p.survived+'회':'탈락 · 전체 '+p.survived+'회'):'전체 생존 '+p.survived+'회';
+        outcome?('선택 '+outcome.chosen.slice().sort((a,b)=>a-b).join('·')+' ('+labelPct(outcome.chosen.length/state.last.faces)+') · '+(outcome.alive?'생존 성공':'탈락')+' · 최고 '+p.best+'회'):'전체 생존 '+p.survived+'회';
       return '<div class="score-line '+(active?'player-active':'')+'"><div class="score-left"><b>'+escape(p.name)+'</b><small'+(ready?' class="locked"':'')+'>'+escape(subtitle)+'</small></div><div class="score-right"><div><span>연속 생존</span><strong>'+p.streak+'회</strong></div><div><span>도전 점수</span><strong class="point">'+p.points.toLocaleString('ko-KR')+'</strong></div></div></div>';
     }).join('');
     setText('scoreTitle',state.mode==='solo'?'내 생존 기록':'대전 현황');
@@ -94,7 +94,7 @@
     setText('mean',stats.average===null?'— / '+stats.expectedAverage:stats.average.toFixed(2)+' / '+stats.expectedAverage);
     setText('rollCount',state.rolls.length+'회 시행');
     const recent=state.rolls.slice(-16).reverse();
-    el.history.innerHTML=recent.length?recent.map((r,i)=>'<span class="chip '+(i===0?'latest':'')+'" title="'+r.faces+'면체 결과" aria-label="'+r.faces+'면체 '+r.value+'">'+r.value+'</span>').join(''):'<span class="muted">첫 번째 주사위를 굴려 보세요.</span>';
+    el.history.innerHTML=recent.length?recent.map((r,i)=>'<span class="chip '+(i===0?'latest':'')+'" title="'+r.faces+'면체 결과" aria-label="'+r.faces+'면체 '+r.value+'"><small>d'+r.faces+'</small><b>'+r.value+'</b></span>').join(''):'<span class="muted">첫 번째 주사위를 굴려 보세요.</span>';
   }
   function sync(){
     const duel=state.mode==='duel',faces=state.last?state.last.faces:facesNow();
