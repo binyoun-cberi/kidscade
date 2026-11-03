@@ -149,11 +149,11 @@
       ctx.fillStyle='rgba(2,9,28,.35)';ctx.fill();
       ctx.beginPath();ctx.ellipse(x,floor+7,scale*.85,scale*.12,0,0,Math.PI*2);
       ctx.fillStyle='rgba(2,9,28,.18)';ctx.fill();
-      const projected=this.geometry.vertices.map(v=>{
-        const [px,py,pz]=rotate(this.orientation,v);
-        const factor=4.8/(4.8-pz);
-        return {x:x+px*scale*factor,y:cy-py*scale*factor,z:pz};
-      });
+      const project=v=>{
+        const factor=4.8/(4.8-v[2]);
+        return {x:x+v[0]*scale*factor,y:cy-v[1]*scale*factor,z:v[2]};
+      };
+      const projected=this.geometry.vertices.map(v=>project(rotate(this.orientation,v)));
       const light=normalize([-.45,.85,1.1]);
       const faces=this.geometry.faces.map(face=>{
         const pts=face.indices.map(i=>projected[i]);
@@ -169,15 +169,26 @@
         ctx.closePath();
         ctx.fillStyle='hsl('+hue+' 74% '+(27+brightness*34)+'%)';ctx.fill();
         ctx.lineWidth=Math.max(1.4,scale*.032);ctx.strokeStyle='rgba(229,246,255,.8)';ctx.stroke();
-        const cx=pts.reduce((s,p)=>s+p.x,0)/pts.length;
-        const cY=pts.reduce((s,p)=>s+p.y,0)/pts.length;
-        const radius=Math.min(...pts.map(p=>Math.hypot(p.x-cx,p.y-cY)));
-        const fontSize=Math.max(12,Math.min(scale*.50,radius*1.15));
-        ctx.font='900 '+fontSize+'px system-ui, sans-serif';
+        // Project both tangent directions onto the face. The digits then tilt,
+        // rotate and foreshorten with the actual polygon instead of being
+        // flat screen-space labels painted over a spinning solid.
+        const worldCenter=rotate(this.orientation,face.center);
+        const center=project(worldCenter);
+        const tangent=normalize(sub(this.geometry.vertices[face.indices[1]],this.geometry.vertices[face.indices[0]]));
+        const bitangent=normalize(cross(tangent,face.normal));
+        const u=project(add(worldCenter,rotate(this.orientation,tangent)));
+        const v=project(add(worldCenter,rotate(this.orientation,bitangent)));
+        const faceRadius=Math.min(...face.indices.map(i=>Math.hypot(...sub(this.geometry.vertices[i],face.center))));
+        const fontSize=faceRadius*(face.number>=10?.62:.83);
+        ctx.save();
+        ctx.translate(center.x,center.y);
+        ctx.transform(u.x-center.x,u.y-center.y,v.x-center.x,v.y-center.y,0,0);
+        ctx.font='900 '+fontSize+'px system-ui,sans-serif';
         ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.lineJoin='round';ctx.lineWidth=Math.max(2,fontSize*.105);
-        ctx.strokeStyle='rgba(11,26,65,.85)';ctx.strokeText(String(face.number),cx,cY+1);
-        ctx.fillStyle='#faffff';ctx.fillText(String(face.number),cx,cY+1);
+        ctx.lineJoin='round';ctx.lineWidth=.075;
+        ctx.strokeStyle='rgba(11,26,65,.9)';ctx.strokeText(String(face.number),0,0);
+        ctx.fillStyle='#faffff';ctx.fillText(String(face.number),0,0);
+        ctx.restore();
       }
       if(this.result!==null&&!this.busy) {
         ctx.font='700 12px system-ui,sans-serif';ctx.textAlign='center';ctx.fillStyle='rgba(232,243,255,.82)';
