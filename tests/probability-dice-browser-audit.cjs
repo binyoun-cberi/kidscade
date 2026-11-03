@@ -85,12 +85,14 @@ const errors=[];
  const desktop=await evaluate(`(()=>{
   const pick=document.querySelector('.select-panel').getBoundingClientRect();
   const dice=document.querySelector('.dice-section').getBoundingClientRect();
+  const settings=document.querySelector('.setting').getBoundingClientRect();
   const c=document.querySelector('#diceCanvas'),pixels=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
   let ink=0;for(let i=3;i<pixels.length;i+=4)if(pixels[i]>0)ink++;
-  return {width:innerWidth,scrollWidth:document.documentElement.scrollWidth,pickX:pick.x,diceX:dice.x,canvasInk:ink};
+  return {width:innerWidth,scrollWidth:document.documentElement.scrollWidth,pickX:pick.x,pickY:pick.y,settingsY:settings.y,diceX:dice.x,canvasInk:ink};
  })()`);
  assert.ok(desktop.scrollWidth<=desktop.width+2,'desktop horizontal overflow');
  assert.ok(desktop.pickX>desktop.diceX,'desktop controls should sit next to arena');
+ assert.ok(desktop.pickY<desktop.settingsY,'desktop number picker must be above the settings');
  assert.ok(desktop.canvasInk>2000,'actual 3D dice canvas rendered blank');
  for(let i=1;i<=5;i++)await select(i);
  assert.equal(await evaluate("document.querySelector('#chanceLabel').textContent"),'83.3%');
@@ -102,12 +104,17 @@ const errors=[];
   return {result,overlay:document.querySelector('#resultOverlay').textContent,
    chance:document.querySelector('#chanceLabel').textContent,
    selected:document.querySelectorAll('#numberGrid button.selected').length,
+   landed:[...document.querySelectorAll('#numberGrid button.landed-alive, #numberGrid button.landed-fail')].map(b=>({number:+b.dataset.number,alive:b.classList.contains('landed-alive'),label:b.getAttribute('aria-label')})),
    records:document.querySelectorAll('#history .chip').length};
  })()`);
  assert.ok(solo.result>=1&&solo.result<=6);
  assert.equal(solo.chance,'83.3%');
  assert.equal(solo.selected,5,'selected numbers should remain highlighted after roll');
  assert.equal(solo.records,1,'first history result should be saved');
+ assert.equal(solo.landed.length,1,'the landed face needs one clear highlight');
+ assert.equal(solo.landed[0].number,solo.result);
+ assert.equal(solo.landed[0].alive,solo.result!==6);
+ assert.ok(solo.landed[0].label.includes('나온 숫자'));
  assert.ok(solo.result===6?solo.overlay.includes('0회'):solo.overlay.includes('1회'),'solo streak outcome mismatch');
  await evaluate("document.querySelector('#nextBtn').click()");
  assert.equal(await evaluate("document.querySelector('#roundLabel').textContent"),'2번째 도전');
@@ -131,6 +138,7 @@ const errors=[];
  assert.ok(duel.cards[0].includes('선택 1·2·3·4·5'));
  assert.ok(duel.cards[1].includes('선택 6'));
  assert.ok(duel.overlay.includes('1명 생존 / 1명 탈락'));
+ assert.equal(await evaluate("document.querySelectorAll('#numberGrid button.landed-shared').length"),1,'duel must show the single shared dice result');
  const mobileBefore=await cmd('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
  const mobile=await evaluate(`(()=>{
   const pick=document.querySelector('.select-panel').getBoundingClientRect();
@@ -151,6 +159,26 @@ const errors=[];
  await evaluate("document.querySelector('#rollBtn').click()");
  await waitFor("!document.querySelector('#nextBtn').classList.contains('hidden')",'mobile d20 landed');
  assert.ok(await evaluate("document.querySelector('#rollResult').textContent !== '—'"));
+ // Finish a complete 4-person 6-round match, including d6->d8 transition.
+ await evaluate("(()=>{document.querySelector('#duelMode').click();const a=document.querySelector('#name3'),b=document.querySelector('#name4');a.value='초록';b.value='보라';const d=document.querySelector('#dieMode');d.value='stage';d.dispatchEvent(new Event('change',{bubbles:true}));const r=document.querySelector('#roundLimit');r.value='6';r.dispatchEvent(new Event('change',{bubbles:true}));})()");
+ for(let round=1;round<=6;round++){
+  const cardCount=await evaluate("document.querySelectorAll('.score-line').length");
+  assert.equal(cardCount,4,'four player scorecards missing in round '+round);
+  for(let player=1;player<=4;player++){
+   await select(player);
+   await evaluate("document.querySelector('#lockBtn').click()");
+  }
+  assert.equal(await evaluate("document.querySelector('#rollBtn').disabled"),false);
+  await evaluate("document.querySelector('#rollBtn').click()");
+  await waitFor("!document.querySelector('#nextBtn').classList.contains('hidden')",'four player match round '+round);
+  const result=await evaluate("({result:+document.querySelector('#rollResult').textContent,faces:+document.querySelector('#dieTitle').textContent.split('면')[0]})");
+  assert.ok(result.result>=1&&result.result<=result.faces,'four person die result out of range');
+  assert.equal(result.faces,round<=3?6:8,'round-scoped die stages diverged');
+  if(round<6)await evaluate("document.querySelector('#arenaNextBtn').click()");
+ }
+ assert.ok((await evaluate("document.querySelector('#resultOverlay').textContent")).includes('최종 결과:'));
+ await evaluate("document.querySelector('#arenaNextBtn').click()");
+ assert.equal(await evaluate("document.querySelector('#roundLabel').textContent"),'1 / 6라운드');
  assert.deepEqual(errors,[],'uncaught Chrome exceptions');
  console.log('[dice-browser] PASS desktop='+JSON.stringify(desktop));
  console.log('[dice-browser] PASS solo='+JSON.stringify(solo));
