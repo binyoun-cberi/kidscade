@@ -76,8 +76,16 @@
     el.numbers.classList.toggle('locked',!canPick);
     for(const btn of el.numbers.querySelectorAll('button')){
       const value=Number(btn.dataset.number),selected=hand.has(value);
+      const isResult=state.last?.value===value && state.last?.faces===faces;
+      const soloResult=isResult&&state.mode==='solo';
       btn.classList.toggle('selected',selected);
+      btn.classList.toggle('landed-alive',soloResult&&selected);
+      btn.classList.toggle('landed-fail',soloResult&&!selected);
+      btn.classList.toggle('landed-shared',isResult&&state.mode==='duel');
       btn.setAttribute('aria-pressed',String(selected));
+      btn.setAttribute('aria-label',isResult
+        ?value+'번, 나온 숫자'+(state.mode==='solo'?(selected?', 생존':', 탈락'):', 대전 공통 결과')
+        :value+'번'+(selected?', 선택함':''));
       btn.disabled=!canPick;
     }
     const count=hand.size;
