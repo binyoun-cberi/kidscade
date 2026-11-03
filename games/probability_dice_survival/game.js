@@ -207,7 +207,7 @@
     state.hands=state.players.map(()=>new Set());
     state.last=null;
     sync();
-    if(window.matchMedia?.('(max-width: 1000px)').matches){
+    if(window.matchMedia?.('(max-width: 1000px)')?.matches){
       // Return the next player to the choice surface without a forced jump on desktop.
       document.querySelector('.select-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
     }
