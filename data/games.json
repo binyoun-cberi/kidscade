@@ -2,6 +2,33 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "probability_dice_survival",
+      "addedAt": "2026-11-03T14:42:00+09:00",
+      "title": "운명의 주사위: 확률 서바이벌",
+      "href": "games/probability_dice_survival/index.html",
+      "category": "math",
+      "age": "high",
+      "icon": "◈",
+      "description": "실제 3D 정다면체 주사위로 확률에 도전! 생존 숫자 여러 개를 고르고 연속 생존 최고 기록을 세워요. 4·6·8·12·20면체, 2~4인 대전, 생존 확률·평균 실험실 지원.",
+      "scoreKey": "kidscade_dice_survival_best_v1",
+      "scoreUnit": "회",
+      "subject": "math",
+      "genre": "strategy",
+      "difficulty": "medium",
+      "sessionMinutes": 8,
+      "players": [
+        "solo",
+        "localMulti",
+        "classroom"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "doodle_aquarium",
       "addedAt": "2026-10-30T18:30:00+09:00",
       "title": "낙서 바다 연구소",
