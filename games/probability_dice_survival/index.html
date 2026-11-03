@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10182d">
+<title>운명의 주사위 — 확률 서바이벌 | 키즈케이드</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <div><span class="eyebrow">KIDSCADE · 평균과 가능성</span><h1>운명의 주사위 <span>확률 서바이벌</span></h1><p>살아남을 숫자를 선택하세요. 빗나가면 연속 생존은 0부터!</p></div>
+    <div class="modes" role="group" aria-label="게임 방식">
+      <button id="soloMode" class="active" aria-pressed="true">혼자 도전</button>
+      <button id="duelMode" aria-pressed="false">친구와 대전</button>
+    </div>
+  </header>
+  <div class="layout">
+    <section class="dice-section panel" aria-label="3D 주사위 경기장">
+      <div class="arena-head"><div><span class="eyebrow" id="stageLabel">STAGE 01</span><h2 id="dieTitle">6면체 주사위</h2></div><span class="shape-pill" id="stageNote">연속 생존 3회면 다음 단계</span></div>
+      <div class="arena">
+        <canvas id="diceCanvas" role="img" aria-label="실제 다면체 면을 그려 회전하고 굴러가는 3차원 주사위. 굴리기 버튼을 누르면 무작위 결과를 보여줍니다."></canvas>
+        <div class="floor"></div>
+        <div id="resultOverlay" class="result-overlay" aria-live="polite">굴릴 준비 완료</div>
+      </div>
+      <div class="roll-status"><div><small>이번 결과</small><strong id="rollResult">—</strong></div><div><small>이번 판</small><strong id="roundLabel">1라운드</strong></div><div><small>이번 주사위 평균(실험 / 예상)</small><strong id="meanLabel">— / 3.5</strong></div></div>
+      <div class="history-block"><div class="subhead"><b>최근 굴린 숫자</b><small id="rollCount">0회 시행</small></div><div id="history" class="history"><span class="muted">첫 번째 주사위를 굴려 보세요.</span></div></div>
+    </section>
+    <div class="right">
+      <section class="panel setting">
+        <div class="subhead"><h2>게임 설정</h2><button id="resetBtn" class="link-btn" type="button">처음부터</button></div>
+        <label class="field-label" for="dieMode">주사위 설정</label>
+        <select id="dieMode">
+          <option value="stage">스테이지마다 면 수 증가</option>
+          <option value="4">4면체 고정</option><option value="6">6면체 고정</option>
+          <option value="8">8면체 고정</option><option value="12">12면체 고정</option>
+          <option value="20">20면체 고정</option>
+        </select>
+        <div id="duelSettings" class="duel-settings hidden">
+          <label class="field-label" for="roundLimit">대전 라운드</label>
+          <select id="roundLimit"><option value="6">6라운드</option><option value="12" selected>12라운드</option><option value="18">18라운드</option></select>
+          <div class="names"><label>1P 이름<input id="name1" maxlength="14" value="파랑"></label><label>2P 이름<input id="name2" maxlength="14" value="노랑"></label><label>3P (선택)<input id="name3" maxlength="14" placeholder="참가자 추가"></label><label>4P (선택)<input id="name4" maxlength="14" placeholder="참가자 추가"></label></div>
+          <button id="startDuel" type="button" class="outline full">대전 새로 시작</button>
+        </div>
+      </section>
+      <section class="panel scoreboard"><div class="subhead"><h2 id="scoreTitle">내 생존 기록</h2><span id="recordBadge" class="record-badge">기록 도전</span></div><div id="scores" class="scores"></div></section>
+      <section class="panel select-panel">
+        <div class="subhead"><h2 id="pickTitle">살아남을 숫자를 고르세요</h2><span id="choiceCount" class="muted">0개 선택</span></div>
+        <p id="turnHint" class="hint">아래에서 숫자 1개 이상, 전체보다 적게 선택해요.</p>
+        <div id="numberGrid" class="number-grid" role="group" aria-label="생존 숫자 선택"></div>
+        <div class="odds"><div class="odds-row"><span>살아남을 가능성</span><strong id="chanceLabel">0%</strong></div><div class="meter"><div id="chanceFill"></div></div><div class="odds-bottom"><span id="oddsFraction">0 / 6</span><span id="rewardLabel">성공 보상 —점</span></div></div>
+        <button id="lockBtn" type="button" class="primary full hidden">이 숫자로 결정하기</button>
+        <button id="rollBtn" type="button" class="primary full" disabled>3D 주사위 굴리기</button>
+        <button id="nextBtn" type="button" class="outline full hidden">다음 라운드</button>
+      </section>
+    </div>
+  </div>
+  <section class="bottom panel" aria-label="수학 탐구 기록">
+    <div class="subhead"><h2>주사위 실험실</h2><span class="muted">가능성 × 실제 결과 비교</span></div>
+    <div class="lab"><div class="lab-card"><small>선택한 숫자가 나올 가능성</small><b id="labChance">아직 선택 전</b><span>선택한 면 수 ÷ 전체 면 수</span></div><div class="lab-card"><small>이번 주사위의 수학적 평균</small><b id="labExpected">3.5</b><span>(가장 작은 수 + 가장 큰 수) ÷ 2</span></div><div class="lab-card"><small>이번 주사위의 관측 평균</small><b id="labObserved">아직 굴리지 않음</b><span>나온 수의 합 ÷ 굴린 횟수</span></div></div>
+    <details><summary>이 게임에서 왜 위험한 선택이 더 높은 점수를 줄까요?</summary><p>선택하는 숫자가 적을수록 성공 확률이 낮아집니다. 대신 성공하면 더 많은 도전 점수를 받아요. 각 회의 성공 보상은 약 (전체 면 수 ÷ 선택한 면 수) × 100점이므로, 어떤 선택도 한 번 굴릴 때의 이론적인 평균 보상은 약 100점입니다. 다만 연속 생존 횟수는 어떤 선택을 하든 성공 1회당 정확히 1씩 증가해요. 주사위의 모든 면이 같은 확률로 나오며, 이전에 나온 결과가 다음 결과에 영향을 주지 않습니다.</p></details>
+  </section>
+  <footer>놀이 속의 ‘생존’과 ‘탈락’은 게임 기록만 뜻합니다. 모든 주사위 결과는 독립적이고 무작위입니다.</footer>
+</main>
+<script src="./engine.js"></script><script src="./polyhedron.js"></script><script src="./game.js"></script>
+</body>
+</html>
