@@ -8,6 +8,6 @@
 
 | 게임 ID | 게임명 | 이력 파일 | 다음 시작점 |
 | --- | --- | --- | --- |
-| — | 아직 기록 없음 | — | 첫 실제 개선 요청 시 생성 |
+| `tod_mot_chatgetda_kkwaekkori` | 못 찾겠다 꾀꼬리 | [개선 이력](./tod_mot_chatgetda_kkwaekkori.md) | PR #668·#641의 생활 동선 선별 통합 및 실제 브라우저 검수 |
 
 작성법: [README](./README.md) · [템플릿](./TEMPLATE.md)
