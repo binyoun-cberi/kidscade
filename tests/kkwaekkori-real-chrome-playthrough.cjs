@@ -24,7 +24,7 @@ const server=http.createServer((req,res)=>{
   fs.readFile(file,(err,body)=>{
     if(err){res.writeHead(404);res.end('Missing '+url.pathname);return}
     if(url.pathname.endsWith('/tod_mot_chatgetda_kkwaekkori/game.js')){
-      const expose="\nwindow.__KK_TEST__={\n  snapshot:()=>({active,mode,stage:town?.stageName,people:town?.people.length,targets:town?.order.length,\n    found:found.length,level:challengeLevel,time:timeRemaining,viewSize,look:[cameraLook.x,cameraLook.z],\n    currentTarget:getTarget()?.id,celebration:!!celebration,preview:!!previewActor,\n    shown:!document.querySelector('#start').classList.contains('hidden')}),\n  targetTap:()=>{const t=getTarget(),h=citizenMeshes.get(t?.id)?.holder;if(!h)return null;\n    scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);\n    const p=h.position.clone();p.y+=.85;p.project(camera);\n    const r=canvas.getBoundingClientRect();\n    return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2,z:p.z};},\n  deliverySnapshot:()=>({seed:town?.seed,time:town?.time,residents:(town?.people||[]).filter(p=>p.routine==='deliver').map(p=>{\n    const h=citizenMeshes.get(p.id)?.holder;return {id:p.id,state:p.state,rendered:h?[h.position.x,h.position.z]:null,simulated:[p.position.x,p.position.z]};})}),\n  greetingSnapshot:()=>({events:town?.greetingCount||0,target:getTarget()?.id,\n    residents:(town?.people||[]).filter(p=>p.socialWith).map(p=>({\n      id:p.id,peer:p.socialWith,reserved:p.reserved,pose:getPose(p),\n      marker:greetingMarkers.get(p.id)?.visible||false,\n      position:[p.position.x,p.position.z]\n    }))})\n};";
+      const expose="\nwindow.__KK_TEST__={\n  snapshot:()=>({active,mode,stage:town?.stageName,people:town?.people.length,targets:town?.order.length,\n    found:found.length,level:challengeLevel,time:timeRemaining,viewSize,look:[cameraLook.x,cameraLook.z],\n    currentTarget:getTarget()?.id,celebration:!!celebration,preview:!!previewActor,\n    shown:!document.querySelector('#start').classList.contains('hidden')}),\n  targetTap:()=>{const t=getTarget(),h=citizenMeshes.get(t?.id)?.holder;if(!h)return null;\n    scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);\n    const p=h.position.clone();p.y+=.85;p.project(camera);\n    const r=canvas.getBoundingClientRect();\n    return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2,z:p.z};},\n  deliverySnapshot:()=>({seed:town?.seed,time:town?.time,residents:(town?.people||[]).filter(p=>p.routine==='deliver').map(p=>{\n    const h=citizenMeshes.get(p.id)?.holder;return {id:p.id,state:p.state,rendered:h?[h.position.x,h.position.z]:null,simulated:[p.position.x,p.position.z]};})}),\n  greetingSnapshot:()=>({events:town?.greetingCount||0,target:getTarget()?.id,\n    residents:(town?.people||[]).filter(p=>p.socialWith).map(p=>({\n      id:p.id,peer:p.socialWith,reserved:p.reserved,pose:getPose(p),\n      marker:greetingMarkers.get(p.id)?.visible||false,\n      position:[p.position.x,p.position.z]\n    }))}),\n  streetSnapshot:()=>{const plan=getStreetPlan(town);return {\n    roads:plan.roads.length,walks:plan.walks.length,crossings:plan.crossings.length,\n    shownWalks:scenery.getObjectByName('city-linked-sidewalks')?.count||0,\n    shownCrossings:scenery.getObjectByName('city-crossing-ramps')?.count||0,\n    zebra:scenery.getObjectByName('city-crossing-stripes')?.count||0,\n    trees:scenery.getObjectByName('city-greenbelt-crowns')?.count||0\n  }}\n};";
       // Seed only the audit's initial quick-start; normal gameplay stays random.
       const original=body.toString('utf8');
       const quickStart="startTown('small',getSeed(),[],'easy')";
@@ -98,6 +98,14 @@ let chrome,ws,profile,serverOpen=false,passed=0;
   await wait("window.__KK_TEST__.snapshot().active",65000);
   assert.equal(await evaluate("__KK_TEST__.snapshot().people"),18);
   assert.equal(await evaluate("__KK_TEST__.snapshot().preview"),true);
+  const smallStreets=await evaluate("__KK_TEST__.streetSnapshot()");
+  assert.equal(smallStreets.roads,3);
+  assert.equal(smallStreets.walks,72);
+  assert.equal(smallStreets.crossings,14);
+  assert.equal(smallStreets.shownWalks,smallStreets.walks);
+  assert.equal(smallStreets.shownCrossings,smallStreets.crossings);
+  assert.equal(smallStreets.zebra,smallStreets.crossings*5);
+  assert.ok(smallStreets.trees>=24,'the town should have a surrounding greenbelt');
   const deliveryStart=await evaluate("__KK_TEST__.deliverySnapshot()");
   assert.ok(deliveryStart.residents.length>0,'the town must contain delivery residents');
   // Deliveries depart after a short activity pause and may yield to traffic. Wait for their natural departure; never fast-forward or
@@ -153,6 +161,13 @@ let chrome,ws,profile,serverOpen=false,passed=0;
   // Large town: five consecutive targets, camera hint, see-through, real pointer events.
   await evaluate("document.querySelector('#otherStageBtn').click();document.querySelector('#difficulty').value='hard';document.querySelector('[data-stage=large]').click()");
   await wait("__KK_TEST__.snapshot().active&&__KK_TEST__.snapshot().targets===5",65000);
+  const largeStreets=await evaluate("__KK_TEST__.streetSnapshot()");
+  assert.equal(largeStreets.roads,9);
+  assert.equal(largeStreets.walks,336);
+  assert.equal(largeStreets.crossings,90);
+  assert.equal(largeStreets.shownWalks,largeStreets.walks);
+  assert.equal(largeStreets.shownCrossings,largeStreets.crossings);
+  assert.equal(largeStreets.zebra,largeStreets.crossings*5);
   await screenshot('03-large-town');passed++;
   assert.equal(await evaluate("document.querySelector('#seeThrough').getAttribute('aria-pressed')"),'false','new cities should start opaque');
   await evaluate("document.querySelector('#seeThrough').click()");

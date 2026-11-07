@@ -182,7 +182,7 @@ test('3D picking, honest prop fallbacks and rotated-camera ground dragging are p
   assert.match(code,/challengeLevel\+1/);
   assert.match(code,/finishChallenge\(/);
   assert.match(html,/20초 연속 찾기 도전/);
-  assert.match(code,/sim\.mjs\?v=8/);
+  assert.match(code,/sim\.mjs\?v=9/);
   assert.match(code,/pinchCenter/);
   assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
 });
@@ -353,4 +353,40 @@ test('speech bubbles render outside the citizen picking layer',()=>{
   assert.match(code,/marker\.add\(bubble\)/);
   assert.match(code,/speech\.quaternion\.copy\(camera\.quaternion\)/);
   assert.match(code,/p\.socialWith\?town\.people\.find/);
+});
+
+test('every on-screen sidewalk and crosswalk is an actual navigation edge',async()=>{
+  const {makeTown,getStreetPlan,BLOCK_PITCH,WALK}=await simPromise;
+  for(const stage of ['small','medium','large'])for(const seed of [1,42,812]){
+    const town=makeTown(stage,seed,'normal');
+    const plan=getStreetPlan(town);
+    const {cols,rows}=town.config;
+    assert.equal(plan.roads.length,cols+rows-2);
+    const expected=2*((cols-1)*rows+(rows-1)*cols);
+    assert.equal(plan.crossings.length,expected,'each road gap needs two real pedestrian crossings');
+    const routeEdges=new Set();
+    for(const [id,node] of town.paths.nodes)for(const next of node.next)
+      routeEdges.add([id,next].sort().join('|'));
+    const renderedEdges=new Set([...plan.walks,...plan.crossings].map(s=>[s.from,s.to].sort().join('|')));
+    assert.equal(renderedEdges.size,routeEdges.size,'all footpaths must be drawn once');
+    for(const edge of routeEdges)assert.ok(renderedEdges.has(edge),edge);
+    for(const cross of plan.crossings){
+      const a=town.paths.nodes.get(cross.from),b=town.paths.nodes.get(cross.to);
+      assert.ok(a&&b);
+      assert.ok(Math.abs(cross.length-(BLOCK_PITCH-WALK.edge*2))<1e-7);
+      assert.ok(cross.axis==='x'?a.z===b.z:a.x===b.x);
+      assert.notEqual(cross.from.split(':')[0],cross.to.split(':')[0]);
+    }
+  }
+});
+test('storefront and shelter envelopes leave walking clearance at the rear sidewalk',async()=>{
+  const {CITY_GEOMETRY,WALK}=await simPromise;
+  assert.ok(WALK.edge-(Math.abs(CITY_GEOMETRY.buildingZ)+CITY_GEOMETRY.buildingFootprint/2)>=.5);
+  assert.ok(WALK.edge-(Math.abs(CITY_GEOMETRY.shelterZ)+CITY_GEOMETRY.shelterFootprint/2)>=.5);
+  assert.ok(CITY_GEOMETRY.walkWidth>=WALK.clearance);
+  assert.ok(CITY_GEOMETRY.crossingWidth>=WALK.clearance);
+});
+test('linked town uses instanced streets outside citizen hit-testing',()=>{
+  for(const part of ['getStreetPlan(town)','city-linked-sidewalks','city-crossing-ramps','city-crossing-stripes','city-greenbelt-crowns','drawConnectedFootways(plan)','new THREE.InstancedMesh'])assert.ok(code.includes(part),part);
+  assert.match(code,/ray\.intersectObjects\(citizens\.children,true\)/);
 });

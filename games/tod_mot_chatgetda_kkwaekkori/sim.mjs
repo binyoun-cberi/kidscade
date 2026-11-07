@@ -53,6 +53,11 @@ export function signature(p){return `${p.modelVariant}:${p.activity}:${p.propVar
 // One geometry contract is shared by the simulation and the renderer.
 // Props/buildings stay behind the activity bays; the perimeter is pedestrians only.
 export const WALK = Object.freeze({edge:2.65, bayZ:1.15, bayX:[-1.8,-.6,.6,1.8], clearance:.82});
+// Share scenery footprints with the actual navigation contract, not separate guesses.
+export const CITY_GEOMETRY = Object.freeze({
+  roadWidth:1.35, crossingWidth:.86, walkWidth:.86,
+  buildingFootprint:2.15, buildingZ:-1, shelterFootprint:2.05, shelterZ:-.95
+});
 export function getRoutePosition(person){return {...person.position};}
 export function getPose(person){return person.state==='walking'?'walk':person.socialWith&&!person.reserved?'interact-right':person.activity==='deliver'?'holding-both':ACTIVITIES.find(a=>a.id===person.activity).clip;}
 
@@ -82,6 +87,31 @@ function makePaths(blocks,config){
     if(below){link(b.id+':se',below.id+':ne');link(below.id+':nw',b.id+':sw');}
   }
   return {nodes,slots,occupied:new Map(),routes:new Map()};
+}
+// Every visible footway and crossing is derived from the SAME nodes the citizens
+// actually use. Links between two block IDs are real street crossings.
+export function getStreetPlan(town){
+  const {cols,rows}=town.config,roads=[],walks=[],crossings=[],seen=new Set();
+  for(let col=0;col<cols-1;col++)roads.push({
+    axis:'z',x:(col+.5-(cols-1)/2)*BLOCK_PITCH,z:0,
+    length:rows*BLOCK_PITCH,width:CITY_GEOMETRY.roadWidth
+  });
+  for(let row=0;row<rows-1;row++)roads.push({
+    axis:'x',x:0,z:(row+.5-(rows-1)/2)*BLOCK_PITCH,
+    length:cols*BLOCK_PITCH,width:CITY_GEOMETRY.roadWidth
+  });
+  for(const [from,start] of town.paths.nodes)for(const to of start.next){
+    const key=[from,to].sort().join('|');
+    if(seen.has(key))continue;
+    seen.add(key);
+    const end=town.paths.nodes.get(to);
+    const dx=end.x-start.x,dz=end.z-start.z;
+    if(Math.abs(dx)>1e-6&&Math.abs(dz)>1e-6)throw new Error('Diagonal footway: '+key);
+    const segment={from,to,x:(start.x+end.x)/2,z:(start.z+end.z)/2,
+      axis:Math.abs(dx)>1e-6?'x':'z',length:Math.abs(dx)||Math.abs(dz)};
+    (from.split(':')[0]===to.split(':')[0]?walks:crossings).push(segment);
+  }
+  return {roads,walks,crossings};
 }
 function findRoute(paths,start,goal){
   const key=start+'>'+goal;if(paths.routes.has(key))return [...paths.routes.get(key)];

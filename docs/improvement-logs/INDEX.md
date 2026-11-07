@@ -8,6 +8,6 @@
 
 | 게임 ID | 게임명 | 이력 파일 | 다음 시작점 |
 | --- | --- | --- | --- |
-| `tod_mot_chatgetda_kkwaekkori` | 못 찾겠다 꾀꼬리 | [개선 이력](./tod_mot_chatgetda_kkwaekkori.md) | PR #668·#641의 생활 동선 선별 통합 및 실제 브라우저 검수 |
+| `tod_mot_chatgetda_kkwaekkori` | 못 찾겠다 꾀꼬리 | [개선 이력](./tod_mot_chatgetda_kkwaekkori.md) | 도시 연결 PR Chrome 검수·성능 확인 후 구매·승하차 통합 |
 
 작성법: [README](./README.md) · [템플릿](./TEMPLATE.md)
