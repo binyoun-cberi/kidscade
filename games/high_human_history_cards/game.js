@@ -1,12 +1,12 @@
 (() => {
 'use strict';
-// v14: full-campaign balance, guaranteed geology path, non-regressing eras, and late-game bottleneck fixes.
+// v15: live combination previews and horizontally scrollable grouped card layout.
 const $=s=>document.querySelector(s);
 const board=$('#board');
 const ui={
  era:$('#eraLabel'),day:$('#dayLabel'),food:$('#foodLabel'),pop:$('#popLabel'),meal:$('#mealLabel'),settlement:$('#settlementLabel'),defense:$('#defenseLabel'),
  questList:$('#questList'),discoveries:$('#discoveries'),discoveryCount:$('#discoveryCount'),hint:$('#hintText'),goalTitle:$('#goalTitle'),goalText:$('#goalText'),
- toast:$('#toast'),workforce:$('#workforceStatus'),foodTile:document.querySelector('.foodTile'),extractor:$('#extractorZone'),
+ toast:$('#toast'),preview:$('#craftPreview'),viewport:$('#boardViewport'),workforce:$('#workforceStatus'),foodTile:document.querySelector('.foodTile'),extractor:$('#extractorZone'),
  tutorialShade:$('#tutorialShade'),tutorialCoach:$('#tutorialCoach'),tutorialStepLabel:$('#tutorialStepLabel'),tutorialIcon:$('#tutorialIcon'),
  tutorialTitle:$('#tutorialTitle'),tutorialText:$('#tutorialText'),tutorialHint:$('#tutorialHint'),tutorialNext:$('#tutorialNextBtn'),tutorialSkip:$('#tutorialSkipBtn'),
  goalBtn:$('#goalBtn'),discoverBtn:$('#discoverBtn'),goalPopover:$('#goalPopover'),discoverPopover:$('#discoverPopover'),
@@ -582,7 +582,7 @@ function tutorialEvent(name,payload={}){
 function reset(){
  state.runId++;state.started=true;state.over=false;state.id=0;state.z=20;state.day=1;state.mealLeft=70;state.starving=false;state.hunger=100;state.cards.clear();state.discoveries.clear();state.worldTick=0;state.tutorial={active:false,step:0};
  state.lifestyle={hunt:0,farm:0,fish:0,herd:0};state.stats={crafted:0,gathered:0,meals:0,explores:0};state.milestoneShown=false;state.bronzeMilestoneShown=false;state.ironMilestoneShown=false;state.ageReached='paleo';
- state.timers.forEach(clearInterval);state.timers=[];board.innerHTML='';ui.era.textContent='구석기 생활';
+ state.timers.forEach(clearInterval);state.timers=[];board.innerHTML='';board.style.width='';ui.viewport?.scrollTo({left:0,top:0});clearCraftPreview();ui.era.textContent='구석기 생활';
  $('#milestoneLayer').classList.add('hidden');$('#gameOverLayer').classList.add('hidden');
  spawnInitial();renderAll();
  const t=setInterval(()=>{
@@ -699,7 +699,42 @@ function interactionClass(a,b){
  if(node.type==='wildGoat')return worker.type==='herder'?'drop-action':'';
  return '';
 }
-function clearHighlights(){for(const o of state.cards.values())o.el.classList.remove('drop-stack','drop-craft','drop-action','drop-danger');}
+let hoveredCardId=null;
+function clearCraftPreview(){
+ if(hoveredCardId){state.cards.get(hoveredCardId)?.el.classList.remove('drop-hover');hoveredCardId=null;}
+ ui.preview?.classList.add('hidden');
+}
+function updateCraftPreview(source,target){
+ if(hoveredCardId!==target?.id){
+  if(hoveredCardId)state.cards.get(hoveredCardId)?.el.classList.remove('drop-hover');
+  hoveredCardId=target?.id||null;
+  target?.el.classList.add('drop-hover');
+ }
+ if(!ui.preview||!target){clearCraftPreview();return;}
+ let title='',detail='';
+ if(source.type===target.type){
+  const rule=SAME[source.type],total=source.count+target.count;
+  if(rule&&total>=rule.need){
+   title='💡 '+rule.name+' → '+C[rule.out].name;
+   detail=C[source.type].name+' '+rule.need+'장 사용 · 남은 카드 '+Math.max(0,total-rule.need)+'장';
+  }else{
+   title='📚 '+C[source.type].name+' 카드 합치기';
+   detail=rule?'현재 '+total+'장 / 제작에 '+rule.need+'장 필요':'같은 카드끼리 모아 보드를 정리해요.';
+  }
+ }else{
+  const recipe=findRecipe(source,target);
+  if(!recipe){clearCraftPreview();return;}
+  const ingredient=(type,count)=>C[type].name+(count>0?' ×'+count:' (유지)');
+  title='💡 '+recipe.name;
+  detail=ingredient(recipe.a,recipe.ca)+' + '+ingredient(recipe.b,recipe.cb)+' → '+recipe.out.map(([type,count])=>C[type].name+(count>1?' ×'+count:'')).join(', ');
+ }
+ ui.preview.replaceChildren();
+ const label=document.createElement('span');label.className='previewEyebrow';label.textContent='이렇게 조합돼요';
+ const heading=document.createElement('b');heading.textContent=title;
+ const hint=document.createElement('small');hint.textContent=detail;
+ ui.preview.append(label,heading,hint);ui.preview.classList.remove('hidden');
+}
+function clearHighlights(){for(const o of state.cards.values())o.el.classList.remove('drop-stack','drop-craft','drop-action','drop-danger','drop-hover');clearCraftPreview();}
 function highlightTargets(c){
  clearHighlights();
  for(const o of state.cards.values()){
@@ -764,7 +799,7 @@ function bindDrag(c){
   if(!moved){moved=true;cancelAssignment(c);}
   setExtractorDrag(c,e.clientX,e.clientY);
   const r=board.getBoundingClientRect();
-  place(c,clamp(e.clientX-r.left-ox,4,Math.max(4,r.width-c.el.offsetWidth-12)),clamp(e.clientY-r.top-oy,18,Math.max(18,r.height-c.el.offsetHeight-12)));e.preventDefault();
+  place(c,clamp(e.clientX-r.left-ox,4,Math.max(4,r.width-c.el.offsetWidth-12)),clamp(e.clientY-r.top-oy,18,Math.max(18,r.height-c.el.offsetHeight-12)));updateCraftPreview(c,findTarget(c));e.preventDefault();
  });
  const end=e=>{
   if(!dragging)return;dragging=false;c.el.classList.remove('dragging');clearHighlights();
@@ -1271,8 +1306,22 @@ function tickThreats(){
  }
 }
 function tidy(){
- const cards=[...state.cards.values()].filter(c=>!c.busy),cols=Math.max(3,Math.floor((board.clientWidth-18)/122));
- cards.forEach((c,i)=>place(c,10+(i%cols)*120,22+Math.floor(i/cols)*158));
+ const cards=[...state.cards.values()].filter(c=>!c.busy&&!c.assignmentNodeId);
+ const viewport=ui.viewport;if(!viewport||!cards.length)return;
+ const groupOrder={human:0,node:1,building:2,tool:3,food:4,item:5,animal:6,group:7,danger:8};
+ cards.sort((a,b)=>{
+  const ga=cardGroup(a.type,C[a.type]).cls.split(' ')[0],gb=cardGroup(b.type,C[b.type]).cls.split(' ')[0];
+  return (groupOrder[ga]??9)-(groupOrder[gb]??9)||C[a.type].name.localeCompare(C[b.type].name,'ko')||a.id-b.id;
+ });
+ const cw=cards[0].el.offsetWidth||122,ch=cards[0].el.offsetHeight||162;
+ const stepX=cw+16,stepY=ch+14;
+ const rows=Math.max(1,Math.floor((viewport.clientHeight-28)/stepY));
+ const cols=Math.max(1,Math.ceil(cards.length/rows));
+ const busyRight=Math.max(0,...[...state.cards.values()].filter(c=>c.busy||c.assignmentNodeId).map(c=>c.x+c.el.offsetWidth+20));
+ board.style.width=Math.max(viewport.clientWidth,cols*stepX+18,busyRight)+'px';
+ cards.forEach((c,i)=>place(c,12+Math.floor(i/rows)*stepX,14+(i%rows)*stepY));
+ viewport.scrollTo({left:0,behavior:'smooth'});
+ showToast('🧺 주민·자연·시설·도구·식량 순서로 정리했어요. 옆으로 밀어 더 볼 수 있어요.');
 }
 
 function renderAll(){renderHud();renderLife();renderDiscoveries();renderQuests();renderGoal();renderHunger();}
