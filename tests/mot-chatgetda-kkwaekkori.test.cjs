@@ -182,7 +182,7 @@ test('3D picking, honest prop fallbacks and rotated-camera ground dragging are p
   assert.match(code,/challengeLevel\+1/);
   assert.match(code,/finishChallenge\(/);
   assert.match(html,/20초 연속 찾기 도전/);
-  assert.match(code,/sim\.mjs\?v=6/);
+  assert.match(code,/sim\.mjs\?v=7/);
   assert.match(code,/pinchCenter/);
   assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
 });
@@ -282,5 +282,27 @@ test('delivery residents depart early across 100 seeded towns without changing s
     }
     assert.ok(moved,'delivery should be visible near the start: seed '+seed);
     assert.deepEqual(town.people.map(p=>[p.id,p.modelVariant,p.propVariant]),looks);
+  }
+});
+
+test('town walkers have visible travel in two minutes without losing the arcade speed ramp',async()=>{
+  const {makeTown,movePeople,getWalkingSpeed}=await simPromise;
+  const pedestrian={id:'person-0',challengeSpeed:1};
+  const normalSpeed=getWalkingSpeed(pedestrian);
+  assert.ok(normalSpeed>1.2&&normalSpeed<1.5);
+  pedestrian.challengeSpeed=2.3;
+  assert.ok(getWalkingSpeed(pedestrian)>normalSpeed*2.2);
+  for(const [stage,required] of [['small',17],['medium',40],['large',78]]){
+    for(const seed of [42,812,1441]){
+      const town=makeTown(stage,seed,'normal'),departed=new Set();
+      for(let tick=0;tick<600;tick++){
+        movePeople(town,.2);
+        for(const p of town.people){
+          if(p.state==='walking'||p.trips>0)departed.add(p.id);
+          assert.ok(p.waiting<5,'no pedestrian should freeze in a crossing');
+        }
+      }
+      assert.ok(departed.size>=required,`${stage}/${seed}: only ${departed.size} walkers departed`);
+    }
   }
 });
