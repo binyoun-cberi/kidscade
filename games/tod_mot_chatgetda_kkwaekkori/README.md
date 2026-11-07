@@ -56,3 +56,12 @@ The actual Chrome audit now follows stable delivery IDs until natural departure,
 then compares rendered 3D coordinates with the simulation. It no longer assumes
 one current activity/slot must move within a fixed 1.7-second wall-clock window.
 Frozen rendering, mismatched identities and simulation-only movement still fail.
+
+## 2026-11-07: 주민 움직임과 일상 동작 개선 제안
+
+- 기존 통로 전체 예약과 충돌 간격을 유지하면서 걷는 속도를 약 1.3~1.5배 높여 긴 보행로에서도 활동 장소를 더 자주 바꾸도록 개선
+- 도전 모드의 속도 증가가 1.35배에서 잘리던 문제 수정: 설정된 최대 2.3배까지 적용
+- 책 보기·지도 보기·배달·버스 기다리기의 손에 든 소품이 미세하게 움직이며, 로딩 전 임시 캐릭터에도 걷기 발걸음 효과 부여
+- 시드·출제·저장 버전·찾기 방식과 모바일 조작 유지. 충돌 회피 알고리즘과 도전 제한 시간은 변경하지 않음
+- 새 회귀 테스트: 3개 도시 × 3개 시드에서 게임 시간 2분 동안 실제로 이동을 시작한 주민 수와 대기 상태 확인
+- 확인 범위: 시뮬레이션 및 JavaScript 구문 검사를 수행했고, 실제 브라우저 렌더링·모바일 기기 플레이는 별도 확인 필요
