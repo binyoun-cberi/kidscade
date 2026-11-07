@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose } from './sim.mjs?v=6';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose } from './sim.mjs?v=7';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -419,6 +419,11 @@ function animateActivity(actor,person,now){
   if(prop&&person.activity==='eat'){prop.position.y=.82+Math.sin(person.elapsed*1.5)*.13;prop.rotation.z=Math.sin(person.elapsed*1.5)*.12;}
   if(prop&&person.activity==='wave'){prop.rotation.z=Math.sin(person.elapsed*5)*.35;}
   if(prop&&person.activity==='browse')prop.rotation.y=Math.sin(person.elapsed)*.18;
+  // Small, staggered prop movements give otherwise stationary scenes a visible task.
+  if(prop&&person.activity==='read')prop.rotation.z=Math.sin(person.elapsed*1.2+person.phase)*.045;
+  if(prop&&person.activity==='map')prop.rotation.y=Math.sin(person.elapsed*.9+person.phase)*.1;
+  if(prop&&person.activity==='deliver')prop.rotation.z=Math.sin(person.elapsed*1.8+person.phase)*.055;
+  if(prop&&person.activity==='wait')prop.rotation.y=Math.sin(person.elapsed*.8+person.phase)*.11;
 }
 
 function positionEverything(dt) {
@@ -439,6 +444,9 @@ function positionEverything(dt) {
     }
     const pos=getRoutePosition(p,town.config);
     mesh.holder.position.set(pos.x,.08,pos.z);
+    // Procedural stand-ins need footsteps; loaded characters use their own clips.
+    mesh.body.position.y=p.state==='walking'&&!citizenAssets.has(p.id)
+      ?Math.abs(Math.sin(p.elapsed*9+p.phase))*.035:0;
     // shortest-angle interpolation avoids a full turn when crossing -PI / PI.
     const facing=p.state==='walking'?p.facing:0;
     const angle=Math.atan2(Math.sin(facing-mesh.holder.rotation.y),Math.cos(facing-mesh.holder.rotation.y));
