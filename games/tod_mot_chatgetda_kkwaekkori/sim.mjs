@@ -247,6 +247,12 @@ export function selectTargets(town,eligibleIds,previous=[]){
   }
   return order;
 }
+// Keep free-roaming pedestrians active without flattening the arcade speed ramp.
+export function getWalkingSpeed(person){
+  const index=Number(person.id.slice(7))||0;
+  const base=1.32+(index%4)*.06;
+  return base*Math.min(2.3,Math.max(1,Number(person.challengeSpeed)||1));
+}
 export function movePeople(town,deltaSeconds){
   const dt=Math.min(.25,Math.max(0,Number(deltaSeconds)||0));town.time+=dt;
   // Rotate priority to avoid giving low IDs a permanent advantage at junctions.
@@ -260,7 +266,7 @@ export function movePeople(town,deltaSeconds){
     }
     const node=town.paths.nodes.get(p.route[0]);if(!node)continue;
     const dx=node.x-p.position.x,dz=node.z-p.position.z,distance=Math.hypot(dx,dz);
-    const step=Math.min(distance,dt*(.95+(Number(p.id.slice(7))%4)*.04)*Math.min(p.challengeSpeed||1,1.35));
+    const step=Math.min(distance,dt*getWalkingSpeed(p));
     const next=distance?{x:p.position.x+dx/distance*step,z:p.position.z+dz/distance*step}:{...p.position};
     const blocked=town.people.some(q=>{
       if(q.id===p.id)return false;
