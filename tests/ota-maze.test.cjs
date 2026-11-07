@@ -7,16 +7,16 @@ const M=require('../games/high_ota_typographic_horror/maze.js');
 
 const bits=[1,2,4,8];
 
-test('13×13 maze is reproducible, connected and materially longer than the old corridor',()=>{
+test('9×9 maze stays connected, varied and comfortably solvable across 200 seeds',()=>{
   const layouts=new Set();
   for(let seed=0;seed<200;seed++){
     const maze=M.create(seed),again=M.create(seed);
     assert.deepEqual(maze,again);
-    assert.equal(maze.links.length,169);
+    assert.equal(maze.links.length,81);
     assert.equal(new Set(maze.stations).size,3);
-    assert.ok(maze.minSteps>=105,'even the optimal collection order must be a real journey');
+    assert.ok(maze.minSteps>=35&&maze.minSteps<=65,'three spelling stations and exit must take a manageable route');
     assert.ok(M.distances(maze.links,0).every(distance=>distance>=0));
-    assert.ok(M.distances(maze.links,0)[maze.exit]>=25);
+    assert.ok(M.distances(maze.links,0)[maze.exit]>=12);
     layouts.add(maze.links.join(','));
   }
   assert.ok(layouts.size===200,'a fresh run must change actual wall connectivity');
@@ -42,6 +42,17 @@ test('visible walls and collision passages agree on all edges and all start cell
     }
   }
   assert.equal(M.canMove(M.create(1),1000,-1000),false);
+});
+
+test('old 13×13 checkpoints preserve solved words without carrying over explored cells',()=>{
+  const maze=M.create(42);
+  const explored=Array(169).fill(true);
+  const legacy={v:1,seed:42,solved:[true,false,true],visited:explored,wrong:2};
+  assert.equal(M.restore(maze,legacy),true);
+  assert.deepEqual(maze.solved,[true,false,true]);
+  assert.equal(maze.wrong,2);
+  assert.equal(maze.visited.filter(Boolean).length,1);
+  assert.equal(M.snapshot(maze).v,2);
 });
 
 test('three distant spelling stations unlock the exit, checkpoint keeps progress',()=>{
