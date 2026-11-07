@@ -1,0 +1,237 @@
+{
+  "status": "design-only-not-in-live-levels",
+  "id": "return-route",
+  "level": {
+    "title": "돌아온 길",
+    "chapter": "2차 설계 시제품",
+    "w": 12,
+    "h": 10,
+    "objects": [
+      {
+        "kind": "object",
+        "type": "hero",
+        "x": 1,
+        "y": 2
+      },
+      {
+        "kind": "object",
+        "type": "flag",
+        "x": 10,
+        "y": 2
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 6,
+        "y": 0
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 6,
+        "y": 1
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 6,
+        "y": 2
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 6,
+        "y": 3
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 6,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 6,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 6,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 6,
+        "y": 7
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 6,
+        "y": 8
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 6,
+        "y": 9
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 0,
+        "y": 3
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 1,
+        "y": 3
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 3,
+        "y": 3
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 4,
+        "y": 3
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 5,
+        "y": 3
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 0,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 1,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 2,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 3,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "ice",
+        "x": 5,
+        "y": 5
+      }
+    ],
+    "words": [
+      {
+        "kind": "word",
+        "token": "N:hero",
+        "x": 1,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 2,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "P:YOU",
+        "x": 3,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "N:flag",
+        "x": 8,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 9,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "P:WIN",
+        "x": 10,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "N:wall",
+        "x": 2,
+        "y": 7
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 3,
+        "y": 7
+      },
+      {
+        "kind": "word",
+        "token": "P:STOP",
+        "x": 4,
+        "y": 7
+      },
+      {
+        "kind": "word",
+        "token": "N:ice",
+        "x": 8,
+        "y": 8
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 9,
+        "y": 8
+      },
+      {
+        "kind": "word",
+        "token": "P:STOP",
+        "x": 10,
+        "y": 8
+      }
+    ],
+    "note": "아랫방에서 규칙을 바꾼 뒤, 처음 막혔던 길로 돌아가요.",
+    "hints": [
+      "처음 막힌 벽을 기억하세요.",
+      "아랫방에서 벽의 성질을 바꿀 수 있을까요?",
+      "벽 = 막힘의 마지막 단어를 아래로 밀어 보세요."
+    ]
+  },
+  "solution": {
+    "moves": "RDDRRDDDUUULLUURRRRRRRR",
+    "count": 23,
+    "events": [
+      {
+        "afterMove": 8,
+        "kind": "remove-stop",
+        "noun": "wall",
+        "iceRemainsStop": true
+      }
+    ]
+  },
+  "goal": "Requires rule edits in distant workbenches; permanent ice barriers force returning to a distinct gate."
+}

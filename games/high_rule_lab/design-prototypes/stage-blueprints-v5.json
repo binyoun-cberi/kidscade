@@ -1,0 +1,1032 @@
+{
+  "version": "v5-planning-only",
+  "basis": "current 60 RuleLabData.levels titles and engine vocabulary, 2026-10-25",
+  "chapters": [
+    {
+      "start": 1,
+      "end": 6,
+      "band": "01 기초",
+      "pattern": "입문",
+      "minEdits": 0,
+      "minReturns": 0,
+      "objective": "규칙과 조작을 인지; 최초 관문 5·6단계에서 귀환"
+    },
+    {
+      "start": 7,
+      "end": 16,
+      "band": "02 탐색",
+      "pattern": "왕복 관문",
+      "minEdits": 1,
+      "minReturns": 1,
+      "objective": "규칙 작업실과 관문을 분리해 되돌아감"
+    },
+    {
+      "start": 17,
+      "end": 26,
+      "band": "03 조종",
+      "pattern": "다중 YOU",
+      "minEdits": 1,
+      "minReturns": 1,
+      "objective": "여러 조종 객체의 공간 분리와 합류"
+    },
+    {
+      "start": 27,
+      "end": 36,
+      "band": "04 변환",
+      "pattern": "전환 회귀",
+      "minEdits": 1,
+      "minReturns": 1,
+      "objective": "물체 변환 후 이전 길의 성질이 바뀜"
+    },
+    {
+      "start": 37,
+      "end": 46,
+      "band": "05 두 법칙",
+      "pattern": "상호작용 연쇄",
+      "minEdits": 2,
+      "minReturns": 1,
+      "objective": "두 개 이상의 규칙을 시간 순으로 풀기"
+    },
+    {
+      "start": 47,
+      "end": 55,
+      "band": "06 이동",
+      "pattern": "이동 위험",
+      "minEdits": 1,
+      "minReturns": 1,
+      "objective": "자동 이동과 상호작용의 예측"
+    },
+    {
+      "start": 56,
+      "end": 60,
+      "band": "07 최종",
+      "pattern": "종합 탈출",
+      "minEdits": 2,
+      "minReturns": 2,
+      "objective": "복합해법·규칙 이동·연속 복귀"
+    }
+  ],
+  "stages": [
+    {
+      "stage": 1,
+      "chapter": "규칙의 문",
+      "currentTitle": "깃발까지 가요",
+      "status": "proposed-not-implemented",
+      "band": "01 기초",
+      "archetype": "입문",
+      "levelIntent": "규칙을 읽고 목표에 도착하는 기본 조작만 학습",
+      "target": {
+        "minimumMeaningfulRuleChanges": 0,
+        "minimumRequiredReturns": 0,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 2,
+      "chapter": "규칙의 문",
+      "currentTitle": "돌을 밀어요",
+      "status": "proposed-not-implemented",
+      "band": "01 기초",
+      "archetype": "입문",
+      "levelIntent": "돌을 밀어 비어 있는 통로를 확보하며 되돌리기 익힘",
+      "target": {
+        "minimumMeaningfulRuleChanges": 0,
+        "minimumRequiredReturns": 0,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 3,
+      "chapter": "규칙의 문",
+      "currentTitle": "벽 사이 길 찾기",
+      "status": "proposed-not-implemented",
+      "band": "01 기초",
+      "archetype": "입문",
+      "levelIntent": "갈림길과 막다른 길의 차이를 작은 지도에서 체험",
+      "target": {
+        "minimumMeaningfulRuleChanges": 0,
+        "minimumRequiredReturns": 0,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 4,
+      "chapter": "규칙의 문",
+      "currentTitle": "밀리는 깃발을 멈춰",
+      "status": "proposed-not-implemented",
+      "band": "01 기초",
+      "archetype": "입문",
+      "levelIntent": "깃발이 밀릴 때 목표를 쫓기보다 PUSH 문장을 끊음",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 0,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 5,
+      "chapter": "규칙의 문",
+      "currentTitle": "벽의 법칙을 끊어라",
+      "status": "proposed-not-implemented",
+      "band": "01 기초",
+      "archetype": "입문",
+      "levelIntent": "아랫방에서 벽의 STOP을 지운 뒤 처음 막힌 관문으로 복귀",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 6,
+      "chapter": "규칙의 문",
+      "currentTitle": "밀림을 완성해라",
+      "status": "proposed-not-implemented",
+      "band": "01 기초",
+      "archetype": "입문",
+      "levelIntent": "PUSH 문장을 완성한 후 원래 통로의 돌을 다시 찾아 이동",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 7,
+      "chapter": "법칙을 깨라",
+      "currentTitle": "지름길은 규칙 안에",
+      "status": "proposed-not-implemented",
+      "band": "02 탐색",
+      "archetype": "왕복 관문",
+      "levelIntent": "닫힌 직선길과 열린 우회 작업실을 비교하여 관문 개방",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 8,
+      "chapter": "법칙을 깨라",
+      "currentTitle": "돌이 목표",
+      "status": "proposed-not-implemented",
+      "band": "02 탐색",
+      "archetype": "왕복 관문",
+      "levelIntent": "돌이 목표인 규칙을 찾고 기존 깃발을 미끼로 구분",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 9,
+      "chapter": "법칙을 깨라",
+      "currentTitle": "문이 목표",
+      "status": "proposed-not-implemented",
+      "band": "02 탐색",
+      "archetype": "왕복 관문",
+      "levelIntent": "문이 목표가 되는 길을 위해 가로 문장을 조립",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 10,
+      "chapter": "법칙을 깨라",
+      "currentTitle": "위험을 지워라",
+      "status": "proposed-not-implemented",
+      "band": "02 탐색",
+      "archetype": "왕복 관문",
+      "levelIntent": "불이 막은 통로를 발견하고 옆 연구실의 DEFEAT 규칙 해제",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 11,
+      "chapter": "법칙을 깨라",
+      "currentTitle": "가라앉지 않게",
+      "status": "proposed-not-implemented",
+      "band": "02 탐색",
+      "archetype": "왕복 관문",
+      "levelIntent": "물의 SINK를 바꾼 후 이전에 겁났던 물길로 돌아옴",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 12,
+      "chapter": "법칙을 깨라",
+      "currentTitle": "벽에게 밀림을 줘",
+      "status": "proposed-not-implemented",
+      "band": "02 탐색",
+      "archetype": "왕복 관문",
+      "levelIntent": "벽 STOP과 PUSH의 차이를 활용해 같은 방의 구조를 바꿈",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 13,
+      "chapter": "법칙을 깨라",
+      "currentTitle": "돌의 성질을 바꿔",
+      "status": "proposed-not-implemented",
+      "band": "02 탐색",
+      "archetype": "왕복 관문",
+      "levelIntent": "돌 PUSH 성질의 유무에 따라 가능한 길이 바뀜",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 14,
+      "chapter": "법칙을 깨라",
+      "currentTitle": "새 주인공을 만들어",
+      "status": "proposed-not-implemented",
+      "band": "02 탐색",
+      "archetype": "왕복 관문",
+      "levelIntent": "주인공 조작권을 다른 물체로 넘겨 먼 방의 통로를 건넘",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 15,
+      "chapter": "법칙을 깨라",
+      "currentTitle": "위험한 목표",
+      "status": "proposed-not-implemented",
+      "band": "02 탐색",
+      "archetype": "왕복 관문",
+      "levelIntent": "목표에 닿기 전에 목표의 DEFEAT를 해결해야 함",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 16,
+      "chapter": "법칙을 깨라",
+      "currentTitle": "두 법칙을 고쳐라",
+      "status": "proposed-not-implemented",
+      "band": "02 탐색",
+      "archetype": "왕복 관문",
+      "levelIntent": "서로 떨어진 두 작업실에서 두 규칙을 차례로 수정",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 17,
+      "chapter": "나는 누구?",
+      "currentTitle": "나는 돌이다",
+      "status": "proposed-not-implemented",
+      "band": "03 조종",
+      "archetype": "다중 YOU",
+      "levelIntent": "돌을 조종해 아이가 도달할 수 없는 구역을 탐험",
+      "target": {
+        "minimumMeaningfulRuleChanges": 0,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 18,
+      "chapter": "나는 누구?",
+      "currentTitle": "돌에게 나를 줘",
+      "status": "proposed-not-implemented",
+      "band": "03 조종",
+      "archetype": "다중 YOU",
+      "levelIntent": "돌 YOU의 위치를 바꿔 원격 관문을 여는 동선",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 19,
+      "chapter": "나는 누구?",
+      "currentTitle": "벽이 움직인다",
+      "status": "proposed-not-implemented",
+      "band": "03 조종",
+      "archetype": "다중 YOU",
+      "levelIntent": "벽 YOU와 얼음 STOP의 조합으로 이동 가능한 영역 변화",
+      "target": {
+        "minimumMeaningfulRuleChanges": 0,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 20,
+      "chapter": "나는 누구?",
+      "currentTitle": "물이 움직인다",
+      "status": "proposed-not-implemented",
+      "band": "03 조종",
+      "archetype": "다중 YOU",
+      "levelIntent": "움직이는 물을 조종하여 다른 구역의 문장에 닿음",
+      "target": {
+        "minimumMeaningfulRuleChanges": 0,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 21,
+      "chapter": "나는 누구?",
+      "currentTitle": "둘이 같은 방향",
+      "status": "proposed-not-implemented",
+      "band": "03 조종",
+      "archetype": "다중 YOU",
+      "levelIntent": "두 YOU의 동시 이동이 장애물이자 도구임을 이해",
+      "target": {
+        "minimumMeaningfulRuleChanges": 0,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 22,
+      "chapter": "나는 누구?",
+      "currentTitle": "문에게 나를 줘",
+      "status": "proposed-not-implemented",
+      "band": "03 조종",
+      "archetype": "다중 YOU",
+      "levelIntent": "문 YOU의 크기와 위치로 통로를 통과하며 다른 물체와 합류",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 23,
+      "chapter": "나는 누구?",
+      "currentTitle": "깃발이 주인공",
+      "status": "proposed-not-implemented",
+      "band": "03 조종",
+      "archetype": "다중 YOU",
+      "levelIntent": "깃발 YOU와 돌 WIN이 다른 지역에 위치한 목표 전환",
+      "target": {
+        "minimumMeaningfulRuleChanges": 0,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 24,
+      "chapter": "나는 누구?",
+      "currentTitle": "문으로 걷기",
+      "status": "proposed-not-implemented",
+      "band": "03 조종",
+      "archetype": "다중 YOU",
+      "levelIntent": "문이 주인공인 동안 기존 아이가 할 수 없는 조작 수행",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 25,
+      "chapter": "나는 누구?",
+      "currentTitle": "세로로 나를 만들어",
+      "status": "proposed-not-implemented",
+      "band": "03 조종",
+      "archetype": "다중 YOU",
+      "levelIntent": "세로 YOU 문장을 완성하여 갇힌 두 번째 조종 물체 활성화",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 26,
+      "chapter": "나는 누구?",
+      "currentTitle": "세 명의 나",
+      "status": "proposed-not-implemented",
+      "band": "03 조종",
+      "archetype": "다중 YOU",
+      "levelIntent": "세 YOU의 이동 간섭을 고려해 순서를 나눠 해결",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 27,
+      "chapter": "세상을 바꿔라",
+      "currentTitle": "돌이 물이 된다",
+      "status": "proposed-not-implemented",
+      "band": "04 변환",
+      "archetype": "전환 회귀",
+      "levelIntent": "돌→물 변환으로 막혔던 좁은 관문이 달라짐",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 28,
+      "chapter": "세상을 바꿔라",
+      "currentTitle": "변환을 완성해",
+      "status": "proposed-not-implemented",
+      "band": "04 변환",
+      "archetype": "전환 회귀",
+      "levelIntent": "전환 문장을 외딴 연구실에서 만들어 돌아온 길을 통과",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 29,
+      "chapter": "세상을 바꿔라",
+      "currentTitle": "물길을 돌길로",
+      "status": "proposed-not-implemented",
+      "band": "04 변환",
+      "archetype": "전환 회귀",
+      "levelIntent": "물이 돌로 바뀐 뒤 기존 통로에서 밀기 가능한 오브젝트가 됨",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 30,
+      "chapter": "세상을 바꿔라",
+      "currentTitle": "벽을 돌로",
+      "status": "proposed-not-implemented",
+      "band": "04 변환",
+      "archetype": "전환 회귀",
+      "levelIntent": "벽을 돌로 변환하되 한번 바꾼 뒤 되돌릴 방법 고려",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 31,
+      "chapter": "세상을 바꿔라",
+      "currentTitle": "불을 물로",
+      "status": "proposed-not-implemented",
+      "band": "04 변환",
+      "archetype": "전환 회귀",
+      "levelIntent": "위험한 불을 물로 바꾼 뒤 안전한 통행을 확보",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 32,
+      "chapter": "세상을 바꿔라",
+      "currentTitle": "문이 깃발로",
+      "status": "proposed-not-implemented",
+      "band": "04 변환",
+      "archetype": "전환 회귀",
+      "levelIntent": "문을 깃발로 바꾸어 목표 위치 자체를 변경",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 33,
+      "chapter": "세상을 바꿔라",
+      "currentTitle": "돌을 깃발로",
+      "status": "proposed-not-implemented",
+      "band": "04 변환",
+      "archetype": "전환 회귀",
+      "levelIntent": "접근 불가능한 깃발 대신 돌을 목표로 변환",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 34,
+      "chapter": "세상을 바꿔라",
+      "currentTitle": "아이를 돌로",
+      "status": "proposed-not-implemented",
+      "band": "04 변환",
+      "archetype": "전환 회귀",
+      "levelIntent": "아이의 변환 후 YOU를 잃지 않게 다른 조종 객체 준비",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 35,
+      "chapter": "세상을 바꿔라",
+      "currentTitle": "얼음을 물로",
+      "status": "proposed-not-implemented",
+      "band": "04 변환",
+      "archetype": "전환 회귀",
+      "levelIntent": "얼음→물 변환 후 SINK와의 상호작용 회피",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 36,
+      "chapter": "세상을 바꿔라",
+      "currentTitle": "두 번 변신",
+      "status": "proposed-not-implemented",
+      "band": "04 변환",
+      "archetype": "전환 회귀",
+      "levelIntent": "두 가지 연속 변환을 다른 방에서 완성해 최종 목표 생성",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 37,
+      "chapter": "두 법칙",
+      "currentTitle": "위험을 물에 밀어",
+      "status": "proposed-not-implemented",
+      "band": "05 두 법칙",
+      "archetype": "상호작용 연쇄",
+      "levelIntent": "DEFEAT와 SINK를 서로 다른 작업실에서 조절",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 38,
+      "chapter": "두 법칙",
+      "currentTitle": "용암 처리",
+      "status": "proposed-not-implemented",
+      "band": "05 두 법칙",
+      "archetype": "상호작용 연쇄",
+      "levelIntent": "용암을 먼저 안전하게 만들고 물의 소멸 효과 이용",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 39,
+      "chapter": "두 법칙",
+      "currentTitle": "돌다리 하나",
+      "status": "proposed-not-implemented",
+      "band": "05 두 법칙",
+      "archetype": "상호작용 연쇄",
+      "levelIntent": "밀 수 있는 물체를 옮겨 안전한 길을 여는 전후 변화",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 40,
+      "chapter": "두 법칙",
+      "currentTitle": "두 번 가라앉혀",
+      "status": "proposed-not-implemented",
+      "band": "05 두 법칙",
+      "archetype": "상호작용 연쇄",
+      "levelIntent": "서로 떨어진 두 물체를 차례로 SINK에 사용",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 41,
+      "chapter": "두 법칙",
+      "currentTitle": "얼음과 불",
+      "status": "proposed-not-implemented",
+      "band": "05 두 법칙",
+      "archetype": "상호작용 연쇄",
+      "levelIntent": "HOT과 MELT가 서로 다른 위치에 놓인 복귀 경로",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 42,
+      "chapter": "두 법칙",
+      "currentTitle": "얼음 두 장",
+      "status": "proposed-not-implemented",
+      "band": "05 두 법칙",
+      "archetype": "상호작용 연쇄",
+      "levelIntent": "첫 얼음 제거 이후 남은 얼음을 활용하는 선택",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 43,
+      "chapter": "두 법칙",
+      "currentTitle": "열쇠와 문",
+      "status": "proposed-not-implemented",
+      "band": "05 두 법칙",
+      "archetype": "상호작용 연쇄",
+      "levelIntent": "OPEN/SHUT이 만나기 전에 키의 위치를 결정",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 44,
+      "chapter": "두 법칙",
+      "currentTitle": "문 두 개",
+      "status": "proposed-not-implemented",
+      "band": "05 두 법칙",
+      "archetype": "상호작용 연쇄",
+      "levelIntent": "문 두 개의 순서가 반대로 되면 막히는 분기",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 45,
+      "chapter": "두 법칙",
+      "currentTitle": "밀림을 만들어 물에",
+      "status": "proposed-not-implemented",
+      "band": "05 두 법칙",
+      "archetype": "상호작용 연쇄",
+      "levelIntent": "PUSH를 만든 뒤 물로 밀어 SINK 처리하고 돌아오기",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 46,
+      "chapter": "두 법칙",
+      "currentTitle": "열쇠에게 밀림을",
+      "status": "proposed-not-implemented",
+      "band": "05 두 법칙",
+      "archetype": "상호작용 연쇄",
+      "levelIntent": "열쇠 PUSH 생성과 문 규칙 변경의 2단계 연쇄",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 47,
+      "chapter": "규칙 연구소",
+      "currentTitle": "혼자 움직이는 돌",
+      "status": "proposed-not-implemented",
+      "band": "06 이동",
+      "archetype": "이동 위험",
+      "levelIntent": "자동 이동 돌의 주기를 관찰하고 우회 진입",
+      "target": {
+        "minimumMeaningfulRuleChanges": 0,
+        "minimumRequiredReturns": 0,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 48,
+      "chapter": "규칙 연구소",
+      "currentTitle": "움직이는 목표",
+      "status": "proposed-not-implemented",
+      "band": "06 이동",
+      "archetype": "이동 위험",
+      "levelIntent": "목표가 움직이므로 도착 위치를 예측해 합류",
+      "target": {
+        "minimumMeaningfulRuleChanges": 0,
+        "minimumRequiredReturns": 0,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 49,
+      "chapter": "규칙 연구소",
+      "currentTitle": "움직이는 위험",
+      "status": "proposed-not-implemented",
+      "band": "06 이동",
+      "archetype": "이동 위험",
+      "levelIntent": "움직이는 위험의 경로에 들어가지 않는 회피·규칙 조작",
+      "target": {
+        "minimumMeaningfulRuleChanges": 0,
+        "minimumRequiredReturns": 0,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 50,
+      "chapter": "규칙 연구소",
+      "currentTitle": "움직임을 끊어",
+      "status": "proposed-not-implemented",
+      "band": "06 이동",
+      "archetype": "이동 위험",
+      "levelIntent": "MOVE 단어를 끊어 장애물 이동을 정지시키고 복귀",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 51,
+      "chapter": "규칙 연구소",
+      "currentTitle": "움직이는 불을 약하게",
+      "status": "proposed-not-implemented",
+      "band": "06 이동",
+      "archetype": "이동 위험",
+      "levelIntent": "WEAK으로 이동하는 불을 제거하고 건너가기",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 52,
+      "chapter": "규칙 연구소",
+      "currentTitle": "약한 돌",
+      "status": "proposed-not-implemented",
+      "band": "06 이동",
+      "archetype": "이동 위험",
+      "levelIntent": "약한 물체의 소멸 시점 때문에 다른 길을 선택",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 53,
+      "chapter": "규칙 연구소",
+      "currentTitle": "움직이는 열쇠",
+      "status": "proposed-not-implemented",
+      "band": "06 이동",
+      "archetype": "이동 위험",
+      "levelIntent": "자동 열쇠의 동선을 수정한 뒤 문이 열리는 위치로 재방문",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 54,
+      "chapter": "규칙 연구소",
+      "currentTitle": "움직이는 불을 물로",
+      "status": "proposed-not-implemented",
+      "band": "06 이동",
+      "archetype": "이동 위험",
+      "levelIntent": "자동 이동하는 불→물 변환으로 위험지대 변화",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 55,
+      "chapter": "규칙 연구소",
+      "currentTitle": "둘이 움직이고 목표도 움직여",
+      "status": "proposed-not-implemented",
+      "band": "06 이동",
+      "archetype": "이동 위험",
+      "levelIntent": "두 조종 물체와 움직이는 목표의 타이밍을 종합",
+      "target": {
+        "minimumMeaningfulRuleChanges": 1,
+        "minimumRequiredReturns": 1,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 56,
+      "chapter": "금지된 실험",
+      "currentTitle": "위험한 벽을 바꿔라",
+      "status": "proposed-not-implemented",
+      "band": "07 최종",
+      "archetype": "종합 탈출",
+      "levelIntent": "DEFEAT 벽을 지운 후 다른 관문을 위한 변환 결합",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 2,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 57,
+      "chapter": "금지된 실험",
+      "currentTitle": "열쇠가 목표다",
+      "status": "proposed-not-implemented",
+      "band": "07 최종",
+      "archetype": "종합 탈출",
+      "levelIntent": "열쇠 WIN을 만들기 위해 기존 깃발 관념 버림",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 2,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 58,
+      "chapter": "금지된 실험",
+      "currentTitle": "움직이는 위험을 약하게",
+      "status": "proposed-not-implemented",
+      "band": "07 최종",
+      "archetype": "종합 탈출",
+      "levelIntent": "WEAK과 MOVE를 모두 제어하는 두 갈래 순환 퍼즐",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 2,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 59,
+      "chapter": "금지된 실험",
+      "currentTitle": "세상이 차례로 나",
+      "status": "proposed-not-implemented",
+      "band": "07 최종",
+      "archetype": "종합 탈출",
+      "levelIntent": "세 개의 YOU가 각각 다른 작업실을 만져 길을 연결",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 2,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    },
+    {
+      "stage": 60,
+      "chapter": "금지된 실험",
+      "currentTitle": "마지막 법칙",
+      "status": "proposed-not-implemented",
+      "band": "07 최종",
+      "archetype": "종합 탈출",
+      "levelIntent": "이전 6개 유형을 섞되 힌트가 정답을 알려주지 않는 다단계 최종 방",
+      "target": {
+        "minimumMeaningfulRuleChanges": 2,
+        "minimumRequiredReturns": 2,
+        "mustRecordGoldenSolution": true,
+        "mustBlockNoRuleShortcut": true
+      },
+      "caveat": "난이도 수치는 설계 목표이며 실제 엔진으로 풀이한 결과가 아님"
+    }
+  ],
+  "comment": "All 60 rows are target redesigns, not currently shipping changes; prototypes are separate design fixtures."
+}
