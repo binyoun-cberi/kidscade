@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose } from './sim.mjs?v=8';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose, CITY_GEOMETRY, getStreetPlan } from './sim.mjs?v=9';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -210,6 +210,58 @@ function placeObject(url, center, longest, fallback, revision, footprint = null,
   if(occluder)registerOccluder(fallback);
   return pivot;
 }
+// Render the entire walk graph as a small number of instanced meshes.
+function paintSegments(segments,width,y,depth,color,name){
+  if(!segments.length)return;
+  const mesh=owned(new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),flat(color),segments.length));
+  const temp=new THREE.Object3D();
+  mesh.name=name;
+  for(let i=0;i<segments.length;i++){
+    const s=segments[i];
+    temp.position.set(s.x,y,s.z);
+    temp.scale.set(s.axis==='x'?s.length+.02:width,depth,s.axis==='z'?s.length+.02:width);
+    temp.updateMatrix();mesh.setMatrixAt(i,temp.matrix);
+  }
+  mesh.instanceMatrix.needsUpdate=true;
+  mesh.frustumCulled=false;
+  scenery.add(mesh);
+}
+function drawConnectedFootways(plan){
+  paintSegments(plan.walks,CITY_GEOMETRY.walkWidth,.074,.012,0xffedcc,'city-linked-sidewalks');
+  // Crossings run exactly along the two cross-block navigation edges, not
+  // arbitrary painted stripes on every tile.
+  paintSegments(plan.crossings,CITY_GEOMETRY.crossingWidth,.043,.03,0xbbbeb0,'city-crossing-ramps');
+  const zebra=[];
+  for(const s of plan.crossings)for(let index=0;index<5;index++){
+    const along=(index-2)*s.length/6;
+    zebra.push({...s,x:s.x+(s.axis==='x'?along:0),z:s.z+(s.axis==='z'?along:0),length:.18});
+  }
+  paintSegments(zebra,CITY_GEOMETRY.crossingWidth*.86,.066,.015,0xfff7e8,'city-crossing-stripes');
+}
+// A single surrounding landscape removes the abrupt, isolated board edges.
+// Instancing is two draw calls even for the largest city.
+function drawOuterGreenbelt(width,depth,cols,rows){
+  const amount=Math.min(64,(cols+rows)*6),trunk=owned(new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(.09,.13,.7,7),flat(0x977b52),amount));
+  const crown=owned(new THREE.InstancedMesh(
+    new THREE.ConeGeometry(.58,1.25,7),flat(0x69a47c),amount));
+  const temp=new THREE.Object3D();
+  trunk.name='city-greenbelt-trunks';crown.name='city-greenbelt-crowns';
+  const perSide=Math.ceil(amount/4);
+  for(let i=0;i<amount;i++){
+    const side=i%4,t=(Math.floor(i/4)+.5)/perSide,offset=2.6+(i%3)*.85;
+    const x=side<2?(side===0?-1:1)*(width/2+offset):(t-.5)*(width+7);
+    const z=side>=2?(side===2?-1:1)*(depth/2+offset):(t-.5)*(depth+7);
+    const size=.83+(i%5)*.075;
+    temp.position.set(x,.31*size,z);temp.scale.set(size,size,size);temp.updateMatrix();
+    trunk.setMatrixAt(i,temp.matrix);
+    temp.position.y=.99*size;temp.updateMatrix();
+    crown.setMatrixAt(i,temp.matrix);
+  }
+  trunk.instanceMatrix.needsUpdate=true;crown.instanceMatrix.needsUpdate=true;
+  trunk.frustumCulled=false;crown.frustumCulled=false;
+  scenery.add(trunk,crown);
+}
 function generateWorld() {
   for(const group of [scenery,citizens,movingCars,marker])disposeProcedural(group);
   scenery.clear();citizens.clear();movingCars.clear();marker.clear();citizenMeshes.clear();greetingMarkers.clear();cars.length=0;
@@ -218,15 +270,13 @@ function generateWorld() {
   const revision=++worldSerial;
   const {cols,rows}=town.config;
   const width=cols*BLOCK_PITCH+1,depth=rows*BLOCK_PITCH+1;
-  const base=cube(width,.25,depth,0x8fbd93);base.position.y=-.17;scenery.add(base);
-  // Lane ribbons are deliberately between blocks; residents always walk on the inner sidewalk.
-  for (let col=0;col<cols-1;col++) {
-    const x=(col+.5-(cols-1)/2)*BLOCK_PITCH;
-    addPart(scenery,cube(1.35,.028,depth,colors.road),x,.003,0);
-  }
-  for (let row=0;row<rows-1;row++) {
-    const z=(row+.5-(rows-1)/2)*BLOCK_PITCH;
-    addPart(scenery,cube(width,.028,1.35,colors.road),0,.007,z);
+  const plan=getStreetPlan(town);
+  const base=cube(width+16,.25,depth+16,0x8fbd93);base.position.y=-.17;scenery.add(base);
+  drawOuterGreenbelt(width,depth,cols,rows);
+  // Roads extend across the entire town, with continuous asphalt at intersections.
+  for(const road of plan.roads){
+    addPart(scenery,cube(road.axis==='x'?road.length:road.width,.028,
+      road.axis==='z'?road.length:road.width,colors.road),road.x,.003,road.z);
   }
   for (let i=0;i<town.blocks.length;i++) {
     const block=town.blocks[i],center=getBlockCenter(block,town.config);
@@ -241,11 +291,15 @@ function generateWorld() {
     if(block.kind==='park') {
       addPart(scenery,cube(2.8,.06,2.8,0x8fbd75),center.x,.08,center.z);
       local(MODEL.parkTree,-.8,-.7,1.6,.9,true);
-      local(`${CITY}flower-pot.glb`,.8,-.8,.55,.5);
+      // Shared public landmark connects the park visually to the main streets.
+      addPart(scenery,cylinder(.48,.5,.12,0xe6dfbd,16),center.x+.7,.17,center.z-.55);
+      addPart(scenery,cylinder(.4,.4,.038,0x79c3d8,16),center.x+.7,.25,center.z-.55);
+      addPart(scenery,cylinder(.065,.085,.32,0xc9dece,9),center.x+.7,.42,center.z-.55);
+      local(`${CITY}flower-pot.glb`,1.8,-.8,.55,.45);
       // Benches belong to occupied activity bays, not a second overlapping prop.
       local(`${CITY}bicycle.glb`,-1.5,-.65,.75,.7);
     } else if(block.kind==='stop') {
-      local(`${CITY}bus-stop.glb`,0,-1.1,1.65,2.6,true);
+      local(`${CITY}bus-stop.glb`,0,CITY_GEOMETRY.shelterZ,1.65,CITY_GEOMETRY.shelterFootprint,true);
       local(`${CITY}bus-stop-sign.glb`,-1.7,-.1,1.25);
       local(`${CITY}trash-can.glb`,1.8,-.1,.65);
       addPart(scenery,cube(4.7,.025,.18,0xf6d16c),center.x,.07,center.z+2.72);
@@ -254,11 +308,12 @@ function generateWorld() {
       const url=town.stageName==='small'&&block.kind==='home' ? MODEL.buildings[i%MODEL.buildings.length] : `${CITY}${variants[Math.floor(i/6)%variants.length]}.glb`;
       const height=1.65;
       // One low building at the rear leaves four full-sized activity bays clear.
-      placeObject(url,{x:center.x,z:center.z-1.2},height,buildingFallback(block),revision,2.65,true);
+      placeObject(url,{x:center.x,z:center.z+CITY_GEOMETRY.buildingZ},
+        1.82,buildingFallback(block),revision,CITY_GEOMETRY.buildingFootprint,true);
       // Distinct, low storefront details sit inside each parcel, never in the pedestrian loop.
       if(block.kind==='market'||block.kind==='bakery') {
         // A stocked counter belongs to the storefront, clear of all activity bays.
-        const counter=new THREE.Group();counter.position.set(center.x,.52,center.z+.2);scenery.add(counter);
+        const counter=new THREE.Group();counter.position.set(center.x,.52,center.z+.34);scenery.add(counter);
         addPart(counter,cube(2.35,.14,.44,0xe7bd85),0,0,0);
         for(let bread=0;bread<3;bread++){
           const tray=new THREE.Group();tray.position.set((bread-1)*.7,.08,0);counter.add(tray);
@@ -277,12 +332,8 @@ function generateWorld() {
       }
     }
     if(block.col<cols-1&&block.row<rows-1)local(`${STREET}light-curved.glb`,1.95,-1.85,1.25,.3);
-    // Paint crossings from the same endpoints used by the path graph.
-    for(const side of [-1,1])for(let stripe=0;stripe<5;stripe++){
-      if(block.col<cols-1)addPart(scenery,cube(.15,.025,.65,0xfff7e6),center.x+2.9+stripe*.3,.05,center.z+side*WALK.edge);
-      if(block.row<rows-1)addPart(scenery,cube(.65,.025,.15,0xfff7e6),center.x+side*WALK.edge,.05,center.z+2.9+stripe*.3);
-    }
   }
+  drawConnectedFootways(plan);
 
   for(const person of town.people) {
     const holder=new THREE.Group();
