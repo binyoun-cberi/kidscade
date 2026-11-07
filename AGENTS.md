@@ -49,3 +49,40 @@ Never claim that a test passed unless the test actually ran successfully.
 Describe: defect before change, files changed, visible gameplay improvement,
 assets reused, tests actually run, limitations, and whether keys, billing,
 deployment, and student records were untouched. Never include credential values.
+
+## Continuity across ordinary Chat requests
+
+The user's default intent for a Kidscade implementation/improvement request is to complete
+as much of **analysis -> plan -> implement -> real verification -> re-evaluation** as is
+feasible in that one Chat turn. Do not stop at a plan if code tools and evidence permit
+implementation. Do not ask whether to continue after every step. The existing **maximum
+three evidence-driven iterations** and all cost, security, deployment, and PR restrictions
+above still apply; this instruction does not authorize background work.
+
+At the **start** of a game task:
+
+1. Read the latest relevant code, this `AGENTS.md`,
+   `docs/CHAT_AGENT_WORKFLOW.md`, and
+   `docs/improvement-logs/README.md`.
+2. Resolve the exact game ID from `data/games.json`. If
+   `docs/improvement-logs/<game-id>.md` exists, read it before planning.
+3. Carry forward the user's standing constraints and the log's **next starting point**.
+   Verify previous claims against code/test evidence; never assume an old claimed test passed.
+4. Treat a brainstorming-only request as **no code changes** unless requested otherwise.
+
+At the **end** of an implementation task:
+
+1. Create or update `docs/improvement-logs/<game-id>.md` using
+   `docs/improvement-logs/TEMPLATE.md`; update its `INDEX.md` entry.
+2. Record only work actually done: baseline, changed paths, each attempted iteration,
+   exact tests/results, visual playthrough status, regressions, unresolved issues, next
+   concrete step, branch, PR, and explicit merge/deploy status.
+3. Never fabricate a browser playthrough, successful CI, or an earlier development history.
+   Never write private student data or credentials to the log.
+4. Include the updated log in the topic branch's PR. If tools cannot write GitHub,
+   say so explicitly and provide the findings in the current response rather than
+   falsely reporting persistence.
+
+The copyable ChatGPT project-instruction text is at
+`docs/CHATGPT_PROJECT_INSTRUCTIONS.md`. Its existence in GitHub does **not**
+automatically update ChatGPT Project settings; the user must paste it in the Project UI.
