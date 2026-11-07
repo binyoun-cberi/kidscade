@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose } from './sim.mjs?v=7';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose } from './sim.mjs?v=8';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -53,6 +53,7 @@ let town = null, viewSize = 21, initialViewSize = 21, worldSerial = 0, currentTa
 let active = false, zoomTouchDist = 0, pinchCenter = null, tapStart = null, lastFrame = performance.now(), lastToast = 0;
 const pointerPositions = new Map();
 const citizenMeshes = new Map();
+const greetingMarkers = new Map();
 const cars = [];
 const mixers = [];
 const occluders = [];
@@ -211,7 +212,7 @@ function placeObject(url, center, longest, fallback, revision, footprint = null,
 }
 function generateWorld() {
   for(const group of [scenery,citizens,movingCars,marker])disposeProcedural(group);
-  scenery.clear();citizens.clear();movingCars.clear();marker.clear();citizenMeshes.clear();cars.length=0;
+  scenery.clear();citizens.clear();movingCars.clear();marker.clear();citizenMeshes.clear();greetingMarkers.clear();cars.length=0;
   mixers.length=0;occluders.length=0;citizenAssets.clear();loweredBuildings.clear();clearPreview();
   if (!town) return;
   const revision=++worldSerial;
@@ -292,6 +293,11 @@ function generateWorld() {
     holder.userData.citizenId=person.id;
     citizenMeshes.set(person.id,{holder,body,appearance,person,activity:person.activity,pose:getPose(person),state:person.state});
     makeCitizenAppearance(person,body,appearance,revision);
+    // A small speech bubble sits in the non-pickable marker layer.
+    const bubble=new THREE.Group();bubble.visible=false;
+    const face=ball(.2,0xfffbeb);face.scale.set(1.25,.83,.45);bubble.add(face);
+    for(const x of [-.08,0,.08])addPart(bubble,ball(.029,0x508f7c),x,0,.1);
+    marker.add(bubble);greetingMarkers.set(person.id,bubble);
   }
   if(rows>1) {
     for(let i=0;i<Math.min(3,Math.max(1,Math.floor(cols/2)));i++) {
@@ -447,8 +453,18 @@ function positionEverything(dt) {
     // Procedural stand-ins need footsteps; loaded characters use their own clips.
     mesh.body.position.y=p.state==='walking'&&!citizenAssets.has(p.id)
       ?Math.abs(Math.sin(p.elapsed*9+p.phase))*.035:0;
+    const speech=greetingMarkers.get(p.id);
+    if(speech){
+      speech.visible=!!p.socialWith;
+      if(speech.visible){
+        speech.position.set(pos.x,1.64+Math.sin(p.elapsed*3+p.phase)*.035,pos.z);
+        speech.quaternion.copy(camera.quaternion);
+      }
+    }
+    // A greeting faces the actual partner, rather than a fixed compass direction.
     // shortest-angle interpolation avoids a full turn when crossing -PI / PI.
-    const facing=p.state==='walking'?p.facing:0;
+    const partner=p.socialWith?town.people.find(q=>q.id===p.socialWith):null;
+    const facing=p.state==='walking'?p.facing:partner?Math.atan2(partner.position.x-pos.x,partner.position.z-pos.z):0;
     const angle=Math.atan2(Math.sin(facing-mesh.holder.rotation.y),Math.cos(facing-mesh.holder.rotation.y));
     mesh.holder.rotation.y+=angle*(dt===0?1:Math.min(1,dt*8));
     if(celebration?.id===p.id){mesh.body.rotation.z=Math.sin(p.elapsed*12)*.07;}
