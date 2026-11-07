@@ -21,6 +21,19 @@
     hammer:[{name:'쇠망치 머리',instruction:'힘을 견딜 단단한 망치 머리를 만들어요.'},{name:'결합 고리',instruction:'나무 손잡이와 연결할 고리를 만들어요.'}],
     crown:[{name:'왕관 띠',instruction:'머리에 두를 황금빛 금속 띠를 만들어요.'},{name:'장식 받침',instruction:'보석을 얹을 장식 받침을 만들어요.'}]
   };
+
+  // These are actual product measurements, not labels attached after a random
+  // arithmetic question. Custom master orders may request a bespoke length.
+  const BLUEPRINTS={
+    sword:[{metal:'5/4',method:'+',technique:'draw',pumps:3,hits:2,action:'칼날을 길게 펴기'},{metal:'1/2',method:'-',technique:'fit',pumps:2,hits:2,action:'손잡이 결합부 맞추기'}],
+    axe:[{metal:'1',method:'-',technique:'spread',pumps:3,hits:3,action:'도끼날을 넓게 펴기'},{metal:'1/4',method:'÷',technique:'bend',pumps:2,hits:1,action:'쇠고리를 둥글게 굽히기'}],
+    shield:[{metal:'3/2',method:'×',technique:'flatten',pumps:3,hits:3,action:'방패 판 평평하게 펴기'},{metal:'3/4',method:'+',technique:'bend',pumps:2,hits:2,action:'방패 테두리 굽히기'}],
+    spear:[{metal:'3/4',method:'÷',technique:'point',pumps:3,hits:2,action:'창끝 뾰족하게 다듬기'},{metal:'1/3',method:'+',technique:'fit',pumps:2,hits:1,action:'창 자루 연결쇠 맞추기'}],
+    helmet:[{metal:'5/4',method:'×',technique:'curve',pumps:3,hits:3,action:'투구 몸통 둥글게 성형'},{metal:'1/2',method:'-',technique:'bend',pumps:2,hits:2,action:'이마 보호대 굽히기'}],
+    dagger:[{metal:'3/4',method:'-',technique:'point',pumps:3,hits:2,action:'짧은 칼날 다듬기'},{metal:'1/4',method:'+',technique:'fit',pumps:2,hits:1,action:'손 보호대 맞추기'}],
+    hammer:[{metal:'1',method:'+',technique:'square',pumps:3,hits:3,action:'망치 머리 네모지게 성형'},{metal:'1/4',method:'÷',technique:'fit',pumps:2,hits:1,action:'손잡이 결합부 맞추기'}],
+    crown:[{metal:'3/2',method:'×',technique:'bend',pumps:3,hits:3,action:'왕관 띠 둥글게 굽히기'},{metal:'1/2',method:'-',technique:'ornament',pumps:2,hits:2,action:'보석 장식 받침 새기기'}]
+  };
   const SHAPES={
     sword:'<path class="piece-primary" d="M113 16 126 16 139 126 120 143 101 126Z"/><path class="etched" d="M120 27V122"/><path class="piece-secondary" d="M70 138Q120 123 170 138L165 151H75Z"/><path class="piece-secondary" d="M113 148H127V197L120 209 113 197Z"/>',
     axe:'<path class="piece-secondary" d="M115 40H130V207H115Z"/><path class="piece-primary" d="M85 50Q56 58 37 40V125Q60 109 84 127L143 113V65Z"/><path class="etched" d="M77 60 77 114"/>',
@@ -53,6 +66,6 @@
   function sprite(itemId){return SPRITES[itemId]||''}
   function tool(op){return '<svg class="smith-tool-svg" viewBox="0 0 66 68" aria-hidden="true"><g class="tool-shape">'+(TOOL_SHAPES[op]||TOOL_SHAPES['+'])+'</g></svg>'}
   function customer(number){return PORTRAITS[((number%PORTRAITS.length)+PORTRAITS.length)%PORTRAITS.length]}
-  function parts(itemId){return (PARTS[itemId]||PARTS.sword).map(p=>({...p}))}
-  return {ASSET_ROOT,REQUEST,PLAYER,SPRITES,PARTS,model,sprite,tool,customer,parts};
+  function parts(itemId){return (PARTS[itemId]||PARTS.sword).map((p,i)=>({...p,...(BLUEPRINTS[itemId]||BLUEPRINTS.sword)[i]}))}
+  return {ASSET_ROOT,REQUEST,PLAYER,SPRITES,PARTS,BLUEPRINTS,model,sprite,tool,customer,parts};
 });
