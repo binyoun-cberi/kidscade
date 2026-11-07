@@ -1,12 +1,13 @@
+import {SUBJECTS,dayBrief,normalizeMemory,remember,careNeed,CARE_CHOICES,careOutcome,attentionItems} from './student-care.mjs?v=77';
 import * as THREE from 'three';
-import {createSchoolSoundscape} from './school-soundscape.mjs?v=76';
+import {createSchoolSoundscape} from './school-soundscape.mjs?v=77';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {
   AI_RULES,STUDENT_PROFILES,createStudentRuntime,resetFocusForLesson,updateLessonFocus,helpFocus,
   resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,chooseOffTaskBehavior,clamp
-} from './student-ai.mjs?v=73';
-import {CLASS_SIZE,SCHOOL_SPACES,DAY_STEPS,PERIODS,ROW_DESK_FORWARD,ROW_CHAIR_OFFSET,SEAT_SURFACE_HEIGHT,seatHeightAdjustment} from './school-day.mjs?v=75';
+} from './student-ai.mjs?v=77';
+import {CLASS_SIZE,SCHOOL_SPACES,DAY_STEPS,PERIODS,ROW_DESK_FORWARD,ROW_CHAIR_OFFSET,SEAT_SURFACE_HEIGHT,seatHeightAdjustment} from './school-day.mjs?v=77';
 import {
   preferenceFor,preferenceMultiplier,preferenceIcon,
   createDailyEnvironment,createDailyHealth,healthRecoveryMultiplier,tickHealth,nextHealthAction,
@@ -14,16 +15,16 @@ import {
   friendshipKey,friendshipInfo,addFriendship,friendshipConflictDuration,
   friendshipSelfReconcileChance,friendshipChatterChance,
   SAFETY_RULES,GROUP_RULES,FRIENDSHIP_RULES
-} from './student-life.mjs?v=71';
+} from './student-life.mjs?v=77';
 import {
   CAMPAIGN_DAYS,EXAM_DAYS,GRADE_ORDER,LEARNING_RULES,
   createCampaignState,normalizeCampaignState,examNumberForDay,nextExamInfo,
   gradeIndex,learningGain,addLearning,conductExam,latestExam,targetReachedCount
-} from './school-campaign.mjs?v=71';
+} from './school-campaign.mjs?v=77';
 import {
   TEACHING_RULES,LESSON_PHASES,createLessonFlow,lessonFlowAction,
   performLessonAction,tickLessonFlow,lessonTeachingEfficiency,lessonFlowProgress,lessonTimePressure
-} from './lesson-instruction.mjs?v=73';
+} from './lesson-instruction.mjs?v=77';
 
 const $=id=>document.getElementById(id);
 const ui={
@@ -97,7 +98,7 @@ function seatFurnitureForSpace(space){
 }
 let seatFurnitureRects=seatFurnitureForSpace(activeSpace);
 
-let started=false,paused=false;
+let started=false,paused=false,shellPaused=false;
 let stepIndex=0,currentStep=DAY_STEPS[0],stepTime=0;
 let schoolMinute=9*60;
 let interactionScan=0,pairScan=0,hudTimer=0,groupSignalCooldown=0,groupSignalsThisLesson=0,currentAction={type:'none'};
@@ -137,6 +138,9 @@ let teamCheckTimer=0;
 let lessonAccidents=0;
 const CAMPAIGN_STORAGE_KEY='kidscade_teacher_campaign_v2';
 let campaign=loadCampaign();
+friendships=new Map(campaign.friendships);relations=new Set(campaign.unresolvedRelations);
+let selectedStudentId=null,careContext=null,careReturnFocus=null;
+const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const campaignDayStartMastery={...campaign.mastery};
 let dayFinished=false;
 let environment=createDailyEnvironment();
@@ -167,6 +171,12 @@ function loadCampaign(){
   return state;
 }
 function saveCampaign(){
+  campaign.friendships=[...friendships];campaign.unresolvedRelations=[...relations];
+  for(const s of students){
+    const memory=campaign.studentMemory[s.runtime.id]=normalizeMemory(campaign.studentMemory[s.runtime.id]);
+    const profile=STUDENT_PROFILES.find(p=>p.id===s.runtime.id);
+    memory.focusGrowth=Math.max(0,s.runtime.focusMax-profile.focusMax);
+  }
   try{localStorage.setItem(CAMPAIGN_STORAGE_KEY,JSON.stringify(campaign))}catch(_){}
 }
 function resetCampaign(){
@@ -175,15 +185,15 @@ function resetCampaign(){
 }
 function campaignGradeGoalText(){
   const latest=latestExam(campaign);
-  if(!latest)return '📝 1차 시험에서 현재 등급을 확인해요';
+  if(!latest)return '시작할 때 정한 개인 목표 · 전원 한 단계 성장';
   const reached=targetReachedCount(campaign);
-  return '🎯 목표 달성 '+reached+'/'+CLASS_SIZE+' · 전원 한 단계 상승';
+  return '목표 달성 '+reached+'/'+CLASS_SIZE+' · 전원 한 단계 상승';
 }
 function updateCampaignStatus(){
   if(!ui.campaignStatus)return;
   const exam=nextExamInfo(campaign.day);
   const when=exam.daysAway===0?'오늘 '+exam.examNumber+'차 시험':exam.examNumber+'차 시험 D-'+exam.daysAway;
-  ui.campaignStatus.innerHTML='<strong>📅 '+campaign.day+'/'+CAMPAIGN_DAYS+'일차</strong> · '+when+'<br>'+campaignGradeGoalText();
+  ui.campaignStatus.innerHTML='<strong>'+campaign.day+' / '+CAMPAIGN_DAYS+'일</strong><span>'+when+'</span><small>'+campaignGradeGoalText()+'</small>';
 }
 function currentGradeLabel(id){
   const latest=latestExam(campaign);
@@ -656,6 +666,7 @@ async function createActors(){
   const healthToday=createDailyHealth(STUDENT_PROFILES);
   const built=await Promise.all(STUDENT_PROFILES.map(async (profile,i)=>{
     const runtime=createStudentRuntime(profile),seat=activeSeats[i]||new THREE.Vector3();
+    runtime.focusMax=Math.min(100,profile.focusMax+(campaign.studentMemory[profile.id]?.focusGrowth||0));runtime.focus=runtime.focusMax;
     const actor=await makeActor('student',profile,i,seat.clone());
     return {
       runtime,actor,seat:seat.clone(),wander:null,offTaskKind:'',wanderTimer:0,fidgetOffset:i*.91,visualIndex:i,questionActive:false,answeredWindow:-1,wasGesturing:false,bubble:null,
@@ -775,7 +786,7 @@ try{soundEnabled=localStorage.getItem(SOUND_PREF_KEY)!=='1'}catch(_){}
 soundscape.setEnabled(soundEnabled);
 function applySoundSetting(enabled,{persist=false}={}){
   soundEnabled=soundscape.setEnabled(enabled);
-  ui.soundButton.textContent=soundEnabled?'🔊':'🔇';
+  ui.soundButton.textContent=soundEnabled?'소리':'무음';
   ui.soundButton.setAttribute('aria-label',soundEnabled?'소리 끄기':'소리 켜기');
   ui.soundButton.setAttribute('aria-pressed',String(soundEnabled));
   ui.soundButton.title=soundEnabled?'소리 끄기':'소리 켜기';
@@ -838,7 +849,7 @@ function activePeriod(){
 }
 function updateDayStrip(){
   const p=activePeriod();
-  ui.dayStrip.innerHTML=PERIODS.map(item=>'<span class="'+(item.period===p?'active ':'')+(item.period< p?'done':'')+'"><i>'+item.icon+'</i><b>'+item.period+'</b><small>'+item.subject+'</small></span>').join('');
+  ui.dayStrip.innerHTML=PERIODS.map(item=>'<span class="'+(item.period===p?'active ':'')+(item.period< p?'done':'')+'"><i>'+item.subject.slice(0,1)+'</i><b>'+item.period+'</b><small>'+item.subject+'</small></span>').join('');
 }
 function friendInfo(a,b){return friendshipInfo(friendships,a.runtime.id,b.runtime.id)}
 function gainFriendship(a,b,amount,{announce=false}={}){
@@ -960,9 +971,62 @@ function healthIcon(s){
   return '';
 }
 function activeLessonStudents(){return students.filter(studentCanParticipate)}
+function careNeedFor(s){return careNeed(s,currentStep.subject||'오늘',preferenceFor(s.runtime.id,currentStep.subject));}
+function setMarkup(id,html){const el=$(id);if(el.dataset.markup!==html){el.innerHTML=html;el.dataset.markup=html;}}
+function updateCareHud(){
+  const items=attentionItems(students,{present:isStudentPresent,pairs});
+  $('attentionCount').textContent=items.length+'명';
+  setMarkup('attentionList',items.length?items.slice(0,4).map(({student:s,label,tone})=>
+    '<button type="button" data-student="'+s.runtime.id+'" class="attentionItem '+tone+'"><b>'+s.runtime.name+'</b><span>'+label+'</span><i>›</i></button>').join(''):
+    '<div class="allCalm"><b>지금은 차분해요</b><span>수업 흐름을 이어가세요.</span></div>');
+  const s=students.find(s=>s.runtime.id===selectedStudentId);if(!s)return;
+  const memory=campaign.studentMemory[s.runtime.id],need=careNeedFor(s);
+  $('detailName').textContent=s.runtime.name+'의 관찰 기록';
+  $('detailNeed').textContent=!isStudentPresent(s)?'지금은 교실 밖에서 쉬고 있어요.':need.label+' · '+need.hint;
+  $('detailMemory').textContent=memory?.notes.at(-1)?memory.notes.at(-1).day+'일차 · '+memory.notes.at(-1).text:'아직 함께 나눈 지도 기록이 없어요.';
+  const friends=[...friendships].filter(([key])=>key.split('|').includes(s.runtime.id)).sort((a,b)=>b[1]-a[1]);
+  const friend=friends[0]?.[0].split('|').find(id=>id!==s.runtime.id);
+  const tension=[...relations].filter(key=>key.split('|').includes(s.runtime.id)).length;
+  $('detailRelationship').textContent='선생님과 신뢰 '+(memory?.trust||0)+' · '+(friend?'가까운 친구 '+(STUDENT_PROFILES.find(p=>p.id===friend)?.name||''):'친구를 알아가는 중')+(tension?' · 풀지 못한 갈등 '+tension+'건':'');
+  setMarkup('subjectGrowth',SUBJECTS.map(subject=>{
+    const score=campaign.subjectMastery[s.runtime.id][subject];
+    return '<div class="subjectRow"><span>'+subject+'</span><meter min="0" max="96" value="'+score+'" aria-label="'+subject+' 학습 '+score.toFixed(1)+'"></meter><b>'+score.toFixed(1)+'</b></div>';
+  }).join(''));
+}
+function openCare(s,kind){
+  if(paused||!studentCanParticipate(s))return;
+  careContext={student:s,kind,need:careNeedFor(s)};careReturnFocus=document.activeElement;
+  paused=true;keys.clear();joy.x=joy.y=0;soundscape.setPaused(true);ui.ambience?.pause();ui.talk?.pause();
+  $('careTitle').textContent=s.runtime.name+'에게 어떤 도움을 줄까요?';
+  $('careWords').textContent='“'+careContext.need.label+'”';$('careHint').textContent=careContext.need.hint;
+  $('careChoices').innerHTML=CARE_CHOICES.map(c=>'<button type="button" data-care="'+c.id+'"><b>'+c.label+'</b><span>'+c.hint+'</span></button>').join('');
+  $('careDialog').classList.remove('hidden');$('careChoices').querySelector('button').focus();
+}
+function closeCare(){
+  careContext=null;$('careDialog').classList.add('hidden');paused=shellPaused;soundscape.setPaused(paused);clock3d.getDelta();
+  if(soundEnabled&&!paused){ui.ambience?.play().catch(()=>{});if(currentStep.kind==='social')ui.talk?.play().catch(()=>{});}
+  careReturnFocus?.focus();
+}
+function resolveCare(choice){
+  if(!careContext||!CARE_CHOICES.some(c=>c.id===choice))return;
+  const {student:s,kind,need}=careContext,result=careOutcome(need.id,choice);
+  if(kind==='question'){
+    s.questionActive=false;s.answeredWindow=Math.floor(lessonElapsed/24);soundscape.play('answer');
+  }else{helpFocus(s.runtime);stats.focusHelps++;soundscape.play('attention');}
+  s.runtime.focus=Math.min(s.runtime.focusMax,s.runtime.focus+s.runtime.focusMax*result.focusRatio);
+  s.runtime.mode='focused';s.wander=null;s.actor.target=s.seat.clone();
+  addLearning(campaign,s.runtime.id,result.learning,currentStep.subject);
+  const m=remember(campaign,s.runtime.id,campaign.day,CARE_CHOICES.find(c=>c.id===choice).label+' · '+result.message);
+  m.trust=Math.min(20,m.trust+result.trust);
+  selectedStudentId=s.runtime.id;refreshStudentBubbleState(s);
+  playerGestureTimer=.55;playAnim(player,'push');actionFeedback(s.actor.root.position,'다시 시작!','attention');
+  closeCare();showToast(s.runtime.name+' · '+result.message);scanAction();updateHud();
+}
+
 function updateHud(){
+  updateCareHud();
   const space=SCHOOL_SPACES[currentStep.location]||activeSpace;
-  ui.phase.parentElement?.querySelector('small')?.replaceChildren(document.createTextNode(space.icon+' '+space.name+' · '+campaign.day+'일차'));
+  ui.phase.parentElement?.querySelector('small')?.replaceChildren(document.createTextNode(space.name+' · '+campaign.day+'일차'));
   ui.phase.textContent=currentStep.period?currentStep.period+'교시 · '+currentStep.subject:(currentStep.title||'학교생활');
   if(currentStep.kind==='lesson'||currentStep.kind==='social')ui.timer.textContent=(currentStep.kind==='lesson'?'수업 ':'')+fmt(stepTime);
   else if(currentStep.kind==='prep')ui.timer.textContent='수업 시작 위치로 이동';
@@ -992,10 +1056,10 @@ function updateHud(){
     const pref=currentStep.kind==='lesson'?preferenceFor(s.runtime.id,currentStep.subject):'neutral';
     const prefMark=currentStep.kind==='lesson'?preferenceIcon(pref):'';
     const f=Math.round(focusRatio(s)*100),so=Math.round(socialRatio(s)*100);
-    return '<div class="studentChip '+cls+'"><i class="face">'+icon+'</i><span class="studentName">'+s.runtime.name+'</span>'+
+    return '<button type="button" data-student="'+s.runtime.id+'" class="studentChip '+cls+'" aria-label="'+s.runtime.name+' 관찰 기록"><i class="face">'+icon+'</i><span class="studentName">'+s.runtime.name+'</span>'+
       (prefMark?'<em class="pref">'+prefMark+'</em>':'')+
       (currentGradeLabel(s.runtime.id)?'<small class="studentGrade">'+currentGradeLabel(s.runtime.id)+'</small>':'')+
-      '<span class="meters"><b class="focusMeter" style="width:'+f+'%"></b><b class="socialMeter" style="width:'+so+'%"></b></span></div>';
+      '<span class="meters" aria-label="집중 '+f+'%, 사교 에너지 '+so+'%"><b class="focusMeter" style="width:'+f+'%"></b><b class="socialMeter" style="width:'+so+'%"></b></span></button>';
   }).join('');
   updateDayStrip();
   updateCampaignStatus();
@@ -1256,7 +1320,7 @@ function refreshStudentBubbleState(s){
   const conflict=pairs.find(p=>p.state==='conflict'&&(p.a===s||p.b===s));
   if(conflict)return showBubble(s,'!','conflict');
   if(s.safetyRecord?.finished&&!s.safetyRecord.heard)return showBubble(s,'⚠️','');
-  if(s.runtime.mode==='offtask')return showBubble(s,'…','');
+  if(s.runtime.mode==='offtask')return showBubble(s,careNeedFor(s).label,'');
   hideBubble(s);
 }
 function startLessonChat(a,b){
@@ -1327,7 +1391,7 @@ function recordLessonLearning(s,dt,chat){
   });
   // A student who is only barely paying attention learns less than a fully attentive student.
   const attentionQuality=.45+.55*focusRatio(s);
-  addLearning(campaign,s.runtime.id,gain*teachingMultiplier*attentionQuality);
+  addLearning(campaign,s.runtime.id,gain*teachingMultiplier*attentionQuality,currentStep.subject);
 }
 function endGroupActivitiesForRecap(){
   const ended=pairs.filter(p=>p.source==='team');
@@ -1355,7 +1419,7 @@ function updateLesson(dt){
     stats.lessonsRecapped++;
     for(const student of activeLessonStudents()){
       const weight=LEARNING_RULES.subjectWeights[currentStep.subject]??.5;
-      addLearning(campaign,student.runtime.id,TEACHING_RULES.recapLearningBonus*weight);
+      addLearning(campaign,student.runtime.id,TEACHING_RULES.recapLearningBonus*weight,currentStep.subject);
     }
     actionFeedback(player.root.position,'학습 성장 +','recap');
     updateBoard('✔ 오늘 배운 내용을 기억해요!');
@@ -1380,7 +1444,7 @@ function updateLesson(dt){
       if(s.offTaskKind==='wander'){offTaskWander(s);soundscape.play('chair',{volume:.6});}
       else{s.wander=null;soundscape.play('offTask',{volume:.5});}
       if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy'))
-        showBubble(s,s.offTaskKind==='wander'?'🚶':'딴짓','');
+        showBubble(s,careNeedFor(s).label,'');
     }
     if(evt==='focused-return'){
       s.wander=null;s.offTaskKind='';s.wanderTimer=0;
@@ -1394,7 +1458,7 @@ function updateLesson(dt){
         if(!s.wander||distance2D(s.actor.root.position,s.wander)<.08)offTaskWander(s);
         moveActorToward(s.actor,s.wander,dt,activeSpace.id==='gym'?.58:.42);
       }else{
-        if(s.offTaskKind==='wander'&&!s.accident)showBubble(s,'딴짓','');
+        if(s.offTaskKind==='wander'&&!s.accident)showBubble(s,careNeedFor(s).label,'');
         s.offTaskKind='fidget';s.wander=null;
         moveActorToward(s.actor,s.seat,dt,.72);
       }
@@ -1474,6 +1538,8 @@ function sendFightApart(pair){
 }
 function mediatePair(pair){
   relations.delete(relationKey(pair.a,pair.b));
+  for(const student of [pair.a,pair.b])remember(campaign,student.runtime.id,campaign.day,'친구와 이야기하며 갈등을 풀었어요.');
+  gainFriendship(pair.a,pair.b,.5);
   if(pair.source==='team'){
     [pair.a,pair.b].forEach(s=>{
       s.runtime.social=Math.min(s.runtime.socialMax,s.runtime.social+s.runtime.socialMax*.22);
@@ -1577,7 +1643,8 @@ function updateBubbles(){
 }
 function teacherNearStudent(s){return distance2D(player.root.position,s.actor.root.position)<=AI_RULES.teacherNearDistance}
 
-function setAction(icon,label,ready){ui.actionIcon.textContent=icon;ui.actionLabel.textContent=label;ui.action.classList.toggle('ready',!!ready)}
+const ACTION_SYMBOLS={startLesson:'▶',moveNext:'→',healthCheck:'＋',healthDecision:'＋',answerQuestion:'?',assignWork:'≡',startRecap:'✓',safetyReview:'!',quietFriends:'…',focus:'◎',groupFocus:'◎',mediate:'↔',separate:'↔'};
+function setAction(icon,label,ready){ui.actionIcon.textContent=ACTION_SYMBOLS[currentAction.type]||'…';ui.actionLabel.textContent=label;ui.action.classList.toggle('ready',!!ready)}
 function scanAction(){
   if(!player){currentAction={type:'none'};return}
   if(currentStep.kind==='prep'){
@@ -1680,6 +1747,7 @@ function removeStudentFromActivePairs(s){
   });
 }
 function checkStudentHealth(s){
+  remember(campaign,s.runtime.id,campaign.day,'몸이 불편해 보여 상태를 확인했어요.');
   s.health.checked=true;stats.healthChecks++;
   s.healthAction=nextHealthAction(s.health,environment,currentPeriodNumber());
   let detail=healthStatusText(s)+'. ';
@@ -1704,6 +1772,7 @@ function applyHealthDecision(s,decision){
 }
 function useAction(){
   if(!started||paused)return;
+  scanAction();
   if(currentAction.type==='startLesson'){soundscape.play('paper');advanceStep();return}
   if(currentAction.type==='moveNext'){
     soundscape.play('door');transitionToSpace(currentStep.nextLocation);enterStep(stepIndex+1,{spaceChanged:true});return;
@@ -1741,15 +1810,8 @@ function useAction(){
     return;
   }
   if(currentAction.type==='answerQuestion'){
-    const s=currentAction.student;
-    if(!s.questionActive)return;
-    s.questionActive=false;s.answeredWindow=Math.floor(lessonElapsed/24);
-    soundscape.play('answer');
-    s.runtime.focus=Math.min(s.runtime.focusMax,s.runtime.focus+s.runtime.focusMax*.12);
-    addLearning(campaign,s.runtime.id,.14);refreshStudentBubbleState(s);
-    actionFeedback(s.actor.root.position,'질문 해결 +','attention');
-    playerGestureTimer=.55;playAnim(player,'push');
-    showToast(s.runtime.name+'의 질문에 답했어요.');return;
+    if(currentAction.student.questionActive)openCare(currentAction.student,'question');
+    return;
   }
   if(currentAction.type==='groupFocus'){
     if(groupSignalCooldown>0||groupSignalsThisLesson>=2)return;
@@ -1759,16 +1821,13 @@ function useAction(){
       if(s.runtime.mode==='offtask'&&s.runtime.focus>=s.runtime.focusMax*.34){
         s.runtime.mode='focused';s.wander=null;s.actor.target=s.seat.clone();refreshStudentBubbleState(s);
       }
-      addLearning(campaign,s.runtime.id,.055);
+      addLearning(campaign,s.runtime.id,.055,currentStep.subject);
     }
     soundscape.play('group');actionFeedback(player.root.position,'전체 집중!','group');
     playerGestureTimer=.5;playAnim(player,'push');showToast('📣 반 전체에 집중 신호를 줬어요!');return;
   }
   if(currentAction.type==='focus'){
-    const s=currentAction.student;helpFocus(s.runtime);addLearning(campaign,s.runtime.id,LEARNING_RULES.focusHelpBonus);stats.focusHelps++;s.wander=null;s.actor.target=s.seat.clone();playerGestureTimer=.5;playAnim(player,'push');
-    if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')&&!(s.safetyRecord?.finished&&!s.safetyRecord.heard))hideBubble(s);
-    soundscape.play('attention');actionFeedback(s.actor.root.position,'집중 회복 +','attention');
-    showToast(s.runtime.name+'에게 관심을 줬어요.');return;
+    openCare(currentAction.student,'focus');return;
   }
   if(currentAction.type==='mediate'){
     const target=currentAction.pair.a.actor.root.position.clone();
@@ -1813,7 +1872,7 @@ function renderExamResults(exam){
   if(!exam){ui.examResults.classList.add('hidden');ui.examResults.innerHTML='';return}
   const final=exam.examNumber===4;
   const headline=exam.examNumber===1
-    ? '1차 시험이 기준이에요. 8일차까지 학생마다 한 단계씩 올려 주세요.'
+    ? '시작할 때 정한 목표는 그대로예요. 8일차까지 함께 성장해 주세요.'
     : '현재 목표 달성 '+exam.reached+'/'+exam.total+'명 · '+(final?'최종 판정':'아직 남은 시험이 있어요.');
   const headlineClass=final?(exam.success?' success':' fail'):'';
   const rows=exam.rows.map(row=>{
@@ -1875,19 +1934,43 @@ function finishDay(){
     ui.restart.textContent=(campaign.day+1)+'일차 시작';
   }
   updateCampaignStatus();
+  const notes=students.map(s=>({s,n:campaign.studentMemory[s.runtime.id]?.notes.at(-1)})).filter(x=>x.n?.day===campaign.day).slice(0,3);
+  $('dayReflection').innerHTML='<strong>오늘 남긴 변화</strong>'+ (notes.length?notes.map(({s,n})=>'<p>'+s.runtime.name+' · '+escapeHtml(n.text)+'</p>').join(''):'<p>내일은 질문하거나 집중이 흐트러진 학생에게 먼저 다가가 보세요.</p>');
   ui.end.classList.remove('hidden');
 }
 
 function setupInput(){
-  ui.soundButton.addEventListener('click',()=>applySoundSetting(!soundEnabled,{persist:true}));
+  document.addEventListener('kidscade:mute-changed',event=>{
+    applySoundSetting(!event.detail.muted,{persist:true});
+  });
+  window.KidscadeGame?.registerPauseHandlers?.({
+    pause(){shellPaused=true;paused=true;keys.clear();joy.x=joy.y=0;soundscape.setPaused(true);ui.ambience?.pause();ui.talk?.pause();},
+    resume(){shellPaused=false;paused=!!careContext||!ui.help.classList.contains('hidden');soundscape.setPaused(paused);clock3d.getDelta();if(!paused&&soundEnabled){ui.ambience?.play().catch(()=>{});if(currentStep.kind==='social')ui.talk?.play().catch(()=>{});}}
+  });
+
+  const inspect=e=>{const button=e.target.closest('[data-student]');if(button){selectedStudentId=button.dataset.student;ui.studentStrip.classList.remove('open');ui.app.classList.remove('roster-open');ui.rosterToggle.setAttribute('aria-expanded','false');$('studentDetail').classList.remove('hidden');updateCareHud();$('closeDetail').focus();}};
+  $('attentionList').addEventListener('click',inspect);ui.studentStrip.addEventListener('click',inspect);
+  $('closeDetail').addEventListener('click',()=>{selectedStudentId=null;$('studentDetail').classList.add('hidden');});
+  $('careChoices').addEventListener('click',e=>{const button=e.target.closest('[data-care]');if(button)resolveCare(button.dataset.care);});
+  $('cancelCare').addEventListener('click',closeCare);
+  $('careDialog').addEventListener('keydown',e=>{
+    if(e.key==='Escape'){e.preventDefault();closeCare();}
+    if(e.key==='Tab'){
+      const buttons=[...$('careDialog').querySelectorAll('button')],first=buttons[0],last=buttons.at(-1);
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+    }
+  });
+
+  ui.soundButton.addEventListener('click',()=>{applySoundSetting(!soundEnabled,{persist:true});window.KidscadeGame?.setMuted?.(!soundEnabled);});
   ui.rosterToggle.addEventListener('click',()=>{
     const isOpen=ui.studentStrip.classList.toggle('open');
     ui.app.classList.toggle('roster-open',isOpen);
     ui.rosterToggle.setAttribute('aria-expanded',String(isOpen));
     if(isOpen)updateHud();
   });
-  addEventListener('keydown',e=>{keys.add(e.code);if((e.code==='Space'||e.code==='KeyE')&&!e.repeat){e.preventDefault();useAction()}});
-  addEventListener('keyup',e=>keys.delete(e.code));ui.action.addEventListener('pointerdown',e=>{e.preventDefault();useAction()});
+  addEventListener('keydown',e=>{if(paused||['INPUT','TEXTAREA'].includes(e.target.tagName))return;if(e.target.tagName==='BUTTON'&&e.code==='Space')return;keys.add(e.code);if((e.code==='Space'||e.code==='KeyE')&&!e.repeat){e.preventDefault();useAction()}});
+  addEventListener('keyup',e=>keys.delete(e.code));ui.action.addEventListener('click',()=>useAction());
   const moveJoy=e=>{
     const r=ui.joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy;
     const max=r.width*.31,d=Math.hypot(dx,dy)||1;if(d>max){dx=dx/d*max;dy=dy/d*max}
@@ -1910,21 +1993,22 @@ ui.helpButton.addEventListener('click',()=>{
   ui.ambience?.pause();ui.talk?.pause();
 });
 ui.closeHelp.addEventListener('click',()=>{
-  ui.help.classList.add('hidden');paused=false;soundscape.setPaused(false);
+  ui.help.classList.add('hidden');paused=shellPaused;soundscape.setPaused(paused);
   if(soundEnabled){soundscape.unlock();ui.ambience?.play().catch(()=>{});
     if(currentStep.kind==='social')ui.talk?.play().catch(()=>{});}
   clock3d.getDelta();
 });
 
 async function boot(){
-  buildSpace('classroom');setupInput();applySoundSetting(soundEnabled);updateDayStrip();
+  buildSpace('classroom');setupInput();applySoundSetting(soundEnabled);window.KidscadeGame?.setMuted?.(!soundEnabled);updateDayStrip();
   ui.start.disabled=true;ui.start.textContent='학교 준비 중…';
   try{await createActors()}catch(err){
     console.error('[TeacherSim] character load failed',err);ui.intro.classList.add('hidden');ui.assetError.classList.remove('hidden');return;
   }
+  const brief=dayBrief(campaign.day);$('dailyTitle').textContent=brief.title;$('dailyHint').textContent=brief.hint;$('introBrief').textContent=campaign.day+'일차 · '+brief.title+' — '+brief.hint;
   enterStep(0);ui.start.disabled=false;ui.start.textContent=campaign.day+'일차 등교하기';updateCampaignStatus();
   ui.start.addEventListener('click',()=>{
-    started=true;ui.intro.classList.add('hidden');
+    started=true;window.KidscadeGame?.start?.();ui.intro.classList.add('hidden');
     soundscape.unlock();
     if(soundEnabled&&ui.ambience){ui.ambience.volume=.08;ui.ambience.play().catch(()=>{});}
     playCue('write');clock3d.getDelta();

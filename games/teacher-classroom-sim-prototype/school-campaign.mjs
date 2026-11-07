@@ -1,3 +1,4 @@
+import {SUBJECTS,normalizeMemory} from './student-care.mjs?v=77';
 export const CAMPAIGN_VERSION=2;
 export const CAMPAIGN_DAYS=8;
 export const EXAM_DAYS=Object.freeze([2,4,6,8]);
@@ -48,8 +49,11 @@ export function createCampaignState(studentIds=Object.keys(INITIAL_MASTERY)){
     dayComplete:false,
     mastery,
     exams:[],
-    baselineGrades:{},
-    targetGrades:{},
+    baselineGrades:Object.fromEntries(studentIds.map(id=>[id,gradeForMastery(mastery[id])])),
+    targetGrades:Object.fromEntries(studentIds.map(id=>[id,nextGrade(gradeForMastery(mastery[id]))])),
+    studentMemory:Object.fromEntries(studentIds.map(id=>[id,normalizeMemory()])),
+    friendships:[],unresolvedRelations:[],
+    subjectMastery:Object.fromEntries(studentIds.map(id=>[id,Object.fromEntries(SUBJECTS.map(subject=>[subject,mastery[id]]))])),
     finalSuccess:null
   };
 }
@@ -64,8 +68,20 @@ export function normalizeCampaignState(raw,studentIds=Object.keys(INITIAL_MASTER
     if(Number.isFinite(value))next.mastery[id]=Math.max(0,Math.min(LEARNING_RULES.maxMastery,value));
   }
   next.exams=Array.isArray(raw.exams)?raw.exams.slice(0,4):[];
-  next.baselineGrades={...(raw.baselineGrades||{})};
-  next.targetGrades={...(raw.targetGrades||{})};
+  for(const id of studentIds){
+    if(GRADE_ORDER.includes(raw.baselineGrades?.[id]))next.baselineGrades[id]=raw.baselineGrades[id];
+    if(GRADE_ORDER.includes(raw.targetGrades?.[id]))next.targetGrades[id]=raw.targetGrades[id];
+  }
+  for(const id of studentIds){
+    next.studentMemory[id]=normalizeMemory(raw.studentMemory?.[id]);
+    for(const subject of SUBJECTS){
+      const value=Number(raw.subjectMastery?.[id]?.[subject]);
+      next.subjectMastery[id][subject]=Number.isFinite(value)?Math.max(0,Math.min(96,value)):next.mastery[id];
+    }
+  }
+  const validPair=key=>typeof key==='string'&&key.split('|').length===2&&key.split('|').every(id=>studentIds.includes(id))&&key.split('|')[0]!==key.split('|')[1];
+  next.friendships=Array.isArray(raw.friendships)?raw.friendships.filter(e=>Array.isArray(e)&&validPair(e[0])&&Number.isFinite(e[1])).map(([key,value])=>[key,Math.max(0,Math.min(100,value))]):[];
+  next.unresolvedRelations=Array.isArray(raw.unresolvedRelations)?[...new Set(raw.unresolvedRelations.filter(validPair))]:[];
   next.finalSuccess=typeof raw.finalSuccess==='boolean'?raw.finalSuccess:null;
   return next;
 }
@@ -112,13 +128,16 @@ export function learningGain(dt,subject,{focused=true,chatting=false,conflict=fa
   return seconds*LEARNING_RULES.focusedPerSecond*weight*mult;
 }
 
-export function addLearning(state,studentId,amount){
+export function addLearning(state,studentId,amount,subject){
   if(!state?.mastery||!(studentId in state.mastery))return 0;
   const gain=Math.max(0,Number(amount)||0);
   state.mastery[studentId]=Math.min(
     LEARNING_RULES.maxMastery,
     Math.max(0,Number(state.mastery[studentId])||0)+gain
   );
+  if(subject&&state.subjectMastery?.[studentId]&&SUBJECTS.includes(subject)){
+    state.subjectMastery[studentId][subject]=Math.min(96,state.subjectMastery[studentId][subject]+gain);
+  }
   return state.mastery[studentId];
 }
 
@@ -135,7 +154,7 @@ export function conductExam(state,profiles){
     };
   });
 
-  if(examNumber===1){
+  if(examNumber===1&&!Object.keys(state.targetGrades||{}).length){
     for(const row of rows){
       state.baselineGrades[row.id]=row.grade;
       state.targetGrades[row.id]=nextGrade(row.grade);
