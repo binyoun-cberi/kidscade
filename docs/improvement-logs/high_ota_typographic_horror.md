@@ -2,11 +2,11 @@
 
 - 게임 ID: `high_ota_typographic_horror`
 - 주요 코드 위치: `games/high_ota_typographic_horror/game.js`, `rewrite.js`, `index.html`
-- 마지막 확인 기준: GitHub `main` (2026-11-08 확인, 대상 파일 원본 blob `game.js: f115c140` — 최종 커밋은 PR 참조)
+- 마지막 확인 기준: GitHub `main` SHA `6300c7a4a32014b578217e410ed81f96837d8a3a`에서 재분기 (원본 게임 파일 blob `f115c140`; 변경은 PR 참조)
 - 최신 상태: **부분 검증**
 - 마지막 갱신일: 2026-11-08
 - 확정된 사용자 요구: 기존 3D 공포·맞춤법·추격·태블릿 조작과 기록을 유지하면서 공간을 바꾸는 단어 기능, 진행 안정성, 긴 미로의 선택 가능성을 강화
-- 다음 시작점: PR의 `Kidscade architecture checks`에서 `node --test`, 정식 빌드 및 `tests/ota-visual-browser-audit.cjs` 결과를 확인하고, 실패 또는 PC/모바일 렌더링 오류를 수정
+- 다음 시작점: PR의 `Kidscade architecture checks` (Node·빌드) 및 `Ota 3D browser simulation` (`tests/ota-visual-browser-audit.cjs`) 결과를 확인하고, 실패 또는 PC/모바일 렌더링 오류를 수정
 
 ## 현재 남은 문제
 
@@ -31,11 +31,11 @@
 | --- | --- | --- | --- | --- |
 | 1 | 물리적 현실 수정 확장; 창문은 통과 불가, 기존 문은 통과 가능 | `rewrite.js`, `tests/ota-rewrite-reality.test.cjs` | GitHub 커넥터에서 읽은 모듈을 V8에서 실행, 창문 충돌·v2 복원·레거시 v1 복원 검사 | 세 항목 PASS. Node 명령이나 실제 Chrome 실행 아님 |
 | 2 | 이야기 결말에서 최종 미로 선택, 세션+로컬 이중 저장, 창문 3D 표시 | `game.js`, `index.html`, `tests/ota-story-continuity.test.cjs` | V8 `new Function`으로 game.js 모듈 import 제외 문법 검사 및 mock fs/require 기반 동기 테스트 하네스 | 정적 문법 검사 PASS, 3개 테스트 파일 19개 동기 검사 PASS, 실패 0. 실제 `node --test` 아님 |
-| 3 | 비평 결과: 저장소 getter 예외 처리, 모달을 띄운 해당 프레임의 추격자 이동 중단, 실제 CI 연결 | `game.js`, `scripts/run-ci-tests.cjs`, `.github/workflows/architecture-tests.yml` | 수정 후 V8 파싱 및 19개 검사 재확인; GitHub 워크플로 파일 등록 | V8 확인 통과. GitHub Actions 실행 결과는 PR 생성 후 확인 필요 |
+| 3 | 비평 결과: 저장소 getter 예외 처리, 모달을 띄운 해당 프레임의 추격자 이동 중단, 실제 CI 연결 | `game.js`, `scripts/run-ci-tests.cjs` (기존 `.github/workflows/ota-visual-audit.yml` 재사용, 워크플로 수정 없음) | 수정 후 V8 파싱 및 19개 검사 재확인; 기존 전용 Ota Chrome PR 워크플로 발견, 공통 CI에 중복 추가했던 실행 단계는 되돌림 | V8 확인 통과. GitHub Actions 실행 결과는 PR 생성 후 확인 필요 |
 
 - 최종 검증 상태: **부분 검증** (실제 Chrome 플레이 및 Node CI 결과 미확인)
-- 확인된 개선: 창문/문/벽 중 하나로 현실을 수정하는 상태·충돌 구분, 창문 가시화 코드, 오래 남는 체크포인트 백업, 이야기 모드 결말의 미로 선택, 기존 테스트 3개를 CI 테스트 목록에 추가하고 기존 Chrome 게임 감사 스크립트를 PR 체크에 연결
+- 확인된 개선: 창문/문/벽 중 하나로 현실을 수정하는 상태·충돌 구분, 창문 가시화 코드, 오래 남는 체크포인트 백업, 이야기 모드 결말의 미로 선택, 대상 테스트 3개를 CI 테스트 목록에 추가하고 이미 존재하는 Chrome 감사 PR 워크플로를 그대로 활용
 - 남은 문제와 미실행 검증: 이 환경의 컨테이너에서 `git ls-remote https://github.com/binyoun-cberi/kidscade.git refs/heads/main` 실행 시 DNS 해석 실패. 따라서 로컬 clone, `npm run build`, `node --test`, 실제 브라우저는 실행하지 못함. PR의 GitHub Actions 결과로 추후 검증 필요.
 - 게임 플레이·모바일 화면 검증: **실행하지 않음**; GitHub Actions에 등록된 Chrome desktop+touch 감사는 실행 여부/결과 확인 필요
 - GitHub: PR #748 생성, GitHub Actions `Kidscade architecture checks` 및 `Ota 3D browser simulation` 실행 중(최종 결과 미확인). 별도 브랜치에 변경함. `main` 병합 **안 함**, 실제 Cloudflare 배포 **안 함**, 원격 D1/결제/Secrets/학생 기록 **미접근**
-- 다음 계획: PR CI의 19개 테스트, 실제 Chrome 캡처, 체크포인트 재시작, 창문 가독성을 검토하고 필요한 범위만 재수정
+- 다음 계획: PR에 추가한 3개 Node 테스트 파일과 기존 Chrome 캡처, 체크포인트 재시작, 창문 가독성을 검토하고 필요한 범위만 재수정
