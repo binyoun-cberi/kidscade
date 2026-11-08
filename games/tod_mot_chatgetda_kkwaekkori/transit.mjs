@@ -43,6 +43,8 @@ function startBoarding(town,station){
     !p.reserved&&!p.found&&!p.errand&&!p.socialWith&&!p.transit&&
     town.time>=(p.nextBusAt||0));
   if(!p)return;
+  if(town.people.some(q=>q!==p&&q.state==='walking'&&
+    distanceToApproach(q.position,p.position,bus.position)<1.55))return;
   p.transit={phase:'boarding',from:station.block.id,toIndex:bus.targetIndex,
     start:{...p.position},goal:{...bus.position},progress:0,duration:SHUTTLE.doorSeconds};
   p.state='boarding';p.pendingRoute=[];p.requestedAt=null;
@@ -54,6 +56,14 @@ function distanceToApproach(point,from,to){
   const length2=dx*dx+dz*dz;
   const ratio=length2?Math.max(0,Math.min(1,((point.x-from.x)*dx+(point.z-from.z)*dz)/length2)):0;
   return Math.hypot(point.x-from.x-dx*ratio,point.z-from.z-dz*ratio);
+}
+// A short, temporary boarding lane yields to pedestrians already crossing
+// BEFORE it opens, then blocks new walkers from entering until the door closes.
+export function shuttleDoorLaneBusy(town,position){
+  if(!town.transit)return false;
+  return town.people.some(p=>p.transit&&
+    ['boarding','alighting'].includes(p.transit.phase)&&
+    distanceToApproach(position,p.transit.start,p.transit.goal)<1.14);
 }
 function startAlighting(town,station){
   const service=town.transit,bus=service.bus;
