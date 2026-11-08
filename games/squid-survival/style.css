@@ -105,3 +105,5 @@ button{cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid #a8
 .ghost-action:hover,.ghost-action:focus-visible{background:#315849;border-color:#bbf5d4}
 .end-lobby{display:block;margin:12px auto 0}
 @media(max-height:510px) and (min-width:700px){.pregame-actions{margin:8px auto 4px}.pregame-actions .primary,.pregame-actions .ghost-action{min-height:38px;padding:7px 12px}.end-lobby{min-height:36px;margin-top:5px}}
+
+.rotate-lobby{margin-top:16px}
