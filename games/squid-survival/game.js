@@ -5,7 +5,9 @@
     shell:$('shell'),frame:$('gameFrame'),steps:$('steps'),pills:R.ROUNDS.map((_,i)=>$('pill'+i)),
     best:$('bestCount'),lobby:$('lobby'),pregame:$('pregame'),rotate:$('rotate'),end:$('end'),
     preLabel:$('pregameLabel'),preTitle:$('pregameTitle'),preRule:$('pregameRule'),
-    preWarning:$('pregameWarning'),demo:$('demo'),count:$('countdownNumber'),countFill:$('countdownFill'),
+    preWarning:$('pregameWarning'),ready:$('readyButton'),readyInstruction:$('readyInstruction'),
+    countWrap:$('countdown'),countTrack:$('countdownTrack'),lobbyButton:$('lobbyButton'),endLobby:$('endLobbyButton'),
+    demo:$('demo'),count:$('countdownNumber'),countFill:$('countdownFill'),
     endLabel:$('endLabel'),endIcon:$('endIcon'),endTitle:$('endTitle'),endDetail:$('endDetail'),
     endClears:$('endClears'),endBest:$('endBest'),endWins:$('endWins'),
     endRounds:R.ROUNDS.map((_,i)=>$('endRound'+i)),endButton:$('endButton'),quit:$('quitButton'),
@@ -99,6 +101,14 @@
     el.frame.removeAttribute('src');
     render();
   }
+  function returnToLobby(){
+    if(practiceId!==null){leavePractice();return;}
+    if(state.phase==='running')return; // Running rounds still use the explicit forfeit button.
+    stopCountdown();
+    el.frame.removeAttribute('src');
+    state=R.reduce(state,{type:'RESET'});
+    render();
+  }
   function startTournament(){
     if(practiceId!==null)return;
     if(!['lobby','champion','failed'].includes(state.phase))return;
@@ -118,7 +128,25 @@
       state=R.reduce(state,{type:'ROTATE'});
       return render();
     }
+    // A briefing is never consumed by a timer: the player chooses when to begin.
+    el.ready.hidden=false;
+    el.countWrap.hidden=true;
+    el.countTrack.hidden=true;
+    el.readyInstruction.textContent='규칙을 확인하고 준비되면 시작하세요.';
+    el.count.textContent='3';
+    el.countFill.style.width='100%';
     render();
+  }
+  function beginCountdown(){
+    if(state.phase!=='intro'||ticker!==null)return;
+    if(R.ROUNDS[state.roundIndex].id==='bridge'&&portraitPhone()){
+      state=R.reduce(state,{type:'ROTATE'});
+      return render();
+    }
+    el.ready.hidden=true;
+    el.countWrap.hidden=false;
+    el.countTrack.hidden=false;
+    el.readyInstruction.textContent='3초 뒤 경기가 시작됩니다.';
     deadline=Date.now()+3000;
     function countdown(){
       if(state.phase!=='intro')return stopCountdown();
@@ -150,6 +178,8 @@
     const previous=state;
     state=R.reduce(state,action);
     if(state===previous)return;
+    // Stop the previous iframe so a completed/forfeited game cannot keep running behind the result.
+    el.frame.removeAttribute('src');
     record.best=Math.max(record.best,state.clearCount);
     if(state.phase==='champion')record.wins++;
     save();
@@ -179,6 +209,9 @@
     }
   });
   $('startButton').addEventListener('click',startTournament);
+  el.ready.addEventListener('click',beginCountdown);
+  el.lobbyButton.addEventListener('click',returnToLobby);
+  el.endLobby.addEventListener('click',returnToLobby);
   for(const round of R.ROUNDS){
     $('practice-'+round.id).addEventListener('click',()=>startPractice(round.id));
     $('end-practice-'+round.id).addEventListener('click',()=>startPractice(round.id));
