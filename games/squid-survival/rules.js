@@ -85,6 +85,10 @@
         return{...state,locked:true,phase:win?(clearCount===ROUNDS.length?'champion':'intermission'):'failed',
           clearCount,results:[...state.results,entry]};
       }
+      case 'RESET':
+        // Returning to the lobby never awards a clear or erases saved records.
+        if(state.phase==='running')return state;
+        return initial();
       case 'NEXT':
         if(state.phase!=='intermission')return state;
         return{...state,phase:'intro',roundIndex:state.roundIndex+1,locked:false};
