@@ -182,7 +182,7 @@ test('3D picking, honest prop fallbacks and rotated-camera ground dragging are p
   assert.match(code,/challengeLevel\+1/);
   assert.match(code,/finishChallenge\(/);
   assert.match(html,/20초 연속 찾기 도전/);
-  assert.match(code,/sim\.mjs\?v=10/);
+  assert.match(code,/sim\.mjs\?v=11/);
   assert.match(code,/pinchCenter/);
   assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
 });
@@ -421,6 +421,8 @@ test('bakery errands carry one bread item across a real block boundary before fi
       // Collision checks also cover the shopping exit and destination arrival.
       if(tick%5===0)for(let i=0;i<town.people.length;i++)for(let j=i+1;j<town.people.length;j++){
         const a=town.people[i],b=town.people[j];
+        // Riders are inside the bus, not on the pedestrian sidewalk.
+        if(a.state==='riding'||b.state==='riding')continue;
         minDistance=Math.min(minDistance,Math.hypot(a.position.x-b.position.x,a.position.z-b.position.z));
       }
     }
@@ -459,4 +461,82 @@ test('shopper visual actions and bags reuse original bread models',()=>{
   assert.match(code,/bakery-shopping-bag/);
   assert.match(code,/BREADS\[person\.propVariant\]/);
   assert.match(code,/mesh\.activity=visualActivity/);
+});
+
+test('the shuttle actually boards residents at curbside stops and drops them in another block',async()=>{
+  const {makeTown,movePeople,signature,personIsDiscoverable,WALK,BLOCK_PITCH}=await simPromise;
+  for(const stage of ['small','medium','large'])for(const seed of [42,812,1441]){
+    const town=makeTown(stage,seed,'hard');
+    const saved=town.order.map(id=>[id,signature(town.people.find(p=>p.id===id))]);
+    const service=town.transit;
+    assert.ok(service&&service.stations.length>=2,'at least two actual pickup/dropoff places');
+    assert.ok(service.stations.some(s=>s.block.kind==='stop'));
+    if(stage==='small')assert.ok(service.stations.some(s=>s.block.kind==='school'),
+      'school street is the second stop in the two-row town');
+    const original=new Map(town.people.map(p=>[p.id,{...p.position}]));
+    let boarding=false,riding=false,alighting=false,minDistance=Infinity,changedBus=false;
+    const initial={...service.bus.position};
+    for(let tick=0;tick<3000;tick++){
+      movePeople(town,.2);
+      const bus=service.bus,at=bus.position;
+      assert.ok(Number.isFinite(at.x)&&Number.isFinite(at.z));
+      assert.ok(Number.isFinite(bus.heading));
+      // A bus always remains on a real vertical or horizontal road strip.
+      const xRoad=Array.from({length:town.config.cols-1},(_,i)=>
+        (i+.5-(town.config.cols-1)/2)*BLOCK_PITCH);
+      const zRoad=Array.from({length:town.config.rows-1},(_,i)=>
+        (i+.5-(town.config.rows-1)/2)*BLOCK_PITCH);
+      assert.ok(xRoad.some(x=>Math.abs(at.x-x)<1e-5)||
+        zRoad.some(z=>Math.abs(at.z-z)<1e-5),'bus must never cut through a building block');
+      if(Math.hypot(at.x-initial.x,at.z-initial.z)>2)changedBus=true;
+      for(const p of town.people){
+        if(p.transit){
+          assert.equal(p.reserved,false,'the target or deliberate lookalike cannot board');
+          assert.equal(p.found,false);
+          assert.equal(p.errand,null,'never steal a resident carrying paid bread');
+          boarding ||=p.state==='boarding';
+          riding ||=p.state==='riding';
+          alighting ||=p.state==='alighting';
+          if(p.state==='riding')assert.equal(bus.rider,p.id);
+          if(p.state==='alighting')assert.equal(town.paths.occupied.get(p.slotId),p.id);
+        }
+        const prev=original.get(p.id);
+        assert.ok(Math.hypot(p.position.x-prev.x,p.position.z-prev.z)<.65,
+          'boarding, riding and disembarking may not teleport');
+        original.set(p.id,{...p.position});
+        assert.ok(p.waiting<5);
+      }
+      if(tick%5===0)for(let i=0;i<town.people.length;i++)for(let j=i+1;j<town.people.length;j++){
+        const p=town.people[i],q=town.people[j];
+        if(p.state==='riding'||q.state==='riding')continue;
+        minDistance=Math.min(minDistance,Math.hypot(p.position.x-q.position.x,p.position.z-q.position.z));
+      }
+    }
+    assert.ok(changedBus,'bus must travel a real cross-block road route');
+    assert.ok(boarding&&riding&&alighting,'boarding, journey and disembark are three visible states');
+    assert.ok(service.boarded>0&&service.alighted>0&&service.arrivals>0);
+    assert.ok(service.boarded>=service.alighted,'cannot drop off more people than boarded');
+    assert.ok(minDistance>=WALK.clearance-1e-6,'transferring people must respect walking clearance');
+    for(const trip of service.recent)assert.notEqual(trip.from,trip.to,'the passenger must change districts');
+    for(const [id,look] of saved){
+      assert.equal(signature(town.people.find(p=>p.id===id)),look);
+      assert.ok(personIsDiscoverable(town,id));
+    }
+  }
+});
+test('arcade challenges retain their original bus-free pace and still contain a target',async()=>{
+  const {getChallengeSettings,makeTown,movePeople}=await simPromise;
+  for(const level of [1,12,30]){
+    const settings=getChallengeSettings(level);
+    const town=makeTown(settings.stageName,1000+level,'easy',true,settings);
+    for(let tick=0;tick<200;tick++)movePeople(town,.1);
+    assert.equal(town.transit,null);
+    assert.ok(town.people.every(p=>p.transit===null));
+    assert.equal(town.order.length,1);
+  }
+});
+test('three-dimensional shuttle is placed by the simulation and excludes onboard residents from picking',()=>{
+  for(const snippet of ['routeBus:true','real-bus-platform','bus-door-ready',
+    "mesh.holder.visible=p.state!=='riding'", "person.state==='riding'"])assert.ok(code.includes(snippet),snippet);
+  assert.match(code,/const bus=town\.transit\.bus/);
 });
