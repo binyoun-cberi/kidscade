@@ -8,6 +8,6 @@
 
 | 게임 ID | 게임명 | 이력 파일 | 다음 시작점 |
 | --- | --- | --- | --- |
-| — | 아직 기록 없음 | — | 첫 실제 개선 요청 시 생성 |
+| `squid_survival` | 꼴뚜기 게임 | [squid_survival.md](./squid_survival.md) | 신규 PR CI 확인, 6관문 모바일 플레이 검증 |
 
 작성법: [README](./README.md) · [템플릿](./TEMPLATE.md)
