@@ -59,7 +59,16 @@ export const CITY_GEOMETRY = Object.freeze({
   buildingFootprint:2.15, buildingZ:-1, shelterFootprint:2.05, shelterZ:-.95
 });
 export function getRoutePosition(person){return {...person.position};}
-export function getPose(person){return person.state==='walking'?'walk':person.socialWith&&!person.reserved?'interact-right':person.activity==='deliver'?'holding-both':ACTIVITIES.find(a=>a.id===person.activity).clip;}
+export function getVisualActivity(person){
+  if(!person.reserved&&person.errand?.phase==='eating')return 'eat';
+  if(!person.reserved&&person.errand?.phase==='carrying')return 'deliver';
+  return person.activity;
+}
+export function getPose(person){
+  const activity=getVisualActivity(person);
+  return person.state==='walking'?'walk':person.socialWith&&!person.reserved?'interact-right':
+    activity==='deliver'?'holding-both':ACTIVITIES.find(a=>a.id===activity).clip;
+}
 
 function makePaths(blocks,config){
   const nodes=new Map(),slots=[];
@@ -147,16 +156,42 @@ function reservedNodes(town,p){
   if(last&&Math.hypot(last.x-p.position.x,last.z-p.position.z)<WALK.clearance+.05)nodes.add(last.id);
   return nodes;
 }
+// Only free-roaming background residents receive a shopping itinerary.
+// Saved puzzles, targets and near-matches continue to use their original routines.
+function safeActivity(town,p,activity){
+  return !town.people.some(q=>q!==p&&signature(q)===signature({...p,activity}));
+}
+function startShopVisit(town,p){
+  if(town.challenge||p.reserved||p.found||p.errand||p.activity!=='browse'||
+    !['bakery','market'].includes(p.block.kind)||p.elapsed<(p.nextShopAt||0))return;
+  p.errand={phase:'shopping',store:p.block.id,bread:p.propVariant,
+    goal:(Number(p.id.slice(7))+town.seed)%2?'park':'home',startedAt:town.time};
+  p.routineAt=Math.max(p.routineAt,p.elapsed+2.5);
+  town.commerce.visits++;
+}
+function finishErrand(town,p){
+  const errand=p.errand,meal=errand.phase==='eating';
+  if(meal)town.commerce.meals++;else town.commerce.deliveries++;
+  town.commerce.completed++;
+  town.commerce.recent.push({person:p.id,from:errand.store,to:p.block.id,
+    kind:p.block.kind,bread:errand.bread,time:town.time});
+  if(town.commerce.recent.length>12)town.commerce.recent.shift();
+  p.errand=null;p.nextShopAt=p.elapsed+45;
+  const next=meal?'sit':'wave';
+  if(safeActivity(town,p,next))p.activity=next;
+  p.action=p.activity;p.routineAt=p.elapsed+2;
+}
 function depart(town,p){
   p.requestedAt??=town.time;p.pendingRoute=[];
   const routine=ROUTINES[p.routine];
-  const kinds=p.reserved?visits[p.activity]:[routine[(p.lifeStop+1)%routine.length][0]];
+  const carrying=p.errand?.phase==='carrying';
+  const kinds=carrying?['park','home']:p.reserved?visits[p.activity]:[routine[(p.lifeStop+1)%routine.length][0]];
   const candidates=town.paths.slots.filter(s=>s.block.id!==p.block.id&&!town.paths.occupied.has(s.id));
   const preferred=candidates.filter(s=>kinds.includes(s.block.kind));
   // Background neighbors can do another errand if a favorite district is full.
   // Clue residents retain their action/prop and only visit suitable places.
   const pool=[...preferred.filter(s=>s.block.kind!==p.block.kind),...preferred.filter(s=>s.block.kind===p.block.kind),
-    ...(p.reserved?[]:candidates.filter(s=>!kinds.includes(s.block.kind)))];
+    ...(p.reserved||carrying?[]:candidates.filter(s=>!kinds.includes(s.block.kind)))];
   const busy=new Set();
   for(const q of town.people){
     if(q.state==='walking')for(const id of reservedNodes(town,q))busy.add(id);
@@ -166,11 +201,13 @@ function depart(town,p){
     }
   }
   pool.sort((a,b)=>{
-    const score=s=>(kinds.includes(s.block.kind)?0:100)+Math.abs(town.paths.nodes.get(s.id).x-p.position.x)+Math.abs(town.paths.nodes.get(s.id).z-p.position.z);
+    const score=s=>(carrying?(s.block.kind===p.errand.goal?0:35):(kinds.includes(s.block.kind)?0:100))+
+      Math.abs(town.paths.nodes.get(s.id).x-p.position.x)+Math.abs(town.paths.nodes.get(s.id).z-p.position.z);
     return score(a)-score(b);
   });
   for(let i=0;i<pool.length;i++){
     const slot=pool[i],route=findRoute(town.paths,p.slotId,slot.id);
+    if(carrying&&!safeActivity(town,p,slot.block.kind==='park'?'eat':'deliver'))continue;
     if(!route.length)continue;
     if(!p.pendingRoute.length)p.pendingRoute=route;
     // Reserve the clear corridor before leaving a bay. Residents wait while doing
@@ -186,6 +223,16 @@ function depart(town,p){
 function arrive(town,p){
   p.block=p.destination.block;p.slot=p.destination.index;p.slotId=p.destination.id;
   p.destination=null;p.route=[];p.state='acting';p.trips++;
+  // Purchased bread reaches a new district before it can be eaten/delivered.
+  if(p.errand?.phase==='carrying'&&['park','home'].includes(p.block.kind)){
+    p.errand.phase=p.block.kind==='park'?'eating':'delivering';
+    p.errand.destination=p.block.id;
+    const activity=p.block.kind==='park'?'eat':'deliver';
+    if(safeActivity(town,p,activity))p.activity=activity;
+    p.action=p.activity;
+    p.routineAt=p.elapsed+4+(Number(p.id.slice(7))%3);
+    return;
+  }
   // Sought neighbors keep their identifying prop/action, but travel like everyone else.
   if(!p.reserved&&!p.found){
     const routine=ROUTINES[p.routine],stop=routine.findIndex(([kind])=>kind===p.block.kind);
@@ -211,7 +258,7 @@ export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=t
     // Delivery starts before the longer browsing/resting activities reserve the
     // shared corridors. Keep one RNG draw per resident so saved appearances stay stable.
     const person={id:`person-${i}`,block,slot,...look,activity,action:activity,elapsed:0,routineAt:activity==='deliver'?.8+random():3+random()*9,reserved:false,found:false,
-      challengeSpeed:challenge?.speed||0,phase:i*2.39996+(seed%19)*.37,socialWith:null,socialUntil:0,nextGreetingAt:4+(i%7)*.9+(seed%7)*.2,greetings:0};
+      challengeSpeed:challenge?.speed||0,phase:i*2.39996+(seed%19)*.37,socialWith:null,socialUntil:0,nextGreetingAt:4+(i%7)*.9+(seed%7)*.2,greetings:0,errand:null,nextShopAt:0};
     used.add(signature(person));return person;
   });
   const paths=makePaths(blocks,config);
@@ -224,6 +271,7 @@ export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=t
   for(const p of people){p.routine=p.activity;p.lifeStop=Math.max(0,ROUTINES[p.routine].findIndex(([kind])=>kind===p.block.kind));}
   const town={stageName,config,seed,difficulty,challenge:!!challenge,blocks,people,paths,order:[],time:0};
   town.greetingCount=0;town.lastGreetingPulse=-1;
+  town.commerce={visits:0,purchases:0,meals:0,deliveries:0,completed:0,recent:[]};
   if(autoSelect)selectTargets(town,people.map(p=>p.id));return town;
 }
 export function selectTargets(town,eligibleIds,previous=[]){
@@ -296,8 +344,8 @@ function greetNeighbors(town){
   let activePairs=town.people.filter(p=>p.socialWith).length/2;
   if(activePairs>=maxPairs)return;
   for(const p of town.people){
-    if(p.reserved||p.found||p.state!=='acting'||p.socialWith||p.elapsed<p.nextGreetingAt||p.elapsed>=p.routineAt||occupied.has(p.block.id))continue;
-    const companion=town.people.find(q=>q!==p&&!q.reserved&&!q.found&&q.state==='acting'&&!q.socialWith&&q.block.id===p.block.id&&q.elapsed>=q.nextGreetingAt&&q.elapsed<q.routineAt&&
+    if(p.reserved||p.found||p.state!=='acting'||p.socialWith||p.errand||p.elapsed<p.nextGreetingAt||p.elapsed>=p.routineAt||occupied.has(p.block.id))continue;
+    const companion=town.people.find(q=>q!==p&&!q.reserved&&!q.found&&!q.errand&&q.state==='acting'&&!q.socialWith&&q.block.id===p.block.id&&q.elapsed>=q.nextGreetingAt&&q.elapsed<q.routineAt&&
       Math.hypot(q.position.x-p.position.x,q.position.z-p.position.z)<=1.5);
     if(!companion)continue;
     const until=town.time+2.4;
@@ -323,6 +371,20 @@ export function movePeople(town,deltaSeconds){
       if(p.socialWith){
         if(town.time<p.socialUntil)continue;
         p.socialWith=null;p.socialUntil=0;
+      }
+      if(!p.reserved&&!p.found&&!town.challenge)startShopVisit(town,p);
+      if(p.errand?.phase==='shopping'&&p.elapsed>=p.routineAt){
+        p.errand.phase='carrying';
+        p.errand.purchasedAt=town.time;
+        if(safeActivity(town,p,'deliver'))p.activity='deliver';
+        p.action=p.activity;
+        town.commerce.purchases++;
+        p.routineAt=p.elapsed+.1;
+        continue;
+      }
+      if((p.errand?.phase==='eating'||p.errand?.phase==='delivering')&&p.elapsed>=p.routineAt){
+        finishErrand(town,p);
+        continue;
       }
       if(p.elapsed>=p.routineAt)depart(town,p);
       continue;
