@@ -10,14 +10,14 @@
     halfWidth:1.16,reach:2.9});
   const LIGHT=Object.freeze({id:'ceiling',name:'천장',x:0,z:-43.7,reach:2.65});
   const GAP=Object.freeze({minX:-4.31,maxX:-3.015,minZ:-53.13,maxZ:-50.87});
-  function create(){return {doorMade:false,doorOpen:false,lightOn:false,changes:0};}
+  function create(){return {doorMade:false,doorOpen:false,windowMade:false,lightOn:false,changes:0};}
   const normalize=word=>String(word||'').trim().replace(/\s/g,'');
   const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
   function target(s,p){
     if(!p||!s)return null;
     const wall=Math.abs(p.x-WALL.x)<WALL.reach&&
       Math.abs(p.z-WALL.z)<1.28 && Math.sin(p.yaw||0)>.24;
-    if(wall)return {id:'wall',label:s.doorMade?'문에 이름 쓰기 · 열고 닫기':'벽에 새 이름 쓰기'};
+    if(wall)return {id:'wall',label:s.doorMade?'문에 이름 쓰기 · 열고 닫기':s.windowMade?'창문에 이름 쓰기 · 안쪽 살피기':'벽에 새 이름 쓰기'};
     const ceiling=distance(p,LIGHT)<LIGHT.reach&&(p.pitch||0)>.21;
     if(ceiling)return {id:'ceiling',label:s.lightOn?'조명에 이름 쓰기 · 끄기':'천장에 이름 쓰기'};
     return null;
@@ -26,11 +26,11 @@
     const value=normalize(word);
     if(!s||!['wall','ceiling'].includes(site))return {ok:false,reason:'target'};
     if(site==='wall'){
-      if(value!=='문'&&value!=='벽')return {ok:false,reason:'word'};
-      if(value==='벽'&&s.doorMade&&withinGap(p))
+      if(!['문','벽','창문'].includes(value))return {ok:false,reason:'word'};
+      if(value!=='문'&&s.doorMade&&withinGap(p))
         return {ok:false,reason:'occupied'};
-      s.doorMade=value==='문';s.doorOpen=value==='문';
-      s.changes++;return {ok:true,kind:value,action:value==='문'?'formed':'restored'};
+      s.doorMade=value==='문';s.doorOpen=value==='문';s.windowMade=value==='창문';
+      s.changes++;return {ok:true,kind:value,action:value==='문'?'formed':value==='창문'?'revealed':'restored'};
     }
     if(value!=='조명'&&value!=='천장')return {ok:false,reason:'word'};
     s.lightOn=value==='조명';s.changes++;
@@ -53,13 +53,14 @@
     if(!s?.doorMade||!s.doorOpen)return false;
     return true;
   }
-  function checkpoint(s){return {v:1,doorMade:!!s.doorMade,doorOpen:!!s.doorOpen,
-    lightOn:!!s.lightOn,changes:s.changes||0};}
+  function checkpoint(s){return {v:2,doorMade:!!s.doorMade,doorOpen:!!s.doorOpen,
+    windowMade:!!s.windowMade,lightOn:!!s.lightOn,changes:s.changes||0};}
   function restore(s,data){
     Object.assign(s,create());
-    if(!data||data.v!==1)return false;
+    if(!data||![1,2].includes(data.v))return false;
     s.doorMade=!!data.doorMade;
     s.doorOpen=s.doorMade&&!!data.doorOpen;
+    s.windowMade=data.v===2&&!s.doorMade&&!!data.windowMade;
     s.lightOn=!!data.lightOn;
     s.changes=Math.min(999,Math.max(0,Number(data.changes)||0));
     return true;
