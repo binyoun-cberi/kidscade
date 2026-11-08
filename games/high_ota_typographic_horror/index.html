@@ -81,6 +81,9 @@ border-radius:9px;padding:9px 13px;text-align:center;transition:opacity .2s}
 #literacyStatus.danger #pollutionFill{background:#f24a62}
 #literacyStatus.danger{color:#f3a5b1}
 #rewritePanel .panel{width:min(470px,93vw);background:#11130ff5;border-color:#9e916a}
+#mazeChoiceActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}
+#mazeChoiceActions button{min-height:55px;padding:12px;border-radius:9px;font-weight:850}
+@media(max-width:520px){#mazeChoiceActions{grid-template-columns:1fr}}
 #rewritePanel h2{color:#f5d79b}
 #rewriteCurrent{font-size:clamp(24px,4vw,34px);font-weight:900;color:#f4c980}
 #rewriteDescription{font-size:14px;line-height:1.65}
@@ -193,9 +196,21 @@ body.hidden-in-locker #lockerMask{display:block}
   <small>제0기록보관소 / 02:17</small><h1 id="introTitle">오 타</h1>
   <p>이곳의 모든 것은 이름으로 존재합니다.<br>잘못된 이름을 고쳐 자신의 이름을 지키세요.</p>
   <div class="note">사람이 아닌 것을 사람이라고 부르지 마십시오.<br>이름이 바뀌면, 존재도 바뀝니다.</div>
-  <div id="modeSelect" role="group" aria-label="플레이 모드 선택"><button class="active" type="button" data-mode="story" aria-pressed="true">새 기록 탐험<small>매번 바뀌는 방과 문제 · 중간 기록부터 계속하기</small></button><button type="button" data-mode="speedrun" aria-pressed="false">스피드런<small>이번 주 같은 코스 · 힌트와 중간 재시작 없이 기록 도전</small></button></div>
-  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>벽·바닥·천장·문은 반복되는 글자로 공간을 알려줍니다. 선명한 글자는 조사할 수 있는 물체입니다.<br>이름을 다시 쓰고, 흩어진 문장을 순서대로 조립해 사라진 공간을 되찾으세요.<br>마지막 기록실 너머에는 매번 달라지는 색인 미로가 기다립니다. 세 조각을 찾아 출구를 여세요.<br>오타가 쌓이면 교정자가, 글자가 지워지면 삭제자가, 기록을 잘못 읽으면 오독자가 나타납니다.<br>막히면 힌트 버튼을 사용하세요. 스피드런에서는 힌트를 사용할 수 없습니다.</div>
+  <div id="modeSelect" role="group" aria-label="플레이 모드 선택"><button class="active" type="button" data-mode="story" aria-pressed="true">새 기록 탐험<small>매번 바뀌는 방과 문제 · 선택형 색인 미로 · 기록 이어하기</small></button><button type="button" data-mode="speedrun" aria-pressed="false">스피드런<small>이번 주 같은 코스 · 힌트와 중간 재시작 없이 기록 도전</small></button></div>
+  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>벽·바닥·천장·문은 반복되는 글자로 공간을 알려줍니다. 선명한 글자는 조사할 수 있는 물체입니다.<br>이름을 다시 쓰고, 흩어진 문장을 순서대로 조립해 사라진 공간을 되찾으세요.<br>마지막 기록실에서는 바로 탈출하거나 색인 미로에 더 도전할 수 있습니다. 스피드런은 미로까지 완주합니다.<br>오타가 쌓이면 교정자가, 글자가 지워지면 삭제자가, 기록을 잘못 읽으면 오독자가 나타납니다.<br>막히면 힌트 버튼을 사용하세요. 스피드런에서는 힌트를 사용할 수 없습니다.</div>
   <button class="primary" id="start" type="button">기록 시작</button><button class="primary" id="resume" type="button" hidden>마지막 기록부터</button>
+ </div>
+</section>
+<section class="overlay closed" id="mazeChoice" role="dialog" aria-modal="true" aria-labelledby="mazeChoiceTitle">
+ <div class="panel">
+  <small>제0기록보관소 / 최종 기록</small>
+  <h2 id="mazeChoiceTitle">당신의 이름을 되찾았습니다</h2>
+  <p>여기서 탈출할 수 있습니다. 더 깊은 기록을 찾으려면 뒤틀린 색인 미로로 들어가세요.
+   미로에서는 세 조각을 찾고 교정자를 피해 탈출해야 합니다.</p>
+  <div id="mazeChoiceActions">
+   <button class="primary" type="button" id="mazeFinish">이름을 지키고 탈출</button>
+   <button class="choice" type="button" id="mazeContinue">색인 미로 더 탐험</button>
+  </div>
  </div>
 </section>
 <section class="overlay closed" id="sentencePanel" role="dialog" aria-modal="true" aria-labelledby="sentenceTitle">
