@@ -3,7 +3,7 @@
 - 게임 ID: `squid_survival` (`data/games.json` 확인)
 - 주요 코드 위치: `games/squid-survival/`, `tests/squid-survival*.test.cjs`
 - 마지막 확인 기준 브랜치: `main` (2026-11-08 코드 조회), 작업 브랜치 `chat/squid-survival-ready-and-pause-20261108`
-- 최신 상태: **미검증** (변경 및 회귀 테스트 작성, 실행 결과 확인 전)
+- 최신 상태: **부분 검증** (실제 소스 기반 V8 오케스트레이션/미니게임 모형 검증 통과, Node CI 및 브라우저 미검증)
 - 마지막 갱신일: 2026-11-08
 - 확정된 사용자 요구: 기존 6개 관문, 1인/2인 모드, 모바일 조작, 기록, Cloudflare/GitHub 배포 흐름을 유지하면서 게임을 개선한다. 무단 병합/배포는 하지 않는다.
 - 다음 시작점: 이 PR의 실제 CI 결과 및 모바일 브라우저에서 6개 관문의 플레이를 확인한 뒤 미해결 문제를 재현하고 다음 개선을 설계한다.
@@ -30,13 +30,13 @@
 
 | 회차 | 계획과 근거 | 실제 변경 파일 | 테스트 명령/환경 | 실제 결과 및 실패/수정 근거 |
 | --- | --- | --- | --- | --- |
-| 1 | 3초 강제 자동시작 및 탈출 경로 개선 | `games/squid-survival/{index.html,style.css,game.js,rules.js}`, `tests/squid-survival.test.cjs` | 테스트 실행 전 | 준비 버튼/로비 RESET/iframe 종료를 구현, 대회 흐름 테스트를 변경·추가함. 테스트 실행 여부는 미확정 |
-| 2 | 브라우저 비활성화 시 시계가 계속 흐르는 문제 및 노란불 움직임 시각 불일치 | `games/squid-survival/mini.js`, `games/squid-survival/{redlight,tug,marbles,final}/index.html`, `tests/squid-survival-{mini,design}.test.cjs` | 테스트 실행 전 | 시계 오프셋·입력 해제·표시 애니메이션 수정, 4종 포커스/가시성 테스트 및 버전 갱신. 브라우저 미검증 |
-| 3 | 직접 시작을 도입하면서 준비 시간이 전체 기록에 합산되는 위험 검토 | `games/squid-survival/game.js`, `tests/squid-survival.test.cjs` | 테스트 실행 전 | 관문별 활성 시간 합계로 기록 방식 수정, 60초 대기 후 700ms 실플레이를 가정한 회귀 테스트 추가 |
+| 1 | 3초 강제 자동시작 및 탈출 경로 개선 | `games/squid-survival/{index.html,style.css,game.js,rules.js}`, `tests/squid-survival.test.cjs` | Chat의 격리 V8에서 실제 `rules.js` 및 `game.js` 실행 + 모형 DOM/시계 | 6관문 계약, 준비 전 자동 시작 방지, 로비 RESET, iframe 정리, 최고 기록 보존 통과 |
+| 2 | 브라우저 비활성화 시 시계가 계속 흐르는 문제 및 노란불 움직임 시각 불일치 | `games/squid-survival/mini.js`, `games/squid-survival/{redlight,tug,marbles,final}/index.html`, `tests/squid-survival-{mini,design}.test.cjs` | 실제 `mini.js`+`mini-rules.js`를 격리 V8에서 DOM/canvas 모형으로 실행 | 4종 모두 화면 숨김 30초와 포커스 상실 20초 후 타이머 동일. 신호등 hold 해제도 확인. 최초 모형은 URLSearchParams 미제공/blur 리스너 덮어쓰기 문제로 실패, 모형 보완 후 통과; 디자인 테스트의 다중 리스너 모형도 수정 |
+| 3 | 직접 시작을 도입하면서 준비 시간이 전체 기록에 합산되는 위험 검토 | `games/squid-survival/game.js`, `tests/squid-survival.test.cjs` | 격리 V8 실제 대회 JS 실행 + 가짜 시계 | 규칙 읽기 60초, 실제 게임 700ms 후 포기 시 결과 `elapsedMs=700` 확인 |
 
-- 최종 검증 상태: **미검증** (CI 및 로컬 `node --test` 미실행)
-- 확인된 개선: GitHub 브랜치에 구현 코드와 회귀 테스트 파일 반영. 실제 통과 여부는 미확인.
-- 남은 문제와 미실행 검증: `node --test tests/squid-survival.test.cjs tests/squid-survival-mini.test.cjs tests/squid-survival-design.test.cjs tests/squid-survival-versus.test.cjs`, `npm run health:strict`, `npm run test:ci`, `npm run build` 검증 필요. 로컬 저장소 접근이 제한되어 직접 실행하지 못함. 6관문 수동 플레이·모바일 기기 검증 미실행.
+- 최종 검증 상태: **부분 검증** (두 개의 별도 V8 모형 검증 실행·통과, Node/브라우저 미검증)
+- 확인된 개선: 브랜치 구현에 더해 실제 대회 및 4종 미니게임 JS를 격리 V8에서 실행한 모형 테스트 통과. 해당 검증은 브라우저 실플레이/Node 회귀 테스트를 대체하지 않음.
+- 남은 문제와 미실행 검증: `node --test tests/squid-survival.test.cjs tests/squid-survival-mini.test.cjs tests/squid-survival-design.test.cjs tests/squid-survival-versus.test.cjs`, `npm run health:strict`, `npm run test:ci`, `npm run build` **미실행**. 전체 저장소의 로컬 체크아웃에 접근하지 못함. 6관문 실제 브라우저 플레이·모바일 기기 검증 미실행. 소스 기반 모형 테스트는 관문 로직에만 적용됨.
 - 게임 플레이·모바일 화면 검증: **미실행**; 테스트 코드 작성 및 GitHub 원격 파일 조회만 실시.
 - GitHub: PR #747 개설(https://github.com/binyoun-cberi/kidscade/pull/747). 최초 조회 시 PR 커밋의 GitHub Actions 실행 목록은 비어 있었으며, Vercel 상태 컨텍스트는 failure로 표시됨(원인/게임 영향 미확인). **main 병합 안 함, Cloudflare 배포 안 함, 원격 D1/Secrets/유료 API 작업 없음.**
 - 다음 계획: CI 실패가 확인되면 해당 테스트를 수정하고, 이어서 실제 모바일 서바이벌 전관문 플레이 및 난이도/타격감 개선.
