@@ -338,7 +338,8 @@ function generateWorld() {
   // They sit inside the parcel, away from the one-way pedestrian loop.
   for(const stop of town.transit?.stations||[]){
     const center=getBlockCenter(stop.block,town.config);
-    const x=center.x+stop.side*2.10,z=center.z;
+    // Keep the sign 1.05 units inside the 2.65 sidewalk centerline.
+    const x=center.x+stop.side*1.60,z=center.z;
     const sign=new THREE.Group();sign.name='real-bus-platform';
     sign.position.set(x,0,z);scenery.add(sign);
     addPart(sign,cylinder(.045,.055,1.2,0x667a82,8),0,.61,0);
