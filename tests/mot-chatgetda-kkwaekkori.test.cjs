@@ -197,7 +197,11 @@ test('shared paths keep residents apart and let every small-town neighbor travel
     for(let tick=0;tick<6000;tick++){
       movePeople(town,.1);
       for(let i=0;i<town.people.length;i++)for(let j=i+1;j<town.people.length;j++){
-        const a=town.people[i].position,b=town.people[j].position;
+        const first=town.people[i],second=town.people[j];
+        // A passenger inside a moving bus is not on the pedestrian footway.
+        // Boarding/alighting people remain subject to the clearance test.
+        if(first.state==='riding'||second.state==='riding')continue;
+        const a=first.position,b=second.position;
         assert.ok(Math.hypot(a.x-b.x,a.z-b.z)>=WALK.clearance-1e-6,'residents overlap');
       }
       assert.equal(signature(target),look,'movement must not invalidate the identifying features');
@@ -210,7 +214,9 @@ test('shared paths keep residents apart and let every small-town neighbor travel
     }
     assert.ok(walkingTarget,'the answer must travel too');
     assert.ok(town.people.every(p=>p.trips>0),'no resident remains confined to their original block');
-    assert.equal(new Set(town.paths.occupied.values()).size,town.people.length);
+    const onboard=town.people.filter(p=>p.state==='riding').length;
+    assert.equal(new Set(town.paths.occupied.values()).size,town.people.length-onboard,
+      'onboard residents release their bay; everyone on foot retains a reservation');
   }
 });
 
@@ -298,11 +304,11 @@ test('town walkers have visible travel in two minutes without losing the arcade 
       for(let tick=0;tick<600;tick++){
         movePeople(town,.2);
         for(const p of town.people){
-          if(p.state==='walking'||p.trips>0)departed.add(p.id);
+          if(p.state==='walking'||p.trips>0||p.transit)departed.add(p.id);
           assert.ok(p.waiting<5,'no pedestrian should freeze in a crossing');
         }
       }
-      assert.ok(departed.size>=required,`${stage}/${seed}: only ${departed.size} walkers departed`);
+      assert.ok(departed.size>=required,`${stage}/${seed}: only ${departed.size} residents travelled by foot or shuttle`);
     }
   }
 });
@@ -329,12 +335,12 @@ test('neighbors reciprocally greet without changing targets, paths, or arcade pa
           assert.ok(Math.hypot(p.position.x-friend.position.x,p.position.z-friend.position.z)<=1.5);
         }
         for(const p of town.people){
-          if(p.state==='walking'||p.trips>0)moved.add(p.id);
+          if(p.state==='walking'||p.trips>0||p.transit)moved.add(p.id);
           assert.ok(p.waiting<5,'greetings must not block the crossing');
         }
       }
       assert.ok(town.greetingCount>0,stage+' should show a real neighbor interaction');
-      assert.ok(moved.size>=minMoved,stage+' walking should not regress');
+      assert.ok(moved.size>=minMoved,stage+' residents should travel by foot or shuttle');
       for(const [id,look] of targets)assert.equal(signature(town.people.find(p=>p.id===id)),look);
       for(const person of town.people)if(person.socialWith)assert.equal(person.reserved,false);
     }
