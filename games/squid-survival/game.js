@@ -6,7 +6,7 @@
     best:$('bestCount'),lobby:$('lobby'),pregame:$('pregame'),rotate:$('rotate'),end:$('end'),
     preLabel:$('pregameLabel'),preTitle:$('pregameTitle'),preRule:$('pregameRule'),
     preWarning:$('pregameWarning'),ready:$('readyButton'),readyInstruction:$('readyInstruction'),
-    countWrap:$('countdown'),countTrack:$('countdownTrack'),lobbyButton:$('lobbyButton'),endLobby:$('endLobbyButton'),
+    countWrap:$('countdown'),countTrack:$('countdownTrack'),lobbyButton:$('lobbyButton'),rotateLobby:$('rotateLobbyButton'),endLobby:$('endLobbyButton'),
     demo:$('demo'),count:$('countdownNumber'),countFill:$('countdownFill'),
     endLabel:$('endLabel'),endIcon:$('endIcon'),endTitle:$('endTitle'),endDetail:$('endDetail'),
     endClears:$('endClears'),endBest:$('endBest'),endWins:$('endWins'),
@@ -216,6 +216,7 @@
   $('startButton').addEventListener('click',startTournament);
   el.ready.addEventListener('click',beginCountdown);
   el.lobbyButton.addEventListener('click',returnToLobby);
+  el.rotateLobby.addEventListener('click',returnToLobby);
   el.endLobby.addEventListener('click',returnToLobby);
   for(const round of R.ROUNDS){
     $('practice-'+round.id).addEventListener('click',()=>startPractice(round.id));
