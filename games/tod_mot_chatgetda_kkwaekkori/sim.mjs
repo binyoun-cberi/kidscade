@@ -1,5 +1,5 @@
 // Seeded, renderer-independent town activities and fair observation puzzles.
-import { createTransit, stepTransit } from './transit.mjs';
+import { createTransit, stepTransit, shuttleDoorLaneBusy } from './transit.mjs';
 export const WORLD_VERSION = 3;
 export const BLOCK_PITCH = 7;
 // Critter Catchin' inspired optional arcade pacing; the untimed town mode is unchanged.
@@ -397,6 +397,11 @@ export function movePeople(town,deltaSeconds){
     const dx=node.x-p.position.x,dz=node.z-p.position.z,distance=Math.hypot(dx,dz);
     const step=Math.min(distance,dt*getWalkingSpeed(p));
     const next=distance?{x:p.position.x+dx/distance*step,z:p.position.z+dz/distance*step}:{...p.position};
+    // A bus door approach is a brief crossing: walkers enter only after
+    // the door closes, avoiding face-to-face deadlock with boarding citizens.
+    if(shuttleDoorLaneBusy(town,next)){
+      p.waiting+=dt;continue;
+    }
     const blocked=town.people.some(q=>{
       if(q.id===p.id||q.state==='riding')return false;
       const before=Math.hypot(p.position.x-q.position.x,p.position.z-q.position.z);
