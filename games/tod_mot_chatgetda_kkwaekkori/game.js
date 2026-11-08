@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose, CITY_GEOMETRY, getStreetPlan } from './sim.mjs?v=9';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose, getVisualActivity, CITY_GEOMETRY, getStreetPlan } from './sim.mjs?v=10';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -406,35 +406,43 @@ function buildActivityProps(person,appearance,revision){
   disposeProcedural(appearance);appearance.clear();
   const prop=new THREE.Group();prop.name='activity-prop';appearance.add(prop);
   const color=COLORS[person.propVariant].hex;
-  if(person.activity==='read'||person.activity==='map'){
+  const activity=getVisualActivity(person);
+  if(activity==='read'||activity==='map'){
     prop.position.set(0,.74,.34);
     const book=addPart(prop,cube(.42,.055,.29,color),0,0,0);book.rotation.x=-.25;
     addPart(book,cube(.37,.018,.26,0xfff6dd),0,.037,0);
-    if(person.activity==='map'){
+    if(activity==='map'){
       addPart(book,cube(.025,.02,.23,0x79b3a6),-.09,.053,0);
       addPart(book,cube(.30,.02,.025,0x79b3a6),0,.053,.03);
     }
-  } else if(['browse','deliver','eat'].includes(person.activity)){
-    prop.position.set(person.activity==='eat'?-.26:0,.74,.36);
-    if(person.activity==='deliver')addPart(prop,cube(.56,.045,.35,0xf4e3bf),0,-.02,0);
+  } else if(['browse','deliver','eat'].includes(activity)){
+    prop.position.set(activity==='eat'?-.26:0,.74,.36);
+    if(activity==='deliver')addPart(prop,cube(.56,.045,.35,0xf4e3bf),0,-.02,0);
     modelIn(prop,BREADS[person.propVariant],.33,cube(.26,.14,.2,0xc48d55),appearance,revision);
-  } else if(person.activity==='ball') {
+  } else if(activity==='ball') {
     prop.position.set(0,.25,.38);prop.add(ball(.17,color));
     addPart(prop,cube(.25,.035,.04,0xfff9e5),0,.14,0);
-  } else if(person.activity==='sit') {
+  } else if(activity==='sit') {
     if(person.state!=='walking'){
       const bench=new THREE.Group();bench.position.set(0,0,-.08);appearance.add(bench);
       modelIn(bench,MODEL.bench,1.05,cube(1,.4,.4,0x977452),appearance,revision);
     }
     addPart(prop,cube(.48,.065,.32,color),0,person.state==='walking'?.72:.43,person.state==='walking'?.36:.02);
-  } else if(person.activity==='wait'){
+  } else if(activity==='wait'){
     prop.position.set(-.37,0,.12);
     addPart(prop,cube(.28,.37,.23,color),0,.20,0);
     const handle=owned(new THREE.Mesh(new THREE.TorusGeometry(.075,.018,6,12),flat(color)));
     addPart(prop,handle,0,.43,0);
-  } else if(person.activity==='wave'){
+  } else if(activity==='wave'){
     prop.position.set(-.34,1.03,.06);
     addPart(prop,cube(.25,.23,.025,color),0,0,0);
+  }
+  if(person.errand?.phase==='carrying'&&!person.reserved){
+    const bag=new THREE.Group();bag.name='bakery-shopping-bag';appearance.add(bag);
+    bag.position.set(.39,.48,.10);
+    addPart(bag,cube(.25,.26,.20,0xd9af78),0,0,0);
+    const loop=owned(new THREE.Mesh(new THREE.TorusGeometry(.085,.018,6,12,Math.PI),flat(0x87634b)));
+    loop.rotation.z=Math.PI;addPart(bag,loop,0,.18,0);
   }
 }
 
@@ -471,16 +479,17 @@ function applyVisibility(){
 }
 function animateActivity(actor,person,now){
   if(person.state==='walking')return;
+  const activity=getVisualActivity(person);
   const prop=actor.getObjectByName('activity-prop');
-  if(prop&&person.activity==='ball')prop.position.y=.22+Math.abs(Math.sin(person.elapsed*3))*(celebration?.id===person.id ? .65 : .45);
-  if(prop&&person.activity==='eat'){prop.position.y=.82+Math.sin(person.elapsed*1.5)*.13;prop.rotation.z=Math.sin(person.elapsed*1.5)*.12;}
-  if(prop&&person.activity==='wave'){prop.rotation.z=Math.sin(person.elapsed*5)*.35;}
-  if(prop&&person.activity==='browse')prop.rotation.y=Math.sin(person.elapsed)*.18;
+  if(prop&&activity==='ball')prop.position.y=.22+Math.abs(Math.sin(person.elapsed*3))*(celebration?.id===person.id ? .65 : .45);
+  if(prop&&activity==='eat'){prop.position.y=.82+Math.sin(person.elapsed*1.5)*.13;prop.rotation.z=Math.sin(person.elapsed*1.5)*.12;}
+  if(prop&&activity==='wave'){prop.rotation.z=Math.sin(person.elapsed*5)*.35;}
+  if(prop&&activity==='browse')prop.rotation.y=Math.sin(person.elapsed)*.18;
   // Small, staggered prop movements give otherwise stationary scenes a visible task.
-  if(prop&&person.activity==='read')prop.rotation.z=Math.sin(person.elapsed*1.2+person.phase)*.045;
-  if(prop&&person.activity==='map')prop.rotation.y=Math.sin(person.elapsed*.9+person.phase)*.1;
-  if(prop&&person.activity==='deliver')prop.rotation.z=Math.sin(person.elapsed*1.8+person.phase)*.055;
-  if(prop&&person.activity==='wait')prop.rotation.y=Math.sin(person.elapsed*.8+person.phase)*.11;
+  if(prop&&activity==='read')prop.rotation.z=Math.sin(person.elapsed*1.2+person.phase)*.045;
+  if(prop&&activity==='map')prop.rotation.y=Math.sin(person.elapsed*.9+person.phase)*.1;
+  if(prop&&activity==='deliver')prop.rotation.z=Math.sin(person.elapsed*1.8+person.phase)*.055;
+  if(prop&&activity==='wait')prop.rotation.y=Math.sin(person.elapsed*.8+person.phase)*.11;
 }
 
 function positionEverything(dt) {
@@ -489,10 +498,10 @@ function positionEverything(dt) {
   for(const p of town.people) {
     const mesh=citizenMeshes.get(p.id);
     if(!mesh)continue;
-    const pose=getPose(p),changed=mesh.activity!==p.activity||mesh.pose!==pose||mesh.state!==p.state;
+    const visualActivity=getVisualActivity(p),pose=getPose(p),changed=mesh.activity!==visualActivity||mesh.pose!==pose||mesh.state!==p.state;
     if(changed){
       mesh.pose=pose;mesh.state=p.state;
-      mesh.activity=p.activity;buildActivityProps(p,mesh.appearance,worldSerial);
+      mesh.activity=visualActivity;buildActivityProps(p,mesh.appearance,worldSerial);
       const entry=mixers.find(e=>e.person.id===p.id),gltf=citizenAssets.get(p.id);
       const clipName=pose;
       const clip=gltf?.animations.find(a=>a.name===clipName);
