@@ -12,6 +12,7 @@ const modes=['redlight','tug','marbles','final'];
 
 function renderMock(mode,width,height){
  const nodes=new Map(),draw={count:0,texts:[],progress:null},listeners=new Map(),frames=[];
+ const listen=(name,fn)=>{const previous=listeners.get(name);listeners.set(name,previous?(...args)=>{previous(...args);fn(...args);}:fn);};
  let clock=1_700_000_000_000;
  const started=clock;
  class FakeDate extends Date{static now(){return clock;}}
@@ -37,11 +38,11 @@ function renderMock(mode,width,height){
    currentScript:{dataset:{mode},src:'https://example.com/games/squid-survival/mini.js'},
    body:{dataset:{}},
    getElementById:node,createElement:id=>node('generated-'+nodes.size),
-   addEventListener:(name,fn)=>listeners.set(name,fn)
+   addEventListener:listen
  };
  const window={
    SquidMiniRules:engine,devicePixelRatio:1,
-   addEventListener:(name,fn)=>listeners.set(name,fn)
+   addEventListener:listen
  };
  window.parent=window;
  const fakeLocation={search:''};
