@@ -12,6 +12,9 @@ const modes=['redlight','tug','marbles','final'];
 
 function renderMock(mode,width,height){
  const nodes=new Map(),draw={count:0,texts:[],progress:null},listeners=new Map(),frames=[];
+ let clock=1_700_000_000_000;
+ const started=clock;
+ class FakeDate extends Date{static now(){return clock;}}
  const ctx={};
  for(const name of ['beginPath','roundRect','fill','stroke','fillRect','clearRect','ellipse','arc','strokeRect','moveTo','lineTo','setTransform','fillText','save','restore','translate','scale','closePath']){
    ctx[name]=(...args)=>{draw.count++;if(name==='fillText')draw.texts.push(String(args[0]));};
@@ -30,6 +33,7 @@ function renderMock(mode,width,height){
    };nodes.set(id,el);return el;
  };
  const document={
+   hidden:false,
    currentScript:{dataset:{mode},src:'https://example.com/games/squid-survival/mini.js'},
    body:{dataset:{}},
    getElementById:node,createElement:id=>node('generated-'+nodes.size),
@@ -43,14 +47,14 @@ function renderMock(mode,width,height){
  const fakeLocation={search:''};
  const storage={getItem:()=>null,setItem:()=>{}};
  vm.runInNewContext(source,{
-   window,document,location:fakeLocation,localStorage:storage,URLSearchParams,Date,Math,
+   window,document,location:fakeLocation,localStorage:storage,URLSearchParams,Date:FakeDate,Math,
    requestAnimationFrame:fn=>frames.push(fn),Image:undefined
  });
  assert.equal(document.body.dataset.mode,mode);
  node('start').click();
  assert.ok(frames.length,'animation scheduled for '+mode);
  const frame=frames.shift();frame(1000);
- return {draw,nodes,document};
+ return {draw,nodes,document,listeners,advance(ms){clock+=ms;frames.shift()?.(1000+clock-started);}};
 }
 test('all six tournament gates get a cinematic briefing and result position',()=>{
  const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
@@ -97,4 +101,29 @@ test('every practice page uses upgraded game design, accessible progress and cor
  assert.match(css,/@media\(max-height:500px\)/);
  assert.match(css,/@media\(max-width:600px\)/);
  assert.match(css,/prefers-reduced-motion/);
+});
+
+test('mini-games do not spend countdown time while backgrounded and release held input',()=>{
+ for(const mode of modes){
+  const s=renderMock(mode,390,844);
+  s.advance(2500);
+  const before=s.nodes.get('time').textContent;
+  s.document.hidden=true;s.listeners.get('visibilitychange')();
+  s.advance(30000);
+  assert.equal(s.nodes.get('time').textContent,before,mode+' timer advanced while hidden');
+  s.document.hidden=false;s.listeners.get('visibilitychange')();
+  s.advance(100);
+  assert.equal(s.nodes.get('time').textContent,before,mode+' lost time after resume');
+  assert.equal(s.nodes.get('status').textContent,'도전 중');
+ }
+});
+test('mini-games also resume correctly after browser focus returns',()=>{
+ const s=renderMock('redlight',390,844);
+ s.advance(1500);
+ const before=s.nodes.get('time').textContent;
+ s.listeners.get('blur')();
+ s.advance(9000);
+ s.listeners.get('focus')();
+ s.advance(100);
+ assert.equal(s.nodes.get('time').textContent,before);
 });
