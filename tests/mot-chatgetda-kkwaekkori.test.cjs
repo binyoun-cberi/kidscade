@@ -182,7 +182,7 @@ test('3D picking, honest prop fallbacks and rotated-camera ground dragging are p
   assert.match(code,/challengeLevel\+1/);
   assert.match(code,/finishChallenge\(/);
   assert.match(html,/20초 연속 찾기 도전/);
-  assert.match(code,/sim\.mjs\?v=6/);
+  assert.match(code,/sim\.mjs\?v=8/);
   assert.match(code,/pinchCenter/);
   assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
 });
@@ -283,4 +283,74 @@ test('delivery residents depart early across 100 seeded towns without changing s
     assert.ok(moved,'delivery should be visible near the start: seed '+seed);
     assert.deepEqual(town.people.map(p=>[p.id,p.modelVariant,p.propVariant]),looks);
   }
+});
+
+test('town walkers have visible travel in two minutes without losing the arcade speed ramp',async()=>{
+  const {makeTown,movePeople,getWalkingSpeed}=await simPromise;
+  const pedestrian={id:'person-0',challengeSpeed:1};
+  const normalSpeed=getWalkingSpeed(pedestrian);
+  assert.ok(normalSpeed>1.2&&normalSpeed<1.5);
+  pedestrian.challengeSpeed=2.3;
+  assert.ok(getWalkingSpeed(pedestrian)>normalSpeed*2.2);
+  for(const [stage,required] of [['small',17],['medium',40],['large',78]]){
+    for(const seed of [42,812,1441]){
+      const town=makeTown(stage,seed,'normal'),departed=new Set();
+      for(let tick=0;tick<600;tick++){
+        movePeople(town,.2);
+        for(const p of town.people){
+          if(p.state==='walking'||p.trips>0)departed.add(p.id);
+          assert.ok(p.waiting<5,'no pedestrian should freeze in a crossing');
+        }
+      }
+      assert.ok(departed.size>=required,`${stage}/${seed}: only ${departed.size} walkers departed`);
+    }
+  }
+});
+
+test('neighbors reciprocally greet without changing targets, paths, or arcade pacing',async()=>{
+  const {makeTown,movePeople,getPose,signature,WALK,getChallengeSettings}=await simPromise;
+  for(const [stage,minMoved,maxPairs] of [['small',17,2],['medium',40,3],['large',78,5]]){
+    for(const seed of [42,812,1441]){
+      const town=makeTown(stage,seed,'normal');
+      const targets=town.order.map(id=>[id,signature(town.people.find(p=>p.id===id))]);
+      const moved=new Set();
+      for(let tick=0;tick<600;tick++){
+        movePeople(town,.2);
+        const greeting=town.people.filter(p=>p.socialWith);
+        assert.equal(greeting.length%2,0,'every greeting has a partner');
+        assert.ok(greeting.length<=maxPairs*2,'keep simultaneous speech bubbles sparse');
+        for(const p of greeting){
+          const friend=town.people.find(q=>q.id===p.socialWith);
+          assert.ok(friend&&friend.socialWith===p.id,'greetings must be reciprocal');
+          assert.equal(p.state,'acting');
+          assert.equal(p.reserved,false,'targets and near-matches must stay observable');
+          assert.equal(friend.block.id,p.block.id);
+          assert.equal(getPose(p),'interact-right');
+          assert.ok(Math.hypot(p.position.x-friend.position.x,p.position.z-friend.position.z)<=1.5);
+        }
+        for(const p of town.people){
+          if(p.state==='walking'||p.trips>0)moved.add(p.id);
+          assert.ok(p.waiting<5,'greetings must not block the crossing');
+        }
+      }
+      assert.ok(town.greetingCount>0,stage+' should show a real neighbor interaction');
+      assert.ok(moved.size>=minMoved,stage+' walking should not regress');
+      for(const [id,look] of targets)assert.equal(signature(town.people.find(p=>p.id===id)),look);
+      for(const person of town.people)if(person.socialWith)assert.equal(person.reserved,false);
+    }
+  }
+  for(const level of [1,12,30]){
+    const config=getChallengeSettings(level);
+    const town=makeTown(config.stageName,500+level,'easy',true,config);
+    for(let tick=0;tick<200;tick++)movePeople(town,.1);
+    assert.equal(town.greetingCount,0,'timed challenges should keep their original pacing');
+    assert.ok(town.people.every(p=>!p.socialWith));
+  }
+});
+
+test('speech bubbles render outside the citizen picking layer',()=>{
+  assert.match(code,/greetingMarkers = new Map\(\)/);
+  assert.match(code,/marker\.add\(bubble\)/);
+  assert.match(code,/speech\.quaternion\.copy\(camera\.quaternion\)/);
+  assert.match(code,/p\.socialWith\?town\.people\.find/);
 });

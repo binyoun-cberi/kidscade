@@ -24,7 +24,7 @@ const server=http.createServer((req,res)=>{
   fs.readFile(file,(err,body)=>{
     if(err){res.writeHead(404);res.end('Missing '+url.pathname);return}
     if(url.pathname.endsWith('/tod_mot_chatgetda_kkwaekkori/game.js')){
-      const expose="\nwindow.__KK_TEST__={\n  snapshot:()=>({active,mode,stage:town?.stageName,people:town?.people.length,targets:town?.order.length,\n    found:found.length,level:challengeLevel,time:timeRemaining,viewSize,look:[cameraLook.x,cameraLook.z],\n    currentTarget:getTarget()?.id,celebration:!!celebration,preview:!!previewActor,\n    shown:!document.querySelector('#start').classList.contains('hidden')}),\n  targetTap:()=>{const t=getTarget(),h=citizenMeshes.get(t?.id)?.holder;if(!h)return null;\n    scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);\n    const p=h.position.clone();p.y+=.85;p.project(camera);\n    const r=canvas.getBoundingClientRect();\n    return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2,z:p.z};},\n  deliverySnapshot:()=>({seed:town?.seed,time:town?.time,residents:(town?.people||[]).filter(p=>p.routine==='deliver').map(p=>{\n    const h=citizenMeshes.get(p.id)?.holder;return {id:p.id,state:p.state,rendered:h?[h.position.x,h.position.z]:null,simulated:[p.position.x,p.position.z]};})})\n};";
+      const expose="\nwindow.__KK_TEST__={\n  snapshot:()=>({active,mode,stage:town?.stageName,people:town?.people.length,targets:town?.order.length,\n    found:found.length,level:challengeLevel,time:timeRemaining,viewSize,look:[cameraLook.x,cameraLook.z],\n    currentTarget:getTarget()?.id,celebration:!!celebration,preview:!!previewActor,\n    shown:!document.querySelector('#start').classList.contains('hidden')}),\n  targetTap:()=>{const t=getTarget(),h=citizenMeshes.get(t?.id)?.holder;if(!h)return null;\n    scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);\n    const p=h.position.clone();p.y+=.85;p.project(camera);\n    const r=canvas.getBoundingClientRect();\n    return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2,z:p.z};},\n  deliverySnapshot:()=>({seed:town?.seed,time:town?.time,residents:(town?.people||[]).filter(p=>p.routine==='deliver').map(p=>{\n    const h=citizenMeshes.get(p.id)?.holder;return {id:p.id,state:p.state,rendered:h?[h.position.x,h.position.z]:null,simulated:[p.position.x,p.position.z]};})}),\n  greetingSnapshot:()=>({events:town?.greetingCount||0,target:getTarget()?.id,\n    residents:(town?.people||[]).filter(p=>p.socialWith).map(p=>({\n      id:p.id,peer:p.socialWith,reserved:p.reserved,pose:getPose(p),\n      marker:greetingMarkers.get(p.id)?.visible||false,\n      position:[p.position.x,p.position.z]\n    }))})\n};";
       // Seed only the audit's initial quick-start; normal gameplay stays random.
       const original=body.toString('utf8');
       const quickStart="startTown('small',getSeed(),[],'easy')";
@@ -111,6 +111,18 @@ let chrome,ws,profile,serverOpen=false,passed=0;
   }
   assert.ok(walkingDelivery,'delivery residents must really walk in 3D: '+JSON.stringify({before:deliveryStart,after:deliveryEnd}));
   console.log('Natural delivery walk verified: '+JSON.stringify({id:walkingDelivery.id,seed:deliveryEnd.seed,time:deliveryEnd.time}));
+  // Read a real WebGL frame with reciprocal greetings and visible scene markers.
+  const greeting=await wait("(()=>{const s=__KK_TEST__.greetingSnapshot();return s.events>0&&s.residents.length>=2&&s.residents.every(p=>p.marker)?s:null;})()",30000);
+  const pairs=new Map(greeting.residents.map(p=>[p.id,p]));
+  for(const p of greeting.residents){
+    const friend=pairs.get(p.peer);
+    assert.ok(friend&&friend.peer===p.id,'greeting must be reciprocal in Chrome');
+    assert.equal(p.reserved,false,'targets and near matches keep their original action');
+    assert.notEqual(p.id,greeting.target);
+    assert.equal(p.pose,'interact-right');
+    assert.ok(Math.hypot(p.position[0]-friend.position[0],p.position[1]-friend.position[1])<=1.5);
+  }
+  await screenshot('00-visible-neighbor-greeting');passed++;
   await screenshot('01-desktop-existing-game');passed++;
   // Test direct controls through CDP input, not via game's internal pick function.
   const look0=await evaluate("__KK_TEST__.snapshot().look");

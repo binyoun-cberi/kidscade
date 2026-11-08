@@ -54,7 +54,7 @@ export function signature(p){return `${p.modelVariant}:${p.activity}:${p.propVar
 // Props/buildings stay behind the activity bays; the perimeter is pedestrians only.
 export const WALK = Object.freeze({edge:2.65, bayZ:1.15, bayX:[-1.8,-.6,.6,1.8], clearance:.82});
 export function getRoutePosition(person){return {...person.position};}
-export function getPose(person){return person.state==='walking'?'walk':person.activity==='deliver'?'holding-both':ACTIVITIES.find(a=>a.id===person.activity).clip;}
+export function getPose(person){return person.state==='walking'?'walk':person.socialWith&&!person.reserved?'interact-right':person.activity==='deliver'?'holding-both':ACTIVITIES.find(a=>a.id===person.activity).clip;}
 
 function makePaths(blocks,config){
   const nodes=new Map(),slots=[];
@@ -181,7 +181,7 @@ export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=t
     // Delivery starts before the longer browsing/resting activities reserve the
     // shared corridors. Keep one RNG draw per resident so saved appearances stay stable.
     const person={id:`person-${i}`,block,slot,...look,activity,action:activity,elapsed:0,routineAt:activity==='deliver'?.8+random():3+random()*9,reserved:false,found:false,
-      challengeSpeed:challenge?.speed||0,phase:i*2.39996+(seed%19)*.37};
+      challengeSpeed:challenge?.speed||0,phase:i*2.39996+(seed%19)*.37,socialWith:null,socialUntil:0,nextGreetingAt:4+(i%7)*.9+(seed%7)*.2,greetings:0};
     used.add(signature(person));return person;
   });
   const paths=makePaths(blocks,config);
@@ -193,6 +193,7 @@ export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=t
   }
   for(const p of people){p.routine=p.activity;p.lifeStop=Math.max(0,ROUTINES[p.routine].findIndex(([kind])=>kind===p.block.kind));}
   const town={stageName,config,seed,difficulty,challenge:!!challenge,blocks,people,paths,order:[],time:0};
+  town.greetingCount=0;town.lastGreetingPulse=-1;
   if(autoSelect)selectTargets(town,people.map(p=>p.id));return town;
 }
 export function selectTargets(town,eligibleIds,previous=[]){
@@ -247,6 +248,40 @@ export function selectTargets(town,eligibleIds,previous=[]){
   }
   return order;
 }
+// Keep free-roaming pedestrians active without flattening the arcade speed ramp.
+export function getWalkingSpeed(person){
+  const index=Number(person.id.slice(7))||0;
+  const base=1.32+(index%4)*.06;
+  return base*Math.min(2.3,Math.max(1,Number(person.challengeSpeed)||1));
+}
+// Two neighbors occasionally greet each other in-place; occupied bays and
+// the path graph remain untouched. Sought residents and near-matches opt out.
+function greetNeighbors(town){
+  if(town.challenge||town.time<4)return;
+  const pulse=Math.floor(town.time*2);
+  if(pulse===town.lastGreetingPulse)return;
+  town.lastGreetingPulse=pulse;
+  const occupied=new Set(town.people.filter(p=>p.socialWith).map(p=>p.block.id));
+  const maxPairs=Math.max(2,Math.min(5,Math.ceil(town.blocks.length/5)));
+  let activePairs=town.people.filter(p=>p.socialWith).length/2;
+  if(activePairs>=maxPairs)return;
+  for(const p of town.people){
+    if(p.reserved||p.found||p.state!=='acting'||p.socialWith||p.elapsed<p.nextGreetingAt||p.elapsed>=p.routineAt||occupied.has(p.block.id))continue;
+    const companion=town.people.find(q=>q!==p&&!q.reserved&&!q.found&&q.state==='acting'&&!q.socialWith&&q.block.id===p.block.id&&q.elapsed>=q.nextGreetingAt&&q.elapsed<q.routineAt&&
+      Math.hypot(q.position.x-p.position.x,q.position.z-p.position.z)<=1.5);
+    if(!companion)continue;
+    const until=town.time+2.4;
+    for(const [who,friend] of [[p,companion],[companion,p]]){
+      who.socialWith=friend.id;who.socialUntil=until;
+      who.nextGreetingAt=who.elapsed+18+(Number(who.id.slice(7))%5)*1.6;
+      who.routineAt=Math.max(who.routineAt,who.elapsed+3);
+      who.greetings++;
+    }
+    town.greetingCount++;
+    occupied.add(p.block.id);
+    if(++activePairs>=maxPairs)break;
+  }
+}
 export function movePeople(town,deltaSeconds){
   const dt=Math.min(.25,Math.max(0,Number(deltaSeconds)||0));town.time+=dt;
   // Rotate priority to avoid giving low IDs a permanent advantage at junctions.
@@ -255,12 +290,16 @@ export function movePeople(town,deltaSeconds){
   for(const p of people){
     p.elapsed+=dt;
     if(p.state!=='walking'){
+      if(p.socialWith){
+        if(town.time<p.socialUntil)continue;
+        p.socialWith=null;p.socialUntil=0;
+      }
       if(p.elapsed>=p.routineAt)depart(town,p);
       continue;
     }
     const node=town.paths.nodes.get(p.route[0]);if(!node)continue;
     const dx=node.x-p.position.x,dz=node.z-p.position.z,distance=Math.hypot(dx,dz);
-    const step=Math.min(distance,dt*(.95+(Number(p.id.slice(7))%4)*.04)*Math.min(p.challengeSpeed||1,1.35));
+    const step=Math.min(distance,dt*getWalkingSpeed(p));
     const next=distance?{x:p.position.x+dx/distance*step,z:p.position.z+dz/distance*step}:{...p.position};
     const blocked=town.people.some(q=>{
       if(q.id===p.id)return false;
@@ -277,6 +316,7 @@ export function movePeople(town,deltaSeconds){
       if(!p.route.length)arrive(town,p);
     }
   }
+  greetNeighbors(town);
 }
 export function getClue(person,difficulty='easy'){
   if(!person)return null;const a=ACTIVITIES.find(a=>a.id===person.activity),prop=a.props[person.propVariant];
