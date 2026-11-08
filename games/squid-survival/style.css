@@ -96,3 +96,12 @@ button{cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid #a8
 .practice-tip{margin:12px 0 0;text-align:center;color:#a7c1b4;font-size:12px;line-height:1.6}
 .practice button{appearance:none;background:#213b32;border:1px solid #587967;border-radius:4px;color:#d7f4e0;padding:5px 9px;font-size:inherit;cursor:pointer}
 .practice button:hover,.practice button:focus-visible{background:#315c49;border-color:#9debc4}
+
+/* Player-controlled start and a predictable escape route for classroom use. */
+[hidden]{display:none!important}
+.pregame-actions{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:16px auto 8px}
+.pregame-actions .primary{width:auto;min-height:48px;max-width:100%;margin:0}
+.ghost-action{appearance:none;cursor:pointer;font:850 13px system-ui,sans-serif;color:#d9f6e3;background:#1a3430;border:1px solid #85b99c;border-radius:6px;min-height:44px;padding:10px 17px}
+.ghost-action:hover,.ghost-action:focus-visible{background:#315849;border-color:#bbf5d4}
+.end-lobby{display:block;margin:12px auto 0}
+@media(max-height:510px) and (min-width:700px){.pregame-actions{margin:8px auto 4px}.pregame-actions .primary,.pregame-actions .ghost-action{min-height:38px;padding:7px 12px}.end-lobby{min-height:36px;margin-top:5px}}
