@@ -216,6 +216,20 @@ test('RESET is an explicit lobby-only transition, never an escape during a live 
   assert.equal(rules.reduce(active,{type:'RESET'}),active);
 });
 
+test('tournament playtime excludes rule-reading and intermission delays',()=>{
+  const s=simulator();
+  s.click('startButton');
+  s.advance(60000);
+  assert.equal(s.sdk.filter(([name])=>name==='start').length,0,'not started until ready');
+  s.click('readyButton');s.advance(3100);
+  assert.equal(s.sdk.filter(([name])=>name==='start').length,1);
+  s.advance(700);
+  s.click('quitButton');
+  const result=s.sdk.find(([name,data])=>name==='result'&&data.status==='failed');
+  assert.ok(result);
+  assert.equal(result[1].elapsedMs,700,'briefing must not inflate reported playtime');
+});
+
 test('catalog has only the unified Squid game while practice files remain accessible',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data/games.json'),'utf8'));
   const game=catalog.games.find(x=>x.id==='squid_survival');
