@@ -40,3 +40,12 @@
 - 게임 플레이·모바일 화면 검증: **미실행**; 테스트 코드 작성 및 GitHub 원격 파일 조회만 실시.
 - GitHub: PR #747 개설(https://github.com/binyoun-cberi/kidscade/pull/747). 최초 조회 시 PR 커밋의 GitHub Actions 실행 목록은 비어 있었으며, Vercel 상태 컨텍스트는 failure로 표시됨(원인/게임 영향 미확인). **main 병합 안 함, Cloudflare 배포 안 함, 원격 D1/Secrets/유료 API 작업 없음.**
 - 다음 계획: CI 실패가 확인되면 해당 테스트를 수정하고, 이어서 실제 모바일 서바이벌 전관문 플레이 및 난이도/타격감 개선.
+
+#### 동일 요청의 추가 검수 — 가로 회전 화면 복귀 경로
+
+- 사용자 요구 연속성: 휴대폰 세로 화면에서 기억의 다리를 시작하려면 회전 안내 화면을 거치는데, 이 화면에서 로비 복귀 수단이 없었던 점을 추가 확인.
+- 추가 변경: `games/squid-survival/index.html`, `game.js`, `style.css`, `tests/squid-survival.test.cjs`. 회전 안내에 로비 복귀 버튼 추가, HTML 캐시 버전 갱신, 회귀 테스트 추가.
+- 직접 실행한 추가 검증: PR 브랜치의 최신 `rules.js`/`game.js`를 격리 V8 모형 DOM·시계에서 실행. 세로 휴대폰 모형에서 첫 관문 통과 → 회전 안내 → 로비 버튼 → 로비 표시와 `최고 통과 1 / 6` 유지 확인 (**통과**).
+- 원래 기록의 3회 한도 내에서 마지막 단계의 빈틈을 고친 것으로, 새로운 무제한 반복이 아님.
+- 추가 검증 한계: 실물 기기의 회전 감지/터치와 Node 전체 회귀 테스트는 미실행.
+- PR: https://github.com/binyoun-cberi/kidscade/pull/747 · **병합 안 함 / 배포 안 함**.
