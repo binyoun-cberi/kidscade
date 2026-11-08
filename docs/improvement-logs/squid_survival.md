@@ -26,7 +26,7 @@
 - 시작 상태 및 근거: `main`의 `squid_survival`은 6개 관문, 개별 연습, 2인 번갈아 대전 및 기록 저장을 구현함. 1인 관문 설명 후 3초 자동 출발, 명시적 로비 복귀 부재, 미니게임에서 `Date.now()` 기반 제한시간이 화면 이탈 중 경과하는 문제를 코드로 확인. 기존 게임별 개선 로그는 없었음.
 - 수용 기준: (1) 플레이어가 준비 버튼을 눌러야 3초 카운트다운 시작 (2) 관문 준비/결과에서 로비 복귀 가능 (3) 이전 iframe은 관문 종료 시 제거 (4) 미니게임 4종에서 비활성화된 시간을 제외하고 누르고 있던 조작 해제 (5) 대회 통계 `elapsedMs`가 준비/인터미션 시간을 포함하지 않음 (6) 기존 6관문/모드/기록 방식 보존.
 - 작업 브랜치: `chat/squid-survival-ready-and-pause-20261108`
-- 관련 PR: 생성 후 링크를 기록할 것
+- 관련 PR: https://github.com/binyoun-cberi/kidscade/pull/747
 
 | 회차 | 계획과 근거 | 실제 변경 파일 | 테스트 명령/환경 | 실제 결과 및 실패/수정 근거 |
 | --- | --- | --- | --- | --- |
@@ -38,5 +38,5 @@
 - 확인된 개선: GitHub 브랜치에 구현 코드와 회귀 테스트 파일 반영. 실제 통과 여부는 미확인.
 - 남은 문제와 미실행 검증: `node --test tests/squid-survival.test.cjs tests/squid-survival-mini.test.cjs tests/squid-survival-design.test.cjs tests/squid-survival-versus.test.cjs`, `npm run health:strict`, `npm run test:ci`, `npm run build` 검증 필요. 로컬 저장소 접근이 제한되어 직접 실행하지 못함. 6관문 수동 플레이·모바일 기기 검증 미실행.
 - 게임 플레이·모바일 화면 검증: **미실행**; 테스트 코드 작성 및 GitHub 원격 파일 조회만 실시.
-- GitHub: 별도 브랜치 작성; PR 제출 후 번호/CI 상태 업데이트 예정. **main 병합 안 함, Cloudflare 배포 안 함, 원격 D1/Secrets/유료 API 작업 없음.**
+- GitHub: PR #747 개설(https://github.com/binyoun-cberi/kidscade/pull/747). 최초 조회 시 PR 커밋의 GitHub Actions 실행 목록은 비어 있었으며, Vercel 상태 컨텍스트는 failure로 표시됨(원인/게임 영향 미확인). **main 병합 안 함, Cloudflare 배포 안 함, 원격 D1/Secrets/유료 API 작업 없음.**
 - 다음 계획: CI 실패가 확인되면 해당 테스트를 수정하고, 이어서 실제 모바일 서바이벌 전관문 플레이 및 난이도/타격감 개선.
