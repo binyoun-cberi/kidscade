@@ -8,6 +8,6 @@
 
 | 게임 ID | 게임명 | 이력 파일 | 다음 시작점 |
 | --- | --- | --- | --- |
-| `tod_mot_chatgetda_kkwaekkori` | 못 찾겠다 꾀꼬리 | [개선 이력](./tod_mot_chatgetda_kkwaekkori.md) | 버스 승하차 PR의 Chrome 검증 후 교차로 통행·차량 간 충돌 검수 |
+| `tod_mot_chatgetda_kkwaekkori` | 못 찾겠다 꾀꼬리 | [개선 이력](./tod_mot_chatgetda_kkwaekkori.md) | PR #749 병합 확인 후 교차로 차량·보행자 신호 및 충돌 제어 |
 
 작성법: [README](./README.md) · [템플릿](./TEMPLATE.md)
