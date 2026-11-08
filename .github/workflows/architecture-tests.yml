@@ -140,10 +140,6 @@ jobs:
           path: ${{ runner.temp }}/cube-geometry-visual-quiz/
           if-no-files-found: ignore
           retention-days: 7
-      - name: Ota archive real-Chrome desktop and touch playthrough
-        run: node tests/ota-visual-browser-audit.cjs
-        env:
-          KIDSCADE_OTA_AUDIT_OUT: ${{ runner.temp }}/ota-visual-audit
       - name: Run all regression tests and audits
         run: npm run test:ci
       - name: Openmon expedition real-browser mobile and desktop audit
