@@ -182,7 +182,7 @@ test('3D picking, honest prop fallbacks and rotated-camera ground dragging are p
   assert.match(code,/challengeLevel\+1/);
   assert.match(code,/finishChallenge\(/);
   assert.match(html,/20초 연속 찾기 도전/);
-  assert.match(code,/sim\.mjs\?v=9/);
+  assert.match(code,/sim\.mjs\?v=10/);
   assert.match(code,/pinchCenter/);
   assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
 });
@@ -389,4 +389,74 @@ test('storefront and shelter envelopes leave walking clearance at the rear sidew
 test('linked town uses instanced streets outside citizen hit-testing',()=>{
   for(const part of ['getStreetPlan(town)','city-linked-sidewalks','city-crossing-ramps','city-crossing-stripes','city-greenbelt-crowns','drawConnectedFootways(plan)','new THREE.InstancedMesh'])assert.ok(code.includes(part),part);
   assert.match(code,/ray\.intersectObjects\(citizens\.children,true\)/);
+});
+
+test('bakery errands carry one bread item across a real block boundary before finishing',async()=>{
+  const {makeTown,movePeople,getVisualActivity,signature,personIsDiscoverable,WALK}=await simPromise;
+  for(const stage of ['small','medium','large'])for(const seed of [42,812,1441]){
+    const town=makeTown(stage,seed,'normal');
+    const original=town.order.map(id=>[id,signature(town.people.find(p=>p.id===id))]);
+    const initialLooks=new Map(town.people.map(p=>[p.id,p.propVariant]));
+    let minDistance=Infinity,carryObserved=false,mealObserved=false;
+    for(let tick=0;tick<1200;tick++){
+      movePeople(town,.2);
+      for(const p of town.people){
+        if(p.errand){
+          assert.equal(p.reserved,false,'a sought resident or lookalike must not shop');
+          assert.equal(p.found,false);
+          assert.equal(p.errand.bread,initialLooks.get(p.id),'bread must survive the entire route');
+          if(p.errand.phase==='carrying'){
+            assert.equal(getVisualActivity(p),'deliver');
+            carryObserved=true;
+          }
+          if(p.errand.phase==='eating'){
+            assert.equal(p.block.kind,'park');
+            assert.equal(getVisualActivity(p),'eat');
+            mealObserved=true;
+          }
+          if(p.errand.phase==='delivering')assert.equal(p.block.kind,'home');
+        }
+        assert.ok(p.waiting<5,'errands must not cause pedestrian standstills');
+      }
+      // Collision checks also cover the shopping exit and destination arrival.
+      if(tick%5===0)for(let i=0;i<town.people.length;i++)for(let j=i+1;j<town.people.length;j++){
+        const a=town.people[i],b=town.people[j];
+        minDistance=Math.min(minDistance,Math.hypot(a.position.x-b.position.x,a.position.z-b.position.z));
+      }
+    }
+    assert.ok(town.commerce.visits>0,'store visits must occur');
+    assert.ok(town.commerce.purchases>0,'a real purchase must occur');
+    assert.ok(carryObserved,'a purchased item must be carried to the destination');
+    assert.ok(town.commerce.completed>0,'at least one purchase must become a fulfilled errand');
+    assert.equal(town.commerce.meals+town.commerce.deliveries,town.commerce.completed);
+    assert.ok(minDistance>=WALK.clearance-1e-6,'no crossing or storefront overlap');
+    for(const record of town.commerce.recent){
+      assert.notEqual(record.from,record.to,'shopper must go to a different block');
+      assert.ok(['park','home'].includes(record.kind),'only a park or home is a final destination');
+      assert.equal(record.bread,initialLooks.get(record.person),'same purchased bread gets delivered');
+    }
+    for(const [id,look] of original){
+      assert.equal(signature(town.people.find(p=>p.id===id)),look);
+      assert.ok(personIsDiscoverable(town,id));
+    }
+    // Some seeds take longer to finish the first park trip, so the test only
+    // requires the eating pose when a shopper naturally reaches a park.
+    if(mealObserved)assert.ok(town.commerce.visits>=town.commerce.meals);
+  }
+});
+test('quick arcade challenges do not start store errands',async()=>{
+  const {getChallengeSettings,makeTown,movePeople}=await simPromise;
+  for(const level of [1,12,30]){
+    const config=getChallengeSettings(level),town=makeTown(config.stageName,211+level,'hard',true,config);
+    for(let tick=0;tick<300;tick++)movePeople(town,.1);
+    assert.deepEqual({visits:town.commerce.visits,purchases:town.commerce.purchases,completed:town.commerce.completed},
+      {visits:0,purchases:0,completed:0});
+    assert.ok(town.people.every(p=>p.errand===null));
+  }
+});
+test('shopper visual actions and bags reuse original bread models',()=>{
+  assert.match(code,/getVisualActivity\(person\)/);
+  assert.match(code,/bakery-shopping-bag/);
+  assert.match(code,/BREADS\[person\.propVariant\]/);
+  assert.match(code,/mesh\.activity=visualActivity/);
 });
