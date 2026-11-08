@@ -230,6 +230,17 @@ test('tournament playtime excludes rule-reading and intermission delays',()=>{
   assert.equal(result[1].elapsedMs,700,'briefing must not inflate reported playtime');
 });
 
+test('portrait bridge rotation prompt has a safe lobby exit',()=>{
+ const s=simulator();
+ s.portrait(true);s.click('startButton');s.click('readyButton');s.advance(3100);
+ s.send(event(rules.ROUNDS[0]));
+ s.click('endButton');
+ assert.equal(s.get('rotate').classList.contains('hidden'),false);
+ s.click('rotateLobbyButton');
+ assert.equal(s.get('lobby').classList.contains('hidden'),false);
+ assert.equal(s.get('bestCount').textContent,'1 / 6');
+});
+
 test('catalog has only the unified Squid game while practice files remain accessible',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data/games.json'),'utf8'));
   const game=catalog.games.find(x=>x.id==='squid_survival');
