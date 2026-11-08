@@ -25,7 +25,7 @@
 - 시작 상태 및 근거: 카탈로그 게임 ID와 `AGENTS.md`, `docs/CHAT_AGENT_WORKFLOW.md` 확인. 이전 게임별 개선 로그는 GitHub `main`에 존재하지 않음. `rewrite.js`는 문/벽과 조명/천장만 쓰기 가능, `game.js` 체크포인트는 `sessionStorage`에만 저장, 이야기 모드는 마지막 13×13 미로 진입이 필수였음. 반면 기존 `animate()`는 교정·문장 퍼즐을 열면 위협 갱신을 이미 일시 정지하므로 그 부분은 중복 구현하지 않음.
 - 수용 기준: 창문은 안쪽이 보이고 막힌 통로를 뚫지 않아야 하며, 기존 문/조명과 v1 체크포인트도 유지; 새 세션에 진행 저장을 남기며, 이야기 결말에 선택권을 추가하고 스피드런·QA 경로는 유지.
 - 작업 브랜치: `improve/ota-20261108-reality-continuity-v2`
-- 관련 PR: 생성 후 URL 기록 예정
+- 관련 PR: https://github.com/binyoun-cberi/kidscade/pull/748
 
 | 회차 | 계획과 근거 | 실제 변경 파일 | 테스트 명령/환경 | 실제 결과 및 실패/수정 근거 |
 | --- | --- | --- | --- | --- |
@@ -37,5 +37,5 @@
 - 확인된 개선: 창문/문/벽 중 하나로 현실을 수정하는 상태·충돌 구분, 창문 가시화 코드, 오래 남는 체크포인트 백업, 이야기 모드 결말의 미로 선택, 기존 테스트 3개를 CI 테스트 목록에 추가하고 기존 Chrome 게임 감사 스크립트를 PR 체크에 연결
 - 남은 문제와 미실행 검증: 이 환경의 컨테이너에서 `git ls-remote https://github.com/binyoun-cberi/kidscade.git refs/heads/main` 실행 시 DNS 해석 실패. 따라서 로컬 clone, `npm run build`, `node --test`, 실제 브라우저는 실행하지 못함. PR의 GitHub Actions 결과로 추후 검증 필요.
 - 게임 플레이·모바일 화면 검증: **실행하지 않음**; GitHub Actions에 등록된 Chrome desktop+touch 감사는 실행 여부/결과 확인 필요
-- GitHub: 별도 브랜치에 변경함. `main` 병합 **안 함**, 실제 Cloudflare 배포 **안 함**, 원격 D1/결제/Secrets/학생 기록 **미접근**
+- GitHub: PR #748 생성, GitHub Actions `Kidscade architecture checks` 및 `Ota 3D browser simulation` 실행 중(최종 결과 미확인). 별도 브랜치에 변경함. `main` 병합 **안 함**, 실제 Cloudflare 배포 **안 함**, 원격 D1/결제/Secrets/학생 기록 **미접근**
 - 다음 계획: PR CI의 19개 테스트, 실제 Chrome 캡처, 체크포인트 재시작, 창문 가독성을 검토하고 필요한 범위만 재수정
