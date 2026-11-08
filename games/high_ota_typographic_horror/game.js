@@ -953,7 +953,7 @@ function saveChapterCheckpoint(){
   data.run={mode:'story',seed:run.seed};
   const value=JSON.stringify(data);
   try{sessionStorage.setItem(CHECKPOINT_KEY,value);}catch(_){}
-  try{localStorage.setItem(CHECKPOINT_KEY,value);}catch(_){} 
+  try{localStorage.setItem(CHECKPOINT_KEY,value);}catch(_){}
 }
 function clearLiteracyVisuals(){
   for(const visual of literacyMeshes.values()){
@@ -1098,9 +1098,9 @@ function submitSentence(){
 }
 function loadChapterCheckpoint(){
   // Persistent backup survives a closed tab. Session checkpoints remain the first choice.
-  for(const storage of [sessionStorage,localStorage]){
+  for(const name of ['sessionStorage','localStorage']){
     try{
-      const raw=storage.getItem(CHECKPOINT_KEY);
+      const raw=window[name].getItem(CHECKPOINT_KEY);
       if(!raw)continue;
       const saved=JSON.parse(raw);
       if(saved?.version===3&&saved.literacy&&saved.run?.mode==='story')return saved;
@@ -1513,6 +1513,7 @@ function update(dt) {
       player.moving=false;keys.clear();mobileRun=false;
       overlays.mazeChoice.classList.remove('closed');
       if(document.pointerLockElement===canvas)document.exitPointerLock?.();
+      return; // The choice freezes the final pursuer before the same frame can advance.
     }else enterMaze();
   }
   if(state.stage==='maze'){
