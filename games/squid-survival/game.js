@@ -13,7 +13,7 @@
     endRounds:R.ROUNDS.map((_,i)=>$('endRound'+i)),endButton:$('endButton'),quit:$('quitButton'),
     demoIcon:$('demoExtraIcon'),demoDesc:$('demoExtraDesc'),watermark:$('roundWatermark')
   };
-  let state=R.initial(),ticker=null,deadline=0,runStartedAt=0,loadId=0,practiceId=null;
+  let state=R.initial(),ticker=null,deadline=0,activeRunMs=0,roundStartedAt=0,loadId=0,practiceId=null;
   const record=(()=>{
     try{
       const v=JSON.parse(localStorage.getItem(R.SAVE_KEY)||'{}');
@@ -115,9 +115,8 @@
     stopCountdown();
     el.frame.removeAttribute('src');
     state=R.reduce(state,{type:'START'});
-    record.attempts++;save();
-    runStartedAt=Date.now();
-    sdk('start',{mode:'tournament',rounds:R.ROUNDS.length});
+    activeRunMs=0;
+    roundStartedAt=0;
     prepareRound();
   }
   function prepareRound(){
@@ -166,6 +165,11 @@
       state=R.reduce(state,{type:'ROTATE'});return render();
     }
     state=R.reduce(state,{type:'READY'});
+    if(state.roundIndex===0){
+      record.attempts++;save();
+      sdk('start',{mode:'tournament',rounds:R.ROUNDS.length});
+    }
+    roundStartedAt=Date.now();
     loadId++;
     const round=R.ROUNDS[state.roundIndex];
     el.frame.title='서바이벌 '+(state.roundIndex+1)+'라운드: '+round.title;
@@ -178,6 +182,7 @@
     const previous=state;
     state=R.reduce(state,action);
     if(state===previous)return;
+    activeRunMs+=Math.max(0,Date.now()-roundStartedAt);
     // Stop the previous iframe so a completed/forfeited game cannot keep running behind the result.
     el.frame.removeAttribute('src');
     record.best=Math.max(record.best,state.clearCount);
@@ -187,11 +192,11 @@
       sdk('score',state.clearCount);
       sdk('milestone','survival_champion');
       sdk('result',{scope:'run',status:'completed',outcome:'win',score:state.clearCount,
-        roundsCleared:state.clearCount,roundsTotal:R.ROUNDS.length,elapsedMs:Date.now()-runStartedAt});
+        roundsCleared:state.clearCount,roundsTotal:R.ROUNDS.length,elapsedMs:activeRunMs});
     }else if(state.phase==='failed'){
       sdk('score',state.clearCount);
       sdk('result',{scope:'run',status:'failed',outcome:'loss',score:state.clearCount,
-        roundsCleared:state.clearCount,roundsTotal:R.ROUNDS.length,elapsedMs:Date.now()-runStartedAt});
+        roundsCleared:state.clearCount,roundsTotal:R.ROUNDS.length,elapsedMs:activeRunMs});
     }else if(state.clearCount===1){
       sdk('milestone','first_survival_round');
     }
