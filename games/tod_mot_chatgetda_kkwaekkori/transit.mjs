@@ -14,11 +14,11 @@ export function createTransit(town,getBlockCenter,blockPitch){
   const bus={position:{x:stations[0].x,z:stations[0].z},heading:0,
     phase:'stopped',stopIndex:0,targetIndex:1,dwellUntil:4.5,
     route:[],routeIndex:0,rider:null};
-  return {stations,bus,boarded:0,alighted:0,arrivals:0,recent:[]};
+  return {stations,bus,pitch:blockPitch,boarded:0,alighted:0,arrivals:0,recent:[]};
 }
 function routeOnRoads(town,from,to){
   const {rows}=town.config;
-  const blockPitch=7;
+  const blockPitch=town.transit.pitch;
   const roadRow=Math.max(0,Math.min(rows-2,Math.min(from.block.row,to.block.row)));
   const zRoad=(roadRow+.5-(rows-1)/2)*blockPitch;
   const raw=from.x===to.x?[{x:to.x,z:to.z}]:
