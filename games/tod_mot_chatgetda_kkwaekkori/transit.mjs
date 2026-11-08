@@ -49,6 +49,12 @@ function startBoarding(town,station){
   bus.rider=p.id;
   bus.dwellUntil=Math.max(bus.dwellUntil,town.time+SHUTTLE.doorSeconds+1);
 }
+function distanceToApproach(point,from,to){
+  const dx=to.x-from.x,dz=to.z-from.z;
+  const length2=dx*dx+dz*dz;
+  const ratio=length2?Math.max(0,Math.min(1,((point.x-from.x)*dx+(point.z-from.z)*dz)/length2)):0;
+  return Math.hypot(point.x-from.x-dx*ratio,point.z-from.z-dz*ratio);
+}
 function startAlighting(town,station){
   const service=town.transit,bus=service.bus;
   const p=town.people.find(p=>p.id===bus.rider);
@@ -56,6 +62,11 @@ function startAlighting(town,station){
   const dock=town.paths.slots.find(s=>s.block.id===station.block.id&&s.index===station.dock);
   if(!dock||town.paths.occupied.has(dock.id))return;
   const node=town.paths.nodes.get(dock.id);
+  // Do not begin crossing the sidewalk while another walker is already
+  // entering the vehicle-to-bay approach. This prevents mutual yield locks.
+  const target={x:node.x,z:node.z};
+  if(town.people.some(q=>q!==p&&q.state==='walking'&&
+    distanceToApproach(q.position,bus.position,target)<1.55))return;
   const duration=Math.max(1.6,Math.hypot(node.x-bus.position.x,node.z-bus.position.z)/1.5);
   p.transit={...p.transit,phase:'alighting',start:{...bus.position},
     goal:{x:node.x,z:node.z},duration,progress:0};
