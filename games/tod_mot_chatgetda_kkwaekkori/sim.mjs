@@ -1,4 +1,6 @@
 // Seeded, renderer-independent town activities and fair observation puzzles.
+import { createTransit, stepTransit, shuttleDoorLaneBusy } from './transit.mjs';
+import { createTraffic, stepTraffic, pedestrianTrafficGuard } from './traffic.mjs';
 export const WORLD_VERSION = 3;
 export const BLOCK_PITCH = 7;
 // Critter Catchin' inspired optional arcade pacing; the untimed town mode is unchanged.
@@ -60,13 +62,14 @@ export const CITY_GEOMETRY = Object.freeze({
 });
 export function getRoutePosition(person){return {...person.position};}
 export function getVisualActivity(person){
+  if(!person.reserved&&['boarding','alighting'].includes(person.state))return 'wait';
   if(!person.reserved&&person.errand?.phase==='eating')return 'eat';
   if(!person.reserved&&person.errand?.phase==='carrying')return 'deliver';
   return person.activity;
 }
 export function getPose(person){
   const activity=getVisualActivity(person);
-  return person.state==='walking'?'walk':person.socialWith&&!person.reserved?'interact-right':
+  return ['walking','boarding','alighting'].includes(person.state)?'walk':person.socialWith&&!person.reserved?'interact-right':
     activity==='deliver'?'holding-both':ACTIVITIES.find(a=>a.id===activity).clip;
 }
 
@@ -258,7 +261,7 @@ export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=t
     // Delivery starts before the longer browsing/resting activities reserve the
     // shared corridors. Keep one RNG draw per resident so saved appearances stay stable.
     const person={id:`person-${i}`,block,slot,...look,activity,action:activity,elapsed:0,routineAt:activity==='deliver'?.8+random():3+random()*9,reserved:false,found:false,
-      challengeSpeed:challenge?.speed||0,phase:i*2.39996+(seed%19)*.37,socialWith:null,socialUntil:0,nextGreetingAt:4+(i%7)*.9+(seed%7)*.2,greetings:0,errand:null,nextShopAt:0};
+      challengeSpeed:challenge?.speed||0,phase:i*2.39996+(seed%19)*.37,socialWith:null,socialUntil:0,nextGreetingAt:4+(i%7)*.9+(seed%7)*.2,greetings:0,errand:null,nextShopAt:0,transit:null,nextBusAt:0};
     used.add(signature(person));return person;
   });
   const paths=makePaths(blocks,config);
@@ -272,7 +275,9 @@ export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=t
   const town={stageName,config,seed,difficulty,challenge:!!challenge,blocks,people,paths,order:[],time:0};
   town.greetingCount=0;town.lastGreetingPulse=-1;
   town.commerce={visits:0,purchases:0,meals:0,deliveries:0,completed:0,recent:[]};
-  if(autoSelect)selectTargets(town,people.map(p=>p.id));return town;
+  if(autoSelect)selectTargets(town,people.map(p=>p.id));
+  town.traffic=town.challenge?null:createTraffic(town,getStreetPlan(town),BLOCK_PITCH);
+  town.transit=createTransit(town,getBlockCenter,BLOCK_PITCH);return town;
 }
 export function selectTargets(town,eligibleIds,previous=[]){
   const eligible=new Set(eligibleIds),random=createRng(town.seed^0x51fa77);
@@ -344,8 +349,8 @@ function greetNeighbors(town){
   let activePairs=town.people.filter(p=>p.socialWith).length/2;
   if(activePairs>=maxPairs)return;
   for(const p of town.people){
-    if(p.reserved||p.found||p.state!=='acting'||p.socialWith||p.errand||p.elapsed<p.nextGreetingAt||p.elapsed>=p.routineAt||occupied.has(p.block.id))continue;
-    const companion=town.people.find(q=>q!==p&&!q.reserved&&!q.found&&!q.errand&&q.state==='acting'&&!q.socialWith&&q.block.id===p.block.id&&q.elapsed>=q.nextGreetingAt&&q.elapsed<q.routineAt&&
+    if(p.reserved||p.found||p.state!=='acting'||p.socialWith||p.errand||p.transit||p.elapsed<p.nextGreetingAt||p.elapsed>=p.routineAt||occupied.has(p.block.id))continue;
+    const companion=town.people.find(q=>q!==p&&!q.reserved&&!q.found&&!q.errand&&!q.transit&&q.state==='acting'&&!q.socialWith&&q.block.id===p.block.id&&q.elapsed>=q.nextGreetingAt&&q.elapsed<q.routineAt&&
       Math.hypot(q.position.x-p.position.x,q.position.z-p.position.z)<=1.5);
     if(!companion)continue;
     const until=town.time+2.4;
@@ -367,6 +372,7 @@ export function movePeople(town,deltaSeconds){
   const people=[...town.people.slice(offset),...town.people.slice(0,offset)].sort((a,b)=>a.trips-b.trips);
   for(const p of people){
     p.elapsed+=dt;
+    if(p.transit)continue;
     if(p.state!=='walking'){
       if(p.socialWith){
         if(town.time<p.socialUntil)continue;
@@ -393,8 +399,13 @@ export function movePeople(town,deltaSeconds){
     const dx=node.x-p.position.x,dz=node.z-p.position.z,distance=Math.hypot(dx,dz);
     const step=Math.min(distance,dt*getWalkingSpeed(p));
     const next=distance?{x:p.position.x+dx/distance*step,z:p.position.z+dz/distance*step}:{...p.position};
+    // A bus door approach is a brief crossing: walkers enter only after
+    // the door closes, avoiding face-to-face deadlock with boarding citizens.
+    if(shuttleDoorLaneBusy(town,next)||pedestrianTrafficGuard(town,p,next)){
+      p.waiting+=dt;continue;
+    }
     const blocked=town.people.some(q=>{
-      if(q.id===p.id)return false;
+      if(q.id===p.id||q.state==='riding')return false;
       const before=Math.hypot(p.position.x-q.position.x,p.position.z-q.position.z);
       const after=Math.hypot(next.x-q.position.x,next.z-q.position.z);
       return after<WALK.clearance&&after<before-1e-7;
@@ -409,6 +420,8 @@ export function movePeople(town,deltaSeconds){
     }
   }
   greetNeighbors(town);
+  stepTransit(town,dt,WALK.clearance,safeActivity);
+  stepTraffic(town,dt);
 }
 export function getClue(person,difficulty='easy'){
   if(!person)return null;const a=ACTIVITIES.find(a=>a.id===person.activity),prop=a.props[person.propVariant];
