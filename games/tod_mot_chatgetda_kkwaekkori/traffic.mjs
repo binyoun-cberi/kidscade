@@ -60,34 +60,47 @@ export function reserveBusRoad(town,route,origin){
 export function releaseBusRoad(town){
   if(town.traffic)town.traffic.busHoldZ=null;
 }
+// Only pedestrians on a REAL zebra crossing are traffic participants.
+// Sidewalk walkers parallel to the road must not freeze cars indefinitely.
+function zebraAt(town,car,x){
+  return town.traffic.crossings.find(c=>c.axis==='z'&&
+    Math.abs(c.z-car.zRoad)<1&&Math.abs(c.x-x)<2);
+}
 function pedestrianInCarPath(town,car,next){
-  const nearCrosswalk=town.traffic.crossings.some(c=>c.axis==='z'&&
-    Math.abs(c.z-car.zRoad)<1&&
-    Math.abs(c.x-next.x)<2.2);
-  if(!nearCrosswalk)return false;
+  const crossing=zebraAt(town,car,next.x);
+  if(!crossing)return false;
+  const carCommitted=Math.abs(car.position.x-crossing.x)<.78;
   return town.people.some(p=>{
-    if(p.state!=='walking')return false;
-    if(Math.abs(p.position.x-next.x)>1.65)return false;
-    const closeRoad=Math.abs(p.position.z-car.zRoad);
-    const carInsideCrosswalk=town.traffic.crossings.some(c=>c.axis==='z'&&
-      Math.abs(c.z-car.zRoad)<1&&Math.abs(car.position.x-c.x)<.8);
-    // A vehicle already inside its zebra crossing clears it first; walkers
-    // are held at the curb by pedestrianTrafficGuard below.
-    return closeRoad<.8||(!carInsideCrosswalk&&closeRoad<1.65);
+    if(p.state!=='walking'||Math.abs(p.position.x-crossing.x)>.22)return false;
+    const to=town.paths.nodes.get(p.route[0]);
+    if(!to||Math.abs(to.x-p.position.x)>.22)return false;
+    const distanceFromRoad=Math.abs(p.position.z-car.zRoad);
+    // Once a car owns a crossing, an approaching pedestrian waits at
+    // its curb. If someone is already *on* the road, the car yields.
+    return distanceFromRoad<.7||(!carCommitted&&distanceFromRoad<1.5);
   });
 }
 export function pedestrianTrafficGuard(town,person,next){
   const traffic=town.traffic;
   if(!traffic||person.state!=='walking')return false;
+  const node=town.paths.nodes.get(person.route[0]);
+  if(!node||Math.abs(node.x-person.position.x)>.2||
+    Math.abs(next.x-person.position.x)>.2)return false;
   for(const car of traffic.cars){
-    if(Math.abs(car.position.x-next.x)>1.25)continue;
-    const before=Math.abs(person.position.z-car.zRoad),after=Math.abs(next.z-car.zRoad);
-    if(after<1.1&&before>=.7&&Math.abs(car.position.z-next.z)<1.25){
+    const crossing=zebraAt(town,car,car.position.x);
+    if(!crossing||Math.abs(crossing.x-person.position.x)>.18)continue;
+    if(Math.abs(car.position.x-crossing.x)>.9)continue;
+    // Pedestrians already on the road keep crossing. The car will
+    // yield to them; only new curb entries wait for a passing vehicle.
+    const before=Math.abs(person.position.z-car.zRoad);
+    const after=Math.abs(next.z-car.zRoad);
+    if(before>=.72&&after<before){
       traffic.pedestrianYields++;return true;
     }
   }
   return false;
 }
+
 export function stepTraffic(town,dt){
   const traffic=town.traffic;if(!traffic||!dt)return;
   for(const car of traffic.cars){
