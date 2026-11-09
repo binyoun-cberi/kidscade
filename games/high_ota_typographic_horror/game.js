@@ -23,7 +23,7 @@ const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
   literacy:el('literacyStatus'),pollution:el('pollutionFill'),route:el('routeStatus'),
   clock:el('runClock'),enemy:el('enemyWarning'),void:el('voidPulse') };
 const overlays = { intro:el('intro'), fix:el('fixPanel'), correction:el('correctionPanel'),
-  rewrite:el('rewritePanel'),sentence:el('sentencePanel'),ending:el('ending') };
+  rewrite:el('rewritePanel'),sentence:el('sentencePanel'),mazeChoice:el('mazeChoice'),ending:el('ending') };
 const auditQuery=new URLSearchParams(location.search);
 const visualAudit=auditQuery.has('visual-audit');
 const mazeVisualAudit=auditQuery.get('visual-audit')==='maze';
@@ -46,6 +46,7 @@ const wayfindingSigns=[];
 const architectureMeshes=[],architectureErrors=[],architectureLights=[];
 const calligramObjects=[],calligramById=new Map();
 let rewriteWallPlug=null,rewriteDoorBlock=null,rewriteWallWord=null,rewriteCeilingWord=null;
+let rewriteWindowFrame=null,rewriteWindowClue=null;
 let rewriteLight=null,rewriteLightPool=null,rewriteGlow=null,rewriteBulb=null;
 const rewriteRays=[];
 let apparitionAnchor=null,apparitionNumber=-1;
@@ -375,6 +376,21 @@ function buildRewriteWorld(){
   const w=RW.WALL,l=RW.LIGHT;
   rewriteWallWord=label('벽','#a5b2bd',w.x+.155,1.65,w.z,0,Math.PI/2,1.32,.62);
   rewriteWallWord.material=rewriteWallWord.material.clone();
+  // A translucent pane lets the player scout the annex but remains solid to movement.
+  // It reuses the authored wall slot; no arbitrary walls become passable.
+  const glassFrameMaterial=new THREE.MeshBasicMaterial({color:0x9ddadd});
+  rewriteWindowFrame=new THREE.Group();
+  for(const [y,z,height,depth] of [
+    [0,-.97,2.50,.11],[0,.97,2.50,.11],
+    [1.19,0,.12,2.05],[-1.19,0,.12,2.05],[0,0,2.36,.055]
+  ]){
+    const panePart=new THREE.Mesh(new THREE.BoxGeometry(.10,height,depth),glassFrameMaterial);
+    panePart.position.set(0,y,z);rewriteWindowFrame.add(panePart);
+  }
+  rewriteWindowFrame.position.set(w.x+.20,1.62,w.z);rewriteWindowFrame.visible=false;
+  scene.add(rewriteWindowFrame);
+  rewriteWindowClue=label('안쪽의 기록','#b5e4ce',w.x-.22,1.75,w.z,0,Math.PI/2,1.75,.53);
+  rewriteWindowClue.visible=false;
   rewriteCeilingWord=label('천장','#a3a8b2',l.x,3.10,l.z,Math.PI/2,0,1.46,.62);
   rewriteCeilingWord.material=rewriteCeilingWord.material.clone();
   rewriteLight=new THREE.PointLight(0xffcd63,0,8.0,2);
@@ -411,11 +427,15 @@ function buildRewriteWorld(){
 function updateRewriteWorld(t){
   if(!rewriteWallPlug)return;
   rewriteWallPlug.visible=!rewrite.doorMade;
+  rewriteWallPlug.material.opacity=rewrite.windowMade?.12:1;
+  rewriteWindowFrame.visible=state.stage==='explore'&&rewrite.windowMade;
+  rewriteWindowClue.visible=state.stage==='explore'&&rewrite.windowMade&&
+    R.distance(player,RW.WALL)<6.5;
   rewriteDoorBlock.visible=rewrite.doorMade&&!rewrite.doorOpen;
   rewriteWallWord.visible=state.stage==='explore'&&
     R.distance(player,RW.WALL)<8.5;
-  rewriteWallWord.material.map=material(rewrite.doorMade?'문':'벽',
-    rewrite.doorMade?'#e9bd8d':'#a5b2bd').map;
+  rewriteWallWord.material.map=material(rewrite.doorMade?'문':rewrite.windowMade?'창문':'벽',
+    rewrite.doorMade?'#e9bd8d':rewrite.windowMade?'#a8e1e0':'#a5b2bd').map;
   rewriteWallWord.material.needsUpdate=true;
   rewriteCeilingWord.visible=state.stage==='explore'&&R.distance(player,RW.LIGHT)<9;
   rewriteCeilingWord.material.map=material(rewrite.lightOn?'조명':'천장',
@@ -444,12 +464,12 @@ function openRewrite(site){
   overlays.rewrite.dataset.site=site;
   const wall=site==='wall',on=wall?rewrite.doorMade:rewrite.lightOn;
   el('rewriteTitle').textContent=wall?'벽에 이름 쓰기':'천장에 이름 쓰기';
-  el('rewriteCurrent').textContent=wall?(rewrite.doorMade?'문':'벽'):(rewrite.lightOn?'조명':'천장');
+  el('rewriteCurrent').textContent=wall?(rewrite.doorMade?'문':rewrite.windowMade?'창문':'벽'):(rewrite.lightOn?'조명':'천장');
   el('rewriteDescription').textContent=wall?
-    '「문」이라고 쓰면 벽이 실제 문으로 바뀝니다. 「벽」이라고 쓰면 복원됩니다.':
+    '「문」은 지나갈 수 있고, 「창문」은 안쪽 기록을 볼 수 있지만 통과할 수 없습니다. 「벽」은 길을 막습니다.':
     '「조명」이라고 쓰면 노란빛이 켜지고, 「천장」이라고 쓰면 다시 어두워집니다.';
   el('rewriteInput').value='';
-  el('rewriteInput').placeholder=wall?'문 또는 벽':'조명 또는 천장';
+  el('rewriteInput').placeholder=wall?'문 · 창문 · 벽':'조명 또는 천장';
   el('rewriteFeedback').textContent='글자가 바뀌면 물체의 기능도 바뀝니다.';
   const toggle=el('rewriteToggle');
   toggle.hidden=!on;
@@ -474,6 +494,7 @@ function submitRewrite(){
     if(obj)obj.progress=rewrite.doorOpen?0:1;
     tone(294,.13,'triangle',.055);tone(440,.28,'sine',.05);
     announce(rewrite.doorMade?'「벽」이 「문」으로! 이제 실제로 지나갈 수 있습니다.':
+      rewrite.windowMade?'「벽」이 「창문」으로! 안쪽 기록은 보이지만 지나갈 수 없습니다.':
       '「문」이 다시 「벽」이 되었습니다. 통행이 막혔습니다.',false,3.4);
   }else{
     tone(rewrite.lightOn?523:160,.28,rewrite.lightOn?'sine':'triangle',.056);
@@ -512,6 +533,9 @@ function scenery() {
       box(.22,3.26,1.30,x,1.61,-50.10,wallMat);
       box(.22,3.26,14.30,x,1.61,-60.40,wallMat);
       rewriteWallPlug=box(.22,3.26,2.50,x,1.61,-52.0,wallMat);
+      rewriteWallPlug.material=wallMat.clone();
+      rewriteWallPlug.material.transparent=true;
+      rewriteWallPlug.material.depthWrite=false;
       rewriteDoorBlock=box(.18,2.65,2.04,x-.18,1.33,-52.0,wallMat);
       rewriteDoorBlock.visible=false;
     }else box(.22,3.26,18.1,x,1.61,-58.5,wallMat);
@@ -927,7 +951,9 @@ function saveChapterCheckpoint(){
   data.inMaze=state.stage==='maze';
   if(data.inMaze){data.maze=M.snapshot(maze);data.mazePosition={x:player.x,z:player.z};}
   data.run={mode:'story',seed:run.seed};
-  try{sessionStorage.setItem(CHECKPOINT_KEY,JSON.stringify(data));}catch(_){}
+  const value=JSON.stringify(data);
+  try{sessionStorage.setItem(CHECKPOINT_KEY,value);}catch(_){}
+  try{localStorage.setItem(CHECKPOINT_KEY,value);}catch(_){}
 }
 function clearLiteracyVisuals(){
   for(const visual of literacyMeshes.values()){
@@ -1071,7 +1097,20 @@ function submitSentence(){
   hud.objective.textContent=C3.objective(state);
 }
 function loadChapterCheckpoint(){
-  try{const raw=sessionStorage.getItem(CHECKPOINT_KEY);return raw?JSON.parse(raw):null;}catch(_){return null;}
+  // Persistent backup survives a closed tab. Session checkpoints remain the first choice.
+  for(const name of ['sessionStorage','localStorage']){
+    try{
+      const raw=window[name].getItem(CHECKPOINT_KEY);
+      if(!raw)continue;
+      const saved=JSON.parse(raw);
+      if(saved?.version===3&&saved.literacy&&saved.run?.mode==='story')return saved;
+    }catch(_){}
+  }
+  return null;
+}
+function clearChapterCheckpoint(){
+  try{sessionStorage.removeItem(CHECKPOINT_KEY);}catch(_){}
+  try{localStorage.removeItem(CHECKPOINT_KEY);}catch(_){}
 }
 function respawnAtCheckpoint(){
   const data=loadChapterCheckpoint();
@@ -1095,6 +1134,7 @@ function respawnAtCheckpoint(){
   mazeHunter=M.createHunter(maze);lastMazeHunterPhase='quiet';lastMazeCell=-1;
   buildMazeWorld();
   failed=false;X.reset(corrector);soundPulse=0;closeCorrection();closeSentence();
+  overlays.mazeChoice.classList.add('closed');
   for(const fx of repairEffects){fx.shards.forEach(m=>scene.remove(m));scene.remove(fx.result);}
   repairEffects.length=0;apparitionAnchor=null;apparitionNumber=-1;
   overlays.ending.classList.add('closed');overlays.fix.classList.add('closed');
@@ -1259,7 +1299,7 @@ function updateStage(stage,old) {
 }
 function syncStage(before) {updateStage(state.stage,before);}
 function interact() {
-  if(!started || failed || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')||!overlays.rewrite.classList.contains('closed')||!overlays.sentence.classList.contains('closed')) return;
+  if(!started || failed || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')||!overlays.rewrite.classList.contains('closed')||!overlays.sentence.classList.contains('closed')||!overlays.mazeChoice.classList.contains('closed')) return;
   if(state.stage==='maze'){
     const action=M.action(maze,player);
     if(!action)return;
@@ -1384,9 +1424,12 @@ function finish(won) {
       speedText=' · '+(seconds<old?'이번 주 개인 최고 기록!':'이번 주 개인 최고 '+formatTime(old));
     }catch(_){speedText='';}
   }
+  const mazeResult=won&&run.mode==='story'&&maze.solved.every(v=>!v)?
+    '색인 미로는 선택하여 생략':'색인 미로 '+maze.solved.filter(Boolean).length+'/3';
   el('endingText').textContent=won
-    ?'기록 A·B · 핵심 오타 '+literacy.coreDone+'/5 · 색인 미로 '+maze.solved.filter(Boolean).length+'/3 · 문장 기록 '+(expansion.fragments.west+expansion.fragments.east)+'/2 · 교정 '+literacy.corrected+'회 · '+formatTime(seconds)+(expansion.bonus?' · 두 열람실 완전 복구!':'')+speedText
+    ?'기록 A·B · 핵심 오타 '+literacy.coreDone+'/5 · '+mazeResult+' · 문장 기록 '+(expansion.fragments.west+expansion.fragments.east)+'/2 · 교정 '+literacy.corrected+'회 · '+formatTime(seconds)+(expansion.bonus?' · 두 열람실 완전 복구!':'')+speedText
     :failure.title+' '+failure.detail+(run.mode==='speedrun'?' · '+formatTime(seconds):'');
+  if(won)clearChapterCheckpoint();
   el('respawn').hidden=run.mode==='speedrun'||!(!won&&Boolean(loadChapterCheckpoint()));
   if(!visualAudit)try {window.KidscadeGame?.result?.({scope:'stage',status:won?'completed':'failed',
     outcome:won?'clear':'fail',id:run.mode==='speedrun'?'ota-weekly-speedrun':'ota-prologue',
@@ -1430,6 +1473,13 @@ function tryMove(dx,dz) {
     if(pass(player.x,nz))player.z=nz;
   }
 }
+function enterMaze(){
+  overlays.mazeChoice.classList.add('closed');
+  state.stage='maze';
+  const entry=M.center(0);
+  Object.assign(player,{x:entry.x,z:entry.z,yaw:M.entryYaw(maze),pitch:0,moving:false});
+  M.enter(maze,player);lastMazeCell=0;
+}
 function update(dt) {
   elapsed+=dt;
   const before=state.stage;
@@ -1458,9 +1508,13 @@ function update(dt) {
   if(state.stage==='exit')C3.startChapter(state,player);
   if(state.stage==='final'&&player.z< -63.3){
     if(visualAudit)C3.finish(state,player); // Legacy chapter-3 browser audit still verifies its own ending.
-    else {state.stage='maze';const entry=M.center(0);
-    Object.assign(player,{x:entry.x,z:entry.z,yaw:M.entryYaw(maze),pitch:0});
-    M.enter(maze,player);lastMazeCell=0;}
+    else if(run.mode==='story'){
+      // Offer the optional maze only after the normal story's finale.
+      player.moving=false;keys.clear();mobileRun=false;
+      overlays.mazeChoice.classList.remove('closed');
+      if(document.pointerLockElement===canvas)document.exitPointerLock?.();
+      return; // The choice freezes the final pursuer before the same frame can advance.
+    }else enterMaze();
   }
   if(state.stage==='maze'){
     const cell=M.current(player),firstVisit=cell>=0&&!maze.visited[cell];
@@ -1682,7 +1736,7 @@ function update(dt) {
   updatePrompt();syncHintScope();
 }
 function look(dx,dy) {
-  if(state.hidden || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')||!overlays.rewrite.classList.contains('closed')||!overlays.sentence.classList.contains('closed'))return;
+  if(state.hidden || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')||!overlays.rewrite.classList.contains('closed')||!overlays.sentence.classList.contains('closed')||!overlays.mazeChoice.classList.contains('closed'))return;
   player.yaw-=dx*.0036;
   player.pitch=Math.max(-.76,Math.min(.76,player.pitch-dy*.0031));
 }
@@ -1693,7 +1747,7 @@ function animate(now) {
   if(started&&!failed&&run.mode==='speedrun'){
     hud.clock.textContent='기록 '+formatTime((Date.now()-run.startedAt)/1000)+' · '+run.week;
   }
-  if(started && !failed && document.visibilityState!=='hidden' && overlays.fix.classList.contains('closed')&&overlays.correction.classList.contains('closed')&&overlays.rewrite.classList.contains('closed')&&overlays.sentence.classList.contains('closed')){
+  if(started && !failed && document.visibilityState!=='hidden' && overlays.fix.classList.contains('closed')&&overlays.correction.classList.contains('closed')&&overlays.rewrite.classList.contains('closed')&&overlays.sentence.classList.contains('closed')&&overlays.mazeChoice.classList.contains('closed')){
     // Hiding is a real-time wait; weak tablets must not require 20 seconds for 4.5 seconds of cover.
     // Chase movement remains bounded to short delta steps to prevent collision tunnelling.
     if(state.stage==='hiding')state.hidingSeconds+=Math.max(0,realDt-dt);
@@ -1746,12 +1800,21 @@ el('modeSelect').querySelectorAll('button').forEach(button=>{
 });
 try{selectMode(sessionStorage.getItem('kidscade-ota-mode'));}catch(_){selectMode('story');}
 el('start').addEventListener('click',()=>{
-  try{sessionStorage.removeItem(CHECKPOINT_KEY);}catch(_){}
+  clearChapterCheckpoint();
   begin();
 });
 el('resume').addEventListener('click',()=>{run.mode='story';begin();respawnAtCheckpoint();});
-el('replay').addEventListener('click',()=>{try{sessionStorage.removeItem(CHECKPOINT_KEY);}catch(_){}location.reload();});
+el('replay').addEventListener('click',()=>{clearChapterCheckpoint();location.reload();});
 el('respawn').addEventListener('click',()=>{if(!respawnAtCheckpoint())location.reload();});
+el('mazeContinue').addEventListener('click',()=>{
+  const before=state.stage;enterMaze();syncStage(before);
+  announce('찢어진 색인 세 조각을 복구하고 마지막 기록을 찾으세요.',false,4.5);
+});
+el('mazeFinish').addEventListener('click',()=>{
+  const before=state.stage;
+  overlays.mazeChoice.classList.add('closed');
+  state.stage='won';state.finished=true;syncStage(before);
+});
 el('mute').addEventListener('click',()=>{
   muted=!muted;el('mute').textContent=muted?'소리 꺼짐':'소리 켜짐';
 });

@@ -36,7 +36,7 @@ test('not every wall becomes magically permeable',()=>{
 });
 test('naming is literal and collision cannot close on the player',()=>{
   const s=W.create();
-  assert.equal(W.write(s,'wall','창문').ok,false);
+  assert.equal(W.write(s,'wall','나무').ok,false);
   assert.equal(W.write(s,'ceiling','문').ok,false);
   assert.equal(W.normalize(' 조 명 '),'조명');
   W.write(s,'wall',' 문 ');
@@ -70,6 +70,29 @@ test('checkpoint restores door, light and closed/open state',()=>{
   assert.deepEqual(restored,first);
   assert.equal(W.restore(restored,{v:9}),false);
   assert.equal(restored.lightOn,false);
+});
+test('창문 is a physical transparent lookout, never an unintended passage',()=>{
+  const state=W.create();
+  const original=(x,z)=>C3.canMove({stage:'explore'},x,z);
+  assert.deepEqual(W.write(state,'wall','창문',{x:-1.5,z:-52}),
+    {ok:true,kind:'창문',action:'revealed'});
+  assert.equal(state.windowMade,true);
+  assert.equal(state.doorMade,false);
+  assert.equal(W.canMove(state,-3.35,-52,original),false,'a window is not an open door');
+  assert.match(W.target(state,{x:-1.5,z:-52,yaw:Math.PI/2}).label,/창문/);
+  const saved=W.checkpoint(state),resume=W.create();
+  assert.equal(W.restore(resume,saved),true);
+  assert.deepEqual(resume,state,'window survives a new browsing session');
+  W.write(resume,'wall','문',{x:-1.5,z:-52});
+  assert.equal(resume.windowMade,false);
+  assert.equal(W.canMove(resume,-3.35,-52,original),true);
+});
+test('v1 checkpoint remains loadable and writing cannot close a window over the player',()=>{
+  const restored=W.create();
+  assert.equal(W.restore(restored,{v:1,doorMade:true,doorOpen:true,lightOn:true,changes:2}),true);
+  assert.equal(restored.windowMade,false);
+  assert.equal(W.write(restored,'wall','창문',{x:-3.35,z:-52}).reason,'occupied');
+  assert.equal(restored.doorOpen,true);
 });
 test('visual game actually uses authored geometry, light, input and checkpoints',()=>{
   const game=fs.readFileSync(path.join(ROOT,'game.js'),'utf8');
