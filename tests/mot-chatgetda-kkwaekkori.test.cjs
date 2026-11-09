@@ -182,7 +182,7 @@ test('3D picking, honest prop fallbacks and rotated-camera ground dragging are p
   assert.match(code,/challengeLevel\+1/);
   assert.match(code,/finishChallenge\(/);
   assert.match(html,/20초 연속 찾기 도전/);
-  assert.match(code,/sim\.mjs\?v=11/);
+  assert.match(code,/sim\.mjs\?v=12/);
   assert.match(code,/pinchCenter/);
   assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
 });
@@ -545,4 +545,91 @@ test('three-dimensional shuttle is placed by the simulation and excludes onboard
   for(const snippet of ['routeBus:true','real-bus-platform','bus-door-ready',
     "mesh.holder.visible=p.state!=='riding'", "person.state==='riding'"])assert.ok(code.includes(snippet),snippet);
   assert.match(code,/const bus=town\.transit\.bus/);
+});
+
+test('traffic signals use the exact town-road intersections and alternate right of way',async()=>{
+  const {makeTown,getStreetPlan,BLOCK_PITCH}=await simPromise;
+  const {trafficPhase,trafficLightAllows,TRAFFIC_RULES}=await import(
+    pathToFileURL(path.join(dir,'traffic.mjs')).href);
+  for(const [stage,count] of [['small',1],['medium',2],['large',3]]){
+    const town=makeTown(stage,42,'normal');
+    const traffic=town.traffic,roads=getStreetPlan(town).roads;
+    assert.ok(traffic);
+    assert.equal(traffic.cars.length,count);
+    assert.equal(traffic.junctions.length,(town.config.cols-1)*(town.config.rows-1));
+    assert.equal(traffic.crossings.length,getStreetPlan(town).crossings.length);
+    for(const car of traffic.cars){
+      assert.ok(roads.some(r=>r.axis==='x'&&Math.abs(car.position.z-r.z)<1e-8),
+        'actual cars travel inside real horizontal roads');
+    }
+    const joint=traffic.junctions[0];
+    const before={x:joint.x-3,z:joint.z},enter={x:joint.x-2.7,z:joint.z};
+    town.time=0;assert.equal(trafficPhase(town),'horizontal');
+    assert.ok(trafficLightAllows(town,before,enter,'horizontal'));
+    town.time=6.5;assert.equal(trafficPhase(town),'all-red');
+    assert.equal(trafficLightAllows(town,before,enter,'horizontal'),false);
+    town.time=10;assert.equal(trafficPhase(town),'vertical');
+    assert.equal(trafficLightAllows(town,before,enter,'horizontal'),false);
+    assert.ok(trafficLightAllows(town,before,enter,'vertical'));
+    assert.ok(TRAFFIC_RULES.stopLine>2.5,'signals stop BEFORE pedestrian zebras');
+    town.time=0;
+    for(const joint of traffic.junctions){
+      const xs=Array.from({length:town.config.cols-1},(_,i)=>
+        (i+.5-(town.config.cols-1)/2)*BLOCK_PITCH);
+      assert.ok(xs.some(x=>Math.abs(x-joint.x)<1e-8));
+    }
+  }
+});
+test('traffic cars yield at real zebras and never block walkers or overlap the shuttle',async()=>{
+  const {makeTown,movePeople,WALK,signature}=await simPromise;
+  const {trafficPhase}=await import(pathToFileURL(path.join(dir,'traffic.mjs')).href);
+  for(const stage of ['small','medium','large'])for(const seed of [42,812,1441]){
+    const town=makeTown(stage,seed,'normal'),phases=new Set();
+    const looks=town.order.map(id=>[id,signature(town.people.find(p=>p.id===id))]);
+    let carMovement=0,minCarPed=Infinity,minBusCar=Infinity,maxWaiting=0;
+    let before=new Map(town.traffic.cars.map(c=>[c.id,{...c.position}]));
+    for(let tick=0;tick<1200;tick++){
+      movePeople(town,.2);phases.add(trafficPhase(town));
+      for(const car of town.traffic.cars){
+        const old=before.get(car.id);
+        const jump=Math.hypot(car.position.x-old.x,car.position.z-old.z);
+        // Respawn happens only after leaving the far outside greenbelt.
+        if(jump>1.0)assert.ok(Math.abs(old.x)>town.config.cols*7/2+2,
+          'car may not jump between inhabited blocks');
+        else carMovement+=jump;
+        before.set(car.id,{...car.position});
+        minBusCar=Math.min(minBusCar,Math.hypot(
+          car.position.x-town.transit.bus.position.x,
+          car.position.z-town.transit.bus.position.z));
+        for(const p of town.people){
+          if(p.state!=='walking')continue;
+          minCarPed=Math.min(minCarPed,Math.hypot(
+            p.position.x-car.position.x,p.position.z-car.position.z));
+        }
+      }
+      for(const p of town.people)maxWaiting=Math.max(maxWaiting,p.waiting);
+    }
+    assert.ok(carMovement>25,'ordinary cars must really travel, not spin in place');
+    assert.ok(phases.has('horizontal')&&phases.has('vertical')&&phases.has('all-red'));
+    assert.ok(minCarPed>=WALK.clearance-1e-6,'cars must clear real walking residents');
+    assert.ok(minBusCar>=1.7,'ordinary cars must clear the actual bus body');
+    assert.ok(maxWaiting<5,'road controls must not deadlock residents');
+    assert.ok(town.traffic.lightStops>0,'red lights must stop real cars');
+    assert.ok(town.traffic.vehicleYields>0,'real pedestrians must receive priority');
+    for(const [id,look] of looks)assert.equal(
+      signature(town.people.find(p=>p.id===id)),look,'traffic must not change target clues');
+  }
+});
+test('signalized road props remain outside target-raycasting and challenges keep old cars',async()=>{
+  const {makeTown,getChallengeSettings,movePeople}=await simPromise;
+  for(const token of ['city-live-traffic-light','trafficHeads',
+    'roadCar.position.x','car.simCar','trafficPhase(town)'])
+    assert.ok(code.includes(token),token);
+  assert.match(code,/ray\.intersectObjects\(citizens\.children,true\)/);
+  const challenge=getChallengeSettings(12);
+  const town=makeTown(challenge.stageName,142,'hard',true,challenge);
+  for(let i=0;i<200;i++)movePeople(town,.1);
+  assert.equal(town.traffic,null);
+  assert.equal(town.transit,null);
+  assert.ok(town.people.every(p=>p.transit===null));
 });
