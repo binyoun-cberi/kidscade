@@ -12,4 +12,6 @@
 
 | `high_ota_typographic_horror` | 오타 — 이름을 잃어버린 밤 | [개선 이력](./high_ota_typographic_horror.md) | PR CI와 실제 Chrome 플레이, 창문 렌더링 검증 |
 
+| `squid_survival` | 꼴뚜기 게임 | [squid_survival.md](./squid_survival.md) | PR CI 확인, 6관문 모바일 플레이 검증 |
+
 작성법: [README](./README.md) · [템플릿](./TEMPLATE.md)
