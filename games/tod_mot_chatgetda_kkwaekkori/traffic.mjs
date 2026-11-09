@@ -75,9 +75,9 @@ function pedestrianInCarPath(town,car,next){
     const to=town.paths.nodes.get(p.route[0]);
     if(!to||Math.abs(to.x-p.position.x)>.22)return false;
     const distanceFromRoad=Math.abs(p.position.z-car.zRoad);
-    // Once a vehicle owns the zebra, it must clear it. New walkers
-    // wait at the curb. Walkers already crossing own the approach first.
-    return !carCommitted&&distanceFromRoad<1.8;
+    // Once a vehicle owns the zebra, curbside walkers wait. If a walker
+    // is already INSIDE the street, the car instead yields until clear.
+    return distanceFromRoad<.72||(!carCommitted&&distanceFromRoad<1.8);
   });
 }
 export function pedestrianTrafficGuard(town,person,next){
