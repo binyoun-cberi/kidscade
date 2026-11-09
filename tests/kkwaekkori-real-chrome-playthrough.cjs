@@ -106,6 +106,14 @@ let chrome,ws,profile,serverOpen=false,passed=0;
   assert.equal(smallStreets.shownCrossings,smallStreets.crossings);
   assert.equal(smallStreets.zebra,smallStreets.crossings*5);
   assert.ok(smallStreets.trees>=24,'the town should have a surrounding greenbelt');
+  // Follow the actual bus, not a decorative car. It must move on the same
+  // simulation coordinates while a background rider is hidden in the cabin.
+  const ridingBus=await wait("(()=>{const s=__KK_TEST__.transitSnapshot();return s.enabled&&s.stops>=2&&s.platforms===s.stops&&s.boarded>0&&s.phase==='driving'&&s.rider?.state==='riding'&&!s.rider.visible&&Math.hypot(s.bus[0]-s.model[0],s.bus[1]-s.model[1])<.025?s:null;})()",45000);
+  assert.equal(ridingBus.rider.reserved,false,'sought friend must remain on foot');
+  assert.ok(ridingBus.bus.every(Number.isFinite),'bus position must be real and finite');
+  const oldFocus=await evaluate("__KK_TEST__.focusBus()");
+  await screenshot('00-real-bus-with-passenger');passed++;
+  await evaluate("__KK_TEST__.restoreFocus("+JSON.stringify(oldFocus)+")");
   // The rendered traffic light must show the same permission that actually
   // stops simulation-driven cars; all signals are placed at true intersections.
   const initialTraffic=await evaluate("__KK_TEST__.trafficSnapshot()");
@@ -153,14 +161,6 @@ let chrome,ws,profile,serverOpen=false,passed=0;
   assert.equal(actualCarrier.reserved,false,'the shopper must never be a target or foil');
   assert.equal(actualCarrier.bread,actualCarrier.propVariant,'the exact bread model is carried');
   await screenshot('00-bakery-purchase-and-bag');passed++;
-  // Follow the actual bus, not a decorative car. It must move on the same
-  // simulation coordinates while a background rider is hidden in the cabin.
-  const ridingBus=await wait("(()=>{const s=__KK_TEST__.transitSnapshot();return s.enabled&&s.stops>=2&&s.platforms===s.stops&&s.boarded>0&&s.phase==='driving'&&s.rider?.state==='riding'&&!s.rider.visible&&Math.hypot(s.bus[0]-s.model[0],s.bus[1]-s.model[1])<.025?s:null;})()",45000);
-  assert.equal(ridingBus.rider.reserved,false,'sought friend must remain on foot');
-  assert.ok(ridingBus.bus.every(Number.isFinite),'bus position must be real and finite');
-  const oldFocus=await evaluate("__KK_TEST__.focusBus()");
-  await screenshot('00-real-bus-with-passenger');passed++;
-  await evaluate("__KK_TEST__.restoreFocus("+JSON.stringify(oldFocus)+")");
   await screenshot('00-visible-neighbor-greeting');passed++;
   await screenshot('01-desktop-existing-game');passed++;
   // Test direct controls through CDP input, not via game's internal pick function.
