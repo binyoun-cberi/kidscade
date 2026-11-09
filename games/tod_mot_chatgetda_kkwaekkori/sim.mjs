@@ -1,5 +1,6 @@
 // Seeded, renderer-independent town activities and fair observation puzzles.
 import { createTransit, stepTransit, shuttleDoorLaneBusy } from './transit.mjs';
+import { createTraffic, stepTraffic, pedestrianTrafficGuard } from './traffic.mjs';
 export const WORLD_VERSION = 3;
 export const BLOCK_PITCH = 7;
 // Critter Catchin' inspired optional arcade pacing; the untimed town mode is unchanged.
@@ -275,6 +276,7 @@ export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=t
   town.greetingCount=0;town.lastGreetingPulse=-1;
   town.commerce={visits:0,purchases:0,meals:0,deliveries:0,completed:0,recent:[]};
   if(autoSelect)selectTargets(town,people.map(p=>p.id));
+  town.traffic=town.challenge?null:createTraffic(town,getStreetPlan(town),BLOCK_PITCH);
   town.transit=createTransit(town,getBlockCenter,BLOCK_PITCH);return town;
 }
 export function selectTargets(town,eligibleIds,previous=[]){
@@ -399,7 +401,7 @@ export function movePeople(town,deltaSeconds){
     const next=distance?{x:p.position.x+dx/distance*step,z:p.position.z+dz/distance*step}:{...p.position};
     // A bus door approach is a brief crossing: walkers enter only after
     // the door closes, avoiding face-to-face deadlock with boarding citizens.
-    if(shuttleDoorLaneBusy(town,next)){
+    if(shuttleDoorLaneBusy(town,next)||pedestrianTrafficGuard(town,p,next)){
       p.waiting+=dt;continue;
     }
     const blocked=town.people.some(q=>{
@@ -419,6 +421,7 @@ export function movePeople(town,deltaSeconds){
   }
   greetNeighbors(town);
   stepTransit(town,dt,WALK.clearance,safeActivity);
+  stepTraffic(town,dt);
 }
 export function getClue(person,difficulty='easy'){
   if(!person)return null;const a=ACTIVITIES.find(a=>a.id===person.activity),prop=a.props[person.propVariant];
