@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose, getVisualActivity, CITY_GEOMETRY, getStreetPlan } from './sim.mjs?v=11';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose, getVisualActivity, CITY_GEOMETRY, getStreetPlan } from './sim.mjs?v=12';
+import { trafficPhase } from './traffic.mjs';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -55,6 +56,8 @@ const pointerPositions = new Map();
 const citizenMeshes = new Map();
 const greetingMarkers = new Map();
 const cars = [];
+const trafficHeads=[];
+let lastTrafficPhase=null;
 const mixers = [];
 const occluders = [];
 const citizenAssets = new Map();
@@ -264,7 +267,7 @@ function drawOuterGreenbelt(width,depth,cols,rows){
 }
 function generateWorld() {
   for(const group of [scenery,citizens,movingCars,marker])disposeProcedural(group);
-  scenery.clear();citizens.clear();movingCars.clear();marker.clear();citizenMeshes.clear();greetingMarkers.clear();cars.length=0;
+  scenery.clear();citizens.clear();movingCars.clear();marker.clear();citizenMeshes.clear();greetingMarkers.clear();cars.length=0;trafficHeads.length=0;lastTrafficPhase=null;
   mixers.length=0;occluders.length=0;citizenAssets.clear();loweredBuildings.clear();clearPreview();
   if (!town) return;
   const revision=++worldSerial;
@@ -334,6 +337,18 @@ function generateWorld() {
     if(block.col<cols-1&&block.row<rows-1)local(`${STREET}light-curved.glb`,1.95,-1.85,1.25,.3);
   }
   drawConnectedFootways(plan);
+  // Signal heads sit beside genuine road intersections, never in the citizen
+  // raycast/picking group. Their colors come from the movement rules.
+  for(const joint of town.traffic?.junctions||[]){
+    const lamp=new THREE.Group();lamp.name='city-live-traffic-light';
+    lamp.position.set(joint.x+1.05,0,joint.z+1.05);scenery.add(lamp);
+    addPart(lamp,cylinder(.045,.055,1.5,0x687a77,7),0,.75,0);
+    addPart(lamp,cube(.49,.34,.28,0x33464a),0,1.52,0);
+    const horizontal=addPart(lamp,ball(.11,0xed6363),-.13,1.55,.17);
+    const vertical=addPart(lamp,ball(.11,0xed6363),.13,1.55,.17);
+    horizontal.name='signal-horizontal';vertical.name='signal-vertical';
+    trafficHeads.push({horizontal,vertical});
+  }
   // Curbside stop markers come from the SAME stations the bus actually visits.
   // They sit inside the parcel, away from the one-way pedestrian loop.
   for(const stop of town.transit?.stations||[]){
@@ -370,7 +385,7 @@ function generateWorld() {
       modelIn(holder,MODEL.cars[i],1.25,fallback,holder,revision);
       const roadRow=i%Math.max(1,rows-1);
       const z=(roadRow+.5-(rows-1)/2)*BLOCK_PITCH+(i%2?.25:-.25);
-      cars.push({holder,z,phase:i*.33,direction:i%2?-1:1,speed:.9+i*.16,width});
+      cars.push({holder,z,phase:i*.33,direction:i%2?-1:1,speed:.9+i*.16,width,simCar:town.traffic?.cars[i]||null});
     }
     if(town.transit){
       const holder=new THREE.Group();movingCars.add(holder);
@@ -570,7 +585,23 @@ function positionEverything(dt) {
     }
     animateActivity(mesh.holder,p);
   }
+  if(town.traffic){
+    const phase=trafficPhase(town);
+    if(phase!==lastTrafficPhase){
+      lastTrafficPhase=phase;
+      for(const head of trafficHeads){
+        head.horizontal.material.color.setHex(phase==='horizontal'?0x57e79c:phase==='all-red'?0xf0bd4f:0xe95d62);
+        head.vertical.material.color.setHex(phase==='vertical'?0x57e79c:phase==='all-red'?0xf0bd4f:0xe95d62);
+      }
+    }
+  }
   for(const car of cars) {
+    if(car.simCar){
+      const roadCar=car.simCar;
+      car.holder.position.set(roadCar.position.x,.10,roadCar.position.z);
+      car.holder.rotation.y=roadCar.direction>0?Math.PI/2:-Math.PI/2;
+      continue;
+    }
     if(car.bus){
       if(car.routeBus){
         const bus=town.transit.bus;
