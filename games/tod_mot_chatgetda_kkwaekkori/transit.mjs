@@ -124,6 +124,12 @@ export function stepTransit(town,dt,clearance,uniqueActivity){
     const station=service.stations[bus.stopIndex];
     const rider=town.people.find(p=>p.id===bus.rider);
     if(rider?.transit?.phase==='riding')startAlighting(town,station);
+    // Do not pass a rider's destination while its designated curb bay is
+    // occupied. Stay on the road until the existing walker can depart.
+    if(rider?.transit?.phase==='riding'&&rider.transit.toIndex===bus.stopIndex){
+      bus.dwellUntil=Math.max(bus.dwellUntil,town.time+.7);
+      return;
+    }
     if(!bus.rider)startBoarding(town,station);
     const doorBusy=town.people.some(p=>p.id===bus.rider&&
       ['boarding','alighting'].includes(p.transit?.phase));
