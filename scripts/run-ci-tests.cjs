@@ -4,6 +4,7 @@
 const { spawnSync } = require('node:child_process');
 
 const TEST_FILES = [
+  "tests/high-corn-maze.test.cjs",
   "tests/ota-rewrite-reality.test.cjs",
   "tests/ota-story-continuity.test.cjs",
   "tests/ota-maze.test.cjs",
