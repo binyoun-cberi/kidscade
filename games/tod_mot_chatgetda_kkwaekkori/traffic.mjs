@@ -19,7 +19,7 @@ export function createTraffic(town,streetPlan,pitch){
   const span=(town.config.cols*pitch)/2+2.8;
   const cars=Array.from({length:Math.min(3,Math.max(1,Math.floor(town.config.cols/2)))},(_,i)=>{
     const roadRow=i%horizontal.length,direction=i%2?-1:1;
-    const zRoad=horizontal[roadRow],z=zRoad+(i%2?.25:-.25);
+    const zRoad=horizontal[roadRow],z=zRoad; // centerlane has .85 sidewalk clearance
     return {id:'street-car-'+i,position:{x:(direction>0?-1:1)*(span-(i%3)*.65),z},
       zRoad,roadRow,direction,speed:2.05+i*.24,wait:0,trips:0};
   });
