@@ -566,7 +566,7 @@ test('traffic signals use the exact town-road intersections and alternate right 
     const before={x:joint.x-3,z:joint.z},enter={x:joint.x-2.7,z:joint.z};
     town.time=0;assert.equal(trafficPhase(town),'horizontal');
     assert.ok(trafficLightAllows(town,before,enter,'horizontal'));
-    town.time=6.5;assert.equal(trafficPhase(town),'all-red');
+    town.time=7.5;assert.equal(trafficPhase(town),'all-red');
     assert.equal(trafficLightAllows(town,before,enter,'horizontal'),false);
     town.time=10;assert.equal(trafficPhase(town),'vertical');
     assert.equal(trafficLightAllows(town,before,enter,'horizontal'),false);
