@@ -55,6 +55,6 @@
 - 사용자 요청: 이전 꼴뚜기 개선 PR을 main에 병합.
 - PR #747은 main에 추가된 다른 게임의 개선 로그 목록 수정과 충돌하여 병합 불가였음. 게임 소스 자체는 main의 분기 이후 변경되지 않은 것을 경로별 GitHub blob SHA로 확인.
 - 최신 main에서 새 브랜치 `chat/squid-survival-sync-main-20261109`를 생성하고 게임/테스트 파일을 이전 PR과 동일 내용으로 옮기고, INDEX.md는 최신 main에 등록된 다른 게임들의 행을 그대로 보존하여 꼴뚜기 행만 추가.
-- 새로운 통합 PR 링크는 생성 후 기록. 원래 PR: https://github.com/binyoun-cberi/kidscade/pull/747
+- 통합 PR: https://github.com/binyoun-cberi/kidscade/pull/750 (기존 충돌 PR: https://github.com/binyoun-cberi/kidscade/pull/747)
 - 새 브랜치의 Node/브라우저 및 GitHub Actions 검증 결과는 미확인. 기존에 수행한 V8 모형 테스트 결과는 위와 같으며 최신 브랜치 전체 CI 통과를 뜻하지 않음.
 - 병합/배포 상태는 실제 도구 결과가 나온 뒤만 확정함.
