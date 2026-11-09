@@ -1,4 +1,5 @@
 // Renderer-independent shuttle on the town's existing public road grid.
+import { trafficLightAllows, reserveBusRoad, releaseBusRoad, TRAFFIC_RULES } from './traffic.mjs';
 // Never consumes the seeded puzzle RNG or changes target/foil identities.
 export const SHUTTLE = Object.freeze({speed:2.35,dwell:5.5,doorSeconds:2.1,capacity:1});
 export function createTransit(town,getBlockCenter,blockPitch){
@@ -127,8 +128,10 @@ export function stepTransit(town,dt,clearance,uniqueActivity){
     const doorBusy=town.people.some(p=>p.id===bus.rider&&
       ['boarding','alighting'].includes(p.transit?.phase));
     if(town.time<bus.dwellUntil||doorBusy)return;
+    const route=routeOnRoads(town,station,service.stations[bus.targetIndex]);
+    if(!reserveBusRoad(town,route,bus.position))return;
     bus.phase='driving';
-    bus.route=routeOnRoads(town,station,service.stations[bus.targetIndex]);
+    bus.route=route;
     bus.routeIndex=0;
   }
   if(bus.phase==='driving'){
@@ -137,15 +140,22 @@ export function stepTransit(town,dt,clearance,uniqueActivity){
       bus.phase='stopped';bus.stopIndex=bus.targetIndex;
       bus.targetIndex=(bus.stopIndex+1)%service.stations.length;
       bus.dwellUntil=town.time+SHUTTLE.dwell;service.arrivals++;
+      releaseBusRoad(town);
       return;
     }
     const dx=point.x-bus.position.x,dz=point.z-bus.position.z;
     const remaining=Math.hypot(dx,dz),step=Math.min(remaining,SHUTTLE.speed*dt);
     const next=remaining?{x:bus.position.x+dx/remaining*step,
       z:bus.position.z+dz/remaining*step}:{...bus.position};
-    // Give pedestrians the right of way at shared zebra crossings.
+    // The visible signal applies to this actual route segment.
+    const axis=Math.abs(dx)>Math.abs(dz)?'horizontal':'vertical';
+    if(!trafficLightAllows(town,bus.position,next,axis))return;
+    // A pedestrian has priority even when the vehicle aspect is green.
     if(town.people.some(p=>p.id!==bus.rider&&p.state==='walking'&&
       Math.hypot(next.x-p.position.x,next.z-p.position.z)<1.2))return;
+    // No bus may enter an occupied car intersection.
+    if(town.traffic?.cars.some(car=>
+      Math.hypot(next.x-car.position.x,next.z-car.position.z)<TRAFFIC_RULES.vehicleClearance))return;
     bus.position=next;
     if(remaining>.001)bus.heading=Math.atan2(dx,dz);
     if(step>=remaining-1e-6)bus.routeIndex++;
