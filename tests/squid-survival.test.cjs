@@ -71,7 +71,7 @@ function simulator(){
   function element(id){
     const events=new Map(),classes=new Set(id==='pregame'||id==='rotate'||id==='end'?['hidden']:[]);
     return {
-      id,hidden:id==='gameFrame'||id==='quitButton',textContent:'',style:{},src:'',
+      id,hidden:['gameFrame','quitButton','countdown','countdownTrack'].includes(id),textContent:'',style:{},src:'',
       classList:{add:x=>classes.add(x),remove:x=>classes.delete(x),
         contains:x=>classes.has(x),toggle:(x,force)=>{if(force)classes.add(x);else classes.delete(x)}},
       addEventListener:(name,fn)=>events.set(name,fn),
@@ -110,6 +110,9 @@ test('end-to-end frame orchestration: intro, guarded signals, rotate, crown and 
   s.click('startButton');
   assert.equal(s.get('pregame').classList.contains('hidden'),false);
   assert.equal(s.get('gameFrame').src,'');
+  s.advance(6000);assert.equal(s.get('gameFrame').src,'','briefing must wait for the player');
+  s.click('readyButton');
+  assert.equal(s.get('readyButton').hidden,true);
   s.advance(2900);assert.equal(s.get('gameFrame').src,'');
   s.advance(110);
   assert.match(s.get('gameFrame').src,/dalgona-trace.*survival=1/);
@@ -118,6 +121,7 @@ test('end-to-end frame orchestration: intro, guarded signals, rotate, crown and 
   s.send(event(rules.ROUNDS[0]),{origin:'https://attacker.invalid'});
   assert.equal(s.get('end').classList.contains('hidden'),true);
   s.send(event(rules.ROUNDS[0]));
+  assert.equal(s.get('gameFrame').src,'','completed iframe must stop');
   assert.equal(s.get('end').classList.contains('hidden'),false);
   assert.equal(s.get('endClears').textContent,'1 / 6');
   s.send(event(rules.ROUNDS[0]));
@@ -125,17 +129,18 @@ test('end-to-end frame orchestration: intro, guarded signals, rotate, crown and 
   s.portrait(true);
   s.click('endButton');
   assert.equal(s.get('rotate').classList.contains('hidden'),false);
-  s.advance(6000);assert.match(s.get('gameFrame').src,/dalgona/);
+  s.advance(6000);assert.equal(s.get('gameFrame').src,'');
   s.portrait(false);
   assert.equal(s.get('pregame').classList.contains('hidden'),false);
-  s.advance(3001);
+  s.advance(3001);assert.equal(s.get('gameFrame').src,'');
+  s.click('readyButton');s.advance(3001);
   assert.match(s.get('gameFrame').src,/squid-memory-bridge.*survival=1/);
   s.send(event(rules.ROUNDS[1]));
   assert.equal(s.get('endTitle').textContent,'기억의 다리 통과!');
   for(let i=2;i<rules.ROUNDS.length;i++){
     s.click('endButton');
     assert.equal(s.get('pregame').classList.contains('hidden'),false);
-    s.advance(3001);
+    s.click('readyButton');s.advance(3001);
     assert.ok(s.get('gameFrame').src.includes(rules.ROUNDS[i].src));
     s.send(event(rules.ROUNDS[i]));
   }
@@ -149,7 +154,7 @@ test('end-to-end frame orchestration: intro, guarded signals, rotate, crown and 
 });
 test('quit is elimination and repeats cannot award extra championships',()=>{
   const s=simulator();
-  s.click('startButton');s.advance(3100);
+  s.click('startButton');s.click('readyButton');s.advance(3100);
   s.click('quitButton');
   assert.equal(s.get('endTitle').textContent,'대회 탈락!');
   assert.equal(s.get('endClears').textContent,'0 / 6');
@@ -170,7 +175,7 @@ test('all six mini-games run as embedded practice and do not change tournament r
   s.click('quitButton');
   assert.equal(s.get('gameFrame').src,'');
   assert.equal(s.get('lobby').classList.contains('hidden'),false);
-  s.click('startButton');s.advance(3100);
+  s.click('startButton');s.click('readyButton');s.advance(3100);
   s.send(event(rules.ROUNDS[0]));
   assert.equal(s.get('endClears').textContent,'1 / 6');
   s.click('end-practice-final');
@@ -180,8 +185,60 @@ test('all six mini-games run as embedded practice and do not change tournament r
   s.click('quitButton');
   assert.equal(s.get('end').classList.contains('hidden'),false);
   assert.equal(s.get('endClears').textContent,'1 / 6');
-  s.click('endButton');s.advance(3100);
+  s.click('endButton');s.click('readyButton');s.advance(3100);
   assert.match(s.get('gameFrame').src,/squid-memory-bridge.*survival=1/);
+});
+
+test('return-to-lobby cancels a briefing and preserves records after a round',()=>{
+  const s=simulator();
+  s.click('startButton');
+  s.click('lobbyButton');
+  assert.equal(s.get('lobby').classList.contains('hidden'),false);
+  s.advance(10000);
+  assert.equal(s.get('gameFrame').src,'','returning during briefing must not launch a child');
+  s.click('startButton');s.click('readyButton');s.advance(3100);
+  s.send(event(rules.ROUNDS[0]));
+  assert.equal(s.get('endClears').textContent,'1 / 6');
+  s.click('endLobbyButton');
+  assert.equal(s.get('lobby').classList.contains('hidden'),false);
+  assert.equal(s.get('gameFrame').src,'');
+  assert.equal(s.get('bestCount').textContent,'1 / 6');
+  s.send(event(rules.ROUNDS[0]));
+  assert.equal(s.get('lobby').classList.contains('hidden'),false);
+  s.click('startButton');
+  assert.equal(s.get('pregame').classList.contains('hidden'),false);
+  assert.equal(s.get('bestCount').textContent,'1 / 6');
+});
+test('RESET is an explicit lobby-only transition, never an escape during a live game',()=>{
+  const intro=rules.reduce(rules.initial(),{type:'START'});
+  assert.equal(rules.reduce(intro,{type:'RESET'}).phase,'lobby');
+  const active=rules.reduce(intro,{type:'READY'});
+  assert.equal(rules.reduce(active,{type:'RESET'}),active);
+});
+
+test('tournament playtime excludes rule-reading and intermission delays',()=>{
+  const s=simulator();
+  s.click('startButton');
+  s.advance(60000);
+  assert.equal(s.sdk.filter(([name])=>name==='start').length,0,'not started until ready');
+  s.click('readyButton');s.advance(3100);
+  assert.equal(s.sdk.filter(([name])=>name==='start').length,1);
+  s.advance(700);
+  s.click('quitButton');
+  const result=s.sdk.find(([name,data])=>name==='result'&&data.status==='failed');
+  assert.ok(result);
+  assert.equal(result[1].elapsedMs,700,'briefing must not inflate reported playtime');
+});
+
+test('portrait bridge rotation prompt has a safe lobby exit',()=>{
+ const s=simulator();
+ s.portrait(true);s.click('startButton');s.click('readyButton');s.advance(3100);
+ s.send(event(rules.ROUNDS[0]));
+ s.click('endButton');
+ assert.equal(s.get('rotate').classList.contains('hidden'),false);
+ s.click('rotateLobbyButton');
+ assert.equal(s.get('lobby').classList.contains('hidden'),false);
+ assert.equal(s.get('bestCount').textContent,'1 / 6');
 });
 
 test('catalog has only the unified Squid game while practice files remain accessible',()=>{
