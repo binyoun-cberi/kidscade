@@ -2,7 +2,7 @@
 // Renderer-free, deterministic, with no random draws or change to saved puzzles.
 export const TRAFFIC_RULES=Object.freeze({
   horizontalGreen:9,allRed:1,verticalGreen:9,cycle:20,
-  stopLine:1.9,pedestrianClearance:1.4,vehicleClearance:1.7
+  stopLine:2.75,pedestrianClearance:1.4,vehicleClearance:1.7
 });
 export function trafficPhase(town){
   const time=((town.time+2)%TRAFFIC_RULES.cycle+TRAFFIC_RULES.cycle)%TRAFFIC_RULES.cycle;
@@ -69,15 +69,15 @@ function zebraAt(town,car,x){
 function pedestrianInCarPath(town,car,next){
   const crossing=zebraAt(town,car,next.x);
   if(!crossing)return false;
-  const carCommitted=Math.abs(car.position.x-crossing.x)<.78;
+  const carCommitted=Math.abs(car.position.x-crossing.x)<1.25;
   return town.people.some(p=>{
     if(p.state!=='walking'||Math.abs(p.position.x-crossing.x)>.22)return false;
     const to=town.paths.nodes.get(p.route[0]);
     if(!to||Math.abs(to.x-p.position.x)>.22)return false;
     const distanceFromRoad=Math.abs(p.position.z-car.zRoad);
-    // Once a car owns a crossing, an approaching pedestrian waits at
-    // its curb. If someone is already *on* the road, the car yields.
-    return distanceFromRoad<.7||(!carCommitted&&distanceFromRoad<1.5);
+    // Once a vehicle owns the zebra, it must clear it. New walkers
+    // wait at the curb. Walkers already crossing own the approach first.
+    return !carCommitted&&distanceFromRoad<1.8;
   });
 }
 export function pedestrianTrafficGuard(town,person,next){
@@ -89,7 +89,7 @@ export function pedestrianTrafficGuard(town,person,next){
   for(const car of traffic.cars){
     const crossing=zebraAt(town,car,car.position.x);
     if(!crossing||Math.abs(crossing.x-person.position.x)>.18)continue;
-    if(Math.abs(car.position.x-crossing.x)>.9)continue;
+    if(Math.abs(car.position.x-crossing.x)>1.25)continue;
     // Pedestrians already on the road keep crossing. The car will
     // yield to them; only new curb entries wait for a passing vehicle.
     const before=Math.abs(person.position.z-car.zRoad);
