@@ -113,7 +113,7 @@ let chrome,ws,profile,serverOpen=false,passed=0;
   assert.equal(initialTraffic.junctions,2);
   assert.equal(initialTraffic.lights.length,initialTraffic.junctions);
   assert.equal(initialTraffic.cars.length,1);
-  const movingTraffic=await wait("(()=>{const s=__KK_TEST__.trafficSnapshot();const c=s.cars[0];return c?.model&&Math.abs(c.sim[0]-"+initialTraffic.cars[0].sim[0]+")>.5&&Math.hypot(c.sim[0]-c.model[0],c.sim[1]-c.model[1])<.025?s:null;})()",25000);
+  const movingTraffic=await wait("(()=>{const s=__KK_TEST__.trafficSnapshot();const c=s.cars[0];return c?.model&&Math.abs(c.sim[0]-("+initialTraffic.cars[0].sim[0]+"))>.5&&Math.hypot(c.sim[0]-c.model[0],c.sim[1]-c.model[1])<.025?s:null;})()",25000);
   assert.ok(movingTraffic.cars[0].model,'a real three-dimensional car must follow the sim');
   const verticalGreen=await wait("(()=>{const s=__KK_TEST__.trafficSnapshot();return s.phase==='vertical'&&s.lights.length===2?s:null;})()",25000);
   for(const head of verticalGreen.lights){
