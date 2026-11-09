@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose, getVisualActivity, CITY_GEOMETRY, getStreetPlan } from './sim.mjs?v=10';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue, WALK, getPose, getVisualActivity, CITY_GEOMETRY, getStreetPlan } from './sim.mjs?v=12';
+import { trafficPhase } from './traffic.mjs';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -55,6 +56,8 @@ const pointerPositions = new Map();
 const citizenMeshes = new Map();
 const greetingMarkers = new Map();
 const cars = [];
+const trafficHeads=[];
+let lastTrafficPhase=null;
 const mixers = [];
 const occluders = [];
 const citizenAssets = new Map();
@@ -264,7 +267,7 @@ function drawOuterGreenbelt(width,depth,cols,rows){
 }
 function generateWorld() {
   for(const group of [scenery,citizens,movingCars,marker])disposeProcedural(group);
-  scenery.clear();citizens.clear();movingCars.clear();marker.clear();citizenMeshes.clear();greetingMarkers.clear();cars.length=0;
+  scenery.clear();citizens.clear();movingCars.clear();marker.clear();citizenMeshes.clear();greetingMarkers.clear();cars.length=0;trafficHeads.length=0;lastTrafficPhase=null;
   mixers.length=0;occluders.length=0;citizenAssets.clear();loweredBuildings.clear();clearPreview();
   if (!town) return;
   const revision=++worldSerial;
@@ -334,6 +337,31 @@ function generateWorld() {
     if(block.col<cols-1&&block.row<rows-1)local(`${STREET}light-curved.glb`,1.95,-1.85,1.25,.3);
   }
   drawConnectedFootways(plan);
+  // Signal heads sit beside genuine road intersections, never in the citizen
+  // raycast/picking group. Their colors come from the movement rules.
+  for(const joint of town.traffic?.junctions||[]){
+    const lamp=new THREE.Group();lamp.name='city-live-traffic-light';
+    lamp.position.set(joint.x+1.05,0,joint.z+1.05);scenery.add(lamp);
+    addPart(lamp,cylinder(.045,.055,1.5,0x687a77,7),0,.75,0);
+    addPart(lamp,cube(.49,.34,.28,0x33464a),0,1.52,0);
+    const horizontal=addPart(lamp,ball(.11,0xed6363),-.13,1.55,.17);
+    const vertical=addPart(lamp,ball(.11,0xed6363),.13,1.55,.17);
+    horizontal.name='signal-horizontal';vertical.name='signal-vertical';
+    trafficHeads.push({horizontal,vertical});
+  }
+  // Curbside stop markers come from the SAME stations the bus actually visits.
+  // They sit inside the parcel, away from the one-way pedestrian loop.
+  for(const stop of town.transit?.stations||[]){
+    const center=getBlockCenter(stop.block,town.config);
+    // Keep the sign 1.05 units inside the 2.65 sidewalk centerline.
+    const x=center.x+stop.side*1.60,z=center.z;
+    const sign=new THREE.Group();sign.name='real-bus-platform';
+    sign.position.set(x,0,z);scenery.add(sign);
+    addPart(sign,cylinder(.045,.055,1.2,0x667a82,8),0,.61,0);
+    addPart(sign,cube(.35,.37,.06,0xffd475),0,1.24,0);
+    addPart(sign,cube(.24,.10,.074,0x447a88),0,1.29,.035);
+    addPart(scenery,cube(.38,.024,1.05,0xf1d48a),x,.084,z);
+  }
 
   for(const person of town.people) {
     const holder=new THREE.Group();
@@ -357,13 +385,23 @@ function generateWorld() {
       modelIn(holder,MODEL.cars[i],1.25,fallback,holder,revision);
       const roadRow=i%Math.max(1,rows-1);
       const z=(roadRow+.5-(rows-1)/2)*BLOCK_PITCH+(i%2?.25:-.25);
-      cars.push({holder,z,phase:i*.33,direction:i%2?-1:1,speed:.9+i*.16,width});
+      cars.push({holder,z,phase:i*.33,direction:i%2?-1:1,speed:.9+i*.16,width,simCar:town.traffic?.cars[i]||null});
     }
-    const stop=town.blocks.find(b=>b.kind==='stop');
-    if(stop){
-      const c=getBlockCenter(stop,town.config),holder=new THREE.Group();movingCars.add(holder);
-      modelIn(holder,`${CITY}bus.glb`,2.5,cube(2.3,.75,.85,0xf0cc65),holder,revision);
-      cars.push({holder,z:c.z+3.5,stopX:c.x,phase:0,bus:true,width});
+    if(town.transit){
+      const holder=new THREE.Group();movingCars.add(holder);
+      const fallback=cube(2.3,.75,.85,0xf0cc65);fallback.position.y=.42;
+      modelIn(holder,`${CITY}bus.glb`,2.5,fallback,holder,revision);
+      const doorLamp=addPart(holder,ball(.12,0x4bdb9b),.72,1.04,.45);
+      doorLamp.name='bus-door-ready';
+      cars.push({holder,bus:true,routeBus:true,doorLamp});
+    } else {
+      // Preserve the original decorative bus in timed challenge mode.
+      const stop=town.blocks.find(b=>b.kind==='stop');
+      if(stop){
+        const c=getBlockCenter(stop,town.config),holder=new THREE.Group();movingCars.add(holder);
+        modelIn(holder,`${CITY}bus.glb`,2.5,cube(2.3,.75,.85,0xf0cc65),holder,revision);
+        cars.push({holder,z:c.z+3.5,stopX:c.x,phase:0,bus:true,width});
+      }
     }
   }
   const markerRing=owned(new THREE.Mesh(new THREE.TorusGeometry(.47,.042,8,32),new THREE.MeshBasicMaterial({color:0xffcc57,transparent:true,opacity:.93,depthTest:false})));
@@ -498,6 +536,8 @@ function positionEverything(dt) {
   for(const p of town.people) {
     const mesh=citizenMeshes.get(p.id);
     if(!mesh)continue;
+    // Only a physical passenger is hidden from 3D picking, not sought friends.
+    mesh.holder.visible=p.state!=='riding';
     const visualActivity=getVisualActivity(p),pose=getPose(p),changed=mesh.activity!==visualActivity||mesh.pose!==pose||mesh.state!==p.state;
     if(changed){
       mesh.pose=pose;mesh.state=p.state;
@@ -511,7 +551,7 @@ function positionEverything(dt) {
     const pos=getRoutePosition(p,town.config);
     mesh.holder.position.set(pos.x,.08,pos.z);
     // Procedural stand-ins need footsteps; loaded characters use their own clips.
-    mesh.body.position.y=p.state==='walking'&&!citizenAssets.has(p.id)
+    mesh.body.position.y=['walking','boarding','alighting'].includes(p.state)&&!citizenAssets.has(p.id)
       ?Math.abs(Math.sin(p.elapsed*9+p.phase))*.035:0;
     const speech=greetingMarkers.get(p.id);
     if(speech){
@@ -545,8 +585,32 @@ function positionEverything(dt) {
     }
     animateActivity(mesh.holder,p);
   }
+  if(town.traffic){
+    const phase=trafficPhase(town);
+    if(phase!==lastTrafficPhase){
+      lastTrafficPhase=phase;
+      for(const head of trafficHeads){
+        head.horizontal.material.color.setHex(phase==='horizontal'?0x57e79c:phase==='all-red'?0xf0bd4f:0xe95d62);
+        head.vertical.material.color.setHex(phase==='vertical'?0x57e79c:phase==='all-red'?0xf0bd4f:0xe95d62);
+      }
+    }
+  }
   for(const car of cars) {
+    if(car.simCar){
+      const roadCar=car.simCar;
+      car.holder.position.set(roadCar.position.x,.10,roadCar.position.z);
+      car.holder.rotation.y=roadCar.direction>0?Math.PI/2:-Math.PI/2;
+      continue;
+    }
     if(car.bus){
+      if(car.routeBus){
+        const bus=town.transit.bus;
+        car.holder.position.set(bus.position.x,.10,bus.position.z);
+        car.holder.rotation.y=bus.heading;
+        car.doorLamp.visible=bus.phase==='stopped';
+        car.doorLamp.material.color.setHex(bus.rider?0xffc75b:0x4bdb9b);
+        continue;
+      }
       if(town.people.some(p=>p.state==='walking'&&Math.abs(p.position.z-car.z)<1.15&&Math.abs(p.position.x-car.holder.position.x)<2))continue;
       car.phase=(car.phase+dt)%40;
       const entry=-car.width/2-2,exit=car.width/2+2;
@@ -674,7 +738,7 @@ function pick(clientX,clientY) {
   if(!nearest){
     let best=20*20;
     for(const person of town.people){
-      if(found.includes(person.id))continue;
+      if(found.includes(person.id)||person.state==='riding')continue;
       const holder=citizenMeshes.get(person.id)?.holder;
       if(!holder)continue;
       for(const height of [.35,.77,1.1]){
