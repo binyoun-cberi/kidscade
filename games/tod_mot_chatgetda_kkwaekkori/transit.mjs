@@ -70,12 +70,8 @@ function startAlighting(town,station){
   const service=town.transit,bus=service.bus;
   const p=town.people.find(p=>p.id===bus.rider);
   if(!p||p.transit?.phase!=='riding'||p.transit.toIndex!==bus.stopIndex)return;
-  // A single occupied curb bay must not keep a passenger onboard for
-  // repeated laps. Pick the nearest truly vacant bay in the same station.
-  const dock=town.paths.slots.filter(s=>s.block.id===station.block.id&&
-    !town.paths.occupied.has(s.id)).sort((a,b)=>
-    Math.abs(a.index-station.dock)-Math.abs(b.index-station.dock))[0];
-  if(!dock)return;
+  const dock=town.paths.slots.find(s=>s.block.id===station.block.id&&s.index===station.dock);
+  if(!dock||town.paths.occupied.has(dock.id))return;
   const node=town.paths.nodes.get(dock.id);
   // Do not begin crossing the sidewalk while another walker is already
   // entering the vehicle-to-bay approach. This prevents mutual yield locks.
@@ -128,12 +124,6 @@ export function stepTransit(town,dt,clearance,uniqueActivity){
     const station=service.stations[bus.stopIndex];
     const rider=town.people.find(p=>p.id===bus.rider);
     if(rider?.transit?.phase==='riding')startAlighting(town,station);
-    // Hold at the destination until an unoccupied safe walkway bay is
-    // available; never carry a passenger past their requested stop.
-    if(rider?.transit?.phase==='riding'&&rider.transit.toIndex===bus.stopIndex){
-      bus.dwellUntil=Math.max(bus.dwellUntil,town.time+.7);
-      return;
-    }
     if(!bus.rider)startBoarding(town,station);
     const doorBusy=town.people.some(p=>p.id===bus.rider&&
       ['boarding','alighting'].includes(p.transit?.phase));
