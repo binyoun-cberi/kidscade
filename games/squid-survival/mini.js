@@ -13,7 +13,7 @@ action:$('action'),choice:$('choices'),intro:$('intro'),result:$('result'),resul
 start:$('start'),restart:$('restart'),help:$('help'),status:$('status'),top:$('modeTag'),best:$('best')};
 const canvas=ui.canvas,ctx=canvas.getContext('2d');
 const label=rules.MODES[mode];
-let model=null,held=false,previousFrame=0,finished=false,canvasWidth=0,canvasHeight=0,choiceKey='';
+let model=null,held=false,previousFrame=0,finished=false,canvasWidth=0,canvasHeight=0,choiceKey='',pausedAt=null;
 const keys=Object.freeze({
   redlight:'kidscade_squid_mini_redlight_v1',
   tug:'kidscade_squid_mini_tug_v1',
@@ -40,7 +40,7 @@ function setHidden(el,hidden){el.hidden=hidden;}
 function launch(){
  model=rules.create(mode,Math.floor(Math.random()*4294967295));
  rules.start(model,Date.now());
- finished=false;held=false;previousFrame=0;choiceKey='';
+ finished=false;held=false;previousFrame=0;choiceKey='';pausedAt=null;
  setHidden(ui.intro,true);setHidden(ui.result,true);
  ui.title.textContent=label.name;ui.hint.textContent=label.hint;ui.best.textContent=best+'점';
  sdk('start',{mode});
@@ -48,7 +48,7 @@ function launch(){
 }
 function complete(){
  if(!model||finished||model.status==='playing'||model.status==='ready')return;
- finished=true;held=false;
+ finished=true;held=false;pausedAt=null;
  ui.action.classList.remove('held');
  const win=model.status==='cleared';
  if(win&&standalone){best=Math.max(best,model.score);try{localStorage.setItem(key,JSON.stringify({best}));}catch(_){}}
@@ -61,21 +61,21 @@ function complete(){
  }
 }
 function update(now){
- if(!model||finished)return;
+ if(!model||finished||pausedAt!==null)return;
  rules.advance(model,now);
  if(model.status!=='playing')complete();
 }
 function choose(action,value){
- if(!model||finished)return;
+ if(!model||finished||pausedAt!==null)return;
  rules.act(model,action,value,Date.now());render();
  if(model.status!=='playing')complete();
 }
 function hold(value){
- if(mode!=='redlight'||!model||model.status!=='playing')return;
+ if(mode!=='redlight'||!model||model.status!=='playing'||pausedAt!==null)return;
  held=value;ui.action.classList.toggle('held',held);choose('hold',held);
 }
 function fire(){
- if(!model||model.status!=='playing')return;
+ if(!model||model.status!=='playing'||pausedAt!==null)return;
  if(mode==='tug')choose('pull');
  if(mode==='final'&&model.part==='timing')choose('hit');
 }
@@ -180,7 +180,7 @@ function drawTraffic(s,now,w,h){
   if(on)glow(boxX+bw/2,cy,bw*.6,c+'66');
   disk(boxX+bw/2,cy,Math.min(bw*.29,bh*.12),on?c:'#31514a','#ffffff25',2);
  }
- character(w*.09+w*.73*s.progress/100,floor,Math.min(123,h*.38),'#73cdae',now,s.held&&s.signal==='green');
+ character(w*.09+w*.73*s.progress/100,floor,Math.min(123,h*.38),'#73cdae',now,s.held&&s.signal!=='red');
  for(let i=0;i<7;i++)rect(w*.06+i*w*.12,floor+10,w*.045,3,'#e8efde66',1);
 }
 function drawTug(s,now,w,h){
@@ -279,10 +279,33 @@ function resize(){
  canvas.width=Math.ceil(canvasWidth*dpr);canvas.height=Math.ceil(canvasHeight*dpr);
  ctx.setTransform(dpr,0,0,dpr,0,0);
 }
+function pauseGame(){
+ if(pausedAt!==null||!model||model.status!=='playing'||finished)return;
+ pausedAt=Date.now();
+ // Never keep holding the run button while the game is out of focus.
+ held=false;model.held=false;ui.action.classList.remove('held');
+}
+function resumeGame(){
+ if(pausedAt===null)return;
+ const duration=Math.max(0,Date.now()-pausedAt);
+ if(model&&model.status==='playing'){
+   // Every mini-game uses elapsed time, so shift its clock rather than granting bonus time.
+   model.startedAt+=duration;
+   model.at+=duration;
+ }
+ pausedAt=null;previousFrame=0;
+}
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden)pauseGame();
+ else resumeGame();
+});
+window.addEventListener('blur',pauseGame);
+window.addEventListener('focus',()=>{if(!document.hidden)resumeGame();});
 function frame(time){
  if(!model||finished)return;
  requestAnimationFrame(frame);
  if(time-previousFrame<25)return;previousFrame=time;
+ if(pausedAt!==null)return;
  update(Date.now());scene(time);
  if(model&&model.status==='playing')render();
 }
