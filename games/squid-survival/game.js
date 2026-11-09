@@ -5,13 +5,15 @@
     shell:$('shell'),frame:$('gameFrame'),steps:$('steps'),pills:R.ROUNDS.map((_,i)=>$('pill'+i)),
     best:$('bestCount'),lobby:$('lobby'),pregame:$('pregame'),rotate:$('rotate'),end:$('end'),
     preLabel:$('pregameLabel'),preTitle:$('pregameTitle'),preRule:$('pregameRule'),
-    preWarning:$('pregameWarning'),demo:$('demo'),count:$('countdownNumber'),countFill:$('countdownFill'),
+    preWarning:$('pregameWarning'),ready:$('readyButton'),readyInstruction:$('readyInstruction'),
+    countWrap:$('countdown'),countTrack:$('countdownTrack'),lobbyButton:$('lobbyButton'),rotateLobby:$('rotateLobbyButton'),endLobby:$('endLobbyButton'),
+    demo:$('demo'),count:$('countdownNumber'),countFill:$('countdownFill'),
     endLabel:$('endLabel'),endIcon:$('endIcon'),endTitle:$('endTitle'),endDetail:$('endDetail'),
     endClears:$('endClears'),endBest:$('endBest'),endWins:$('endWins'),
     endRounds:R.ROUNDS.map((_,i)=>$('endRound'+i)),endButton:$('endButton'),quit:$('quitButton'),
     demoIcon:$('demoExtraIcon'),demoDesc:$('demoExtraDesc'),watermark:$('roundWatermark')
   };
-  let state=R.initial(),ticker=null,deadline=0,runStartedAt=0,loadId=0,practiceId=null;
+  let state=R.initial(),ticker=null,deadline=0,activeRunMs=0,roundStartedAt=0,loadId=0,practiceId=null;
   const record=(()=>{
     try{
       const v=JSON.parse(localStorage.getItem(R.SAVE_KEY)||'{}');
@@ -99,15 +101,22 @@
     el.frame.removeAttribute('src');
     render();
   }
+  function returnToLobby(){
+    if(practiceId!==null){leavePractice();return;}
+    if(state.phase==='running')return; // Running rounds still use the explicit forfeit button.
+    stopCountdown();
+    el.frame.removeAttribute('src');
+    state=R.reduce(state,{type:'RESET'});
+    render();
+  }
   function startTournament(){
     if(practiceId!==null)return;
     if(!['lobby','champion','failed'].includes(state.phase))return;
     stopCountdown();
     el.frame.removeAttribute('src');
     state=R.reduce(state,{type:'START'});
-    record.attempts++;save();
-    runStartedAt=Date.now();
-    sdk('start',{mode:'tournament',rounds:R.ROUNDS.length});
+    activeRunMs=0;
+    roundStartedAt=0;
     prepareRound();
   }
   function prepareRound(){
@@ -118,7 +127,25 @@
       state=R.reduce(state,{type:'ROTATE'});
       return render();
     }
+    // A briefing is never consumed by a timer: the player chooses when to begin.
+    el.ready.hidden=false;
+    el.countWrap.hidden=true;
+    el.countTrack.hidden=true;
+    el.readyInstruction.textContent='규칙을 확인하고 준비되면 시작하세요.';
+    el.count.textContent='3';
+    el.countFill.style.width='100%';
     render();
+  }
+  function beginCountdown(){
+    if(state.phase!=='intro'||ticker!==null)return;
+    if(R.ROUNDS[state.roundIndex].id==='bridge'&&portraitPhone()){
+      state=R.reduce(state,{type:'ROTATE'});
+      return render();
+    }
+    el.ready.hidden=true;
+    el.countWrap.hidden=false;
+    el.countTrack.hidden=false;
+    el.readyInstruction.textContent='3초 뒤 경기가 시작됩니다.';
     deadline=Date.now()+3000;
     function countdown(){
       if(state.phase!=='intro')return stopCountdown();
@@ -138,6 +165,11 @@
       state=R.reduce(state,{type:'ROTATE'});return render();
     }
     state=R.reduce(state,{type:'READY'});
+    if(state.roundIndex===0){
+      record.attempts++;save();
+      sdk('start',{mode:'tournament',rounds:R.ROUNDS.length});
+    }
+    roundStartedAt=Date.now();
     loadId++;
     const round=R.ROUNDS[state.roundIndex];
     el.frame.title='서바이벌 '+(state.roundIndex+1)+'라운드: '+round.title;
@@ -150,6 +182,9 @@
     const previous=state;
     state=R.reduce(state,action);
     if(state===previous)return;
+    activeRunMs+=Math.max(0,Date.now()-roundStartedAt);
+    // Stop the previous iframe so a completed/forfeited game cannot keep running behind the result.
+    el.frame.removeAttribute('src');
     record.best=Math.max(record.best,state.clearCount);
     if(state.phase==='champion')record.wins++;
     save();
@@ -157,11 +192,11 @@
       sdk('score',state.clearCount);
       sdk('milestone','survival_champion');
       sdk('result',{scope:'run',status:'completed',outcome:'win',score:state.clearCount,
-        roundsCleared:state.clearCount,roundsTotal:R.ROUNDS.length,elapsedMs:Date.now()-runStartedAt});
+        roundsCleared:state.clearCount,roundsTotal:R.ROUNDS.length,elapsedMs:activeRunMs});
     }else if(state.phase==='failed'){
       sdk('score',state.clearCount);
       sdk('result',{scope:'run',status:'failed',outcome:'loss',score:state.clearCount,
-        roundsCleared:state.clearCount,roundsTotal:R.ROUNDS.length,elapsedMs:Date.now()-runStartedAt});
+        roundsCleared:state.clearCount,roundsTotal:R.ROUNDS.length,elapsedMs:activeRunMs});
     }else if(state.clearCount===1){
       sdk('milestone','first_survival_round');
     }
@@ -179,6 +214,10 @@
     }
   });
   $('startButton').addEventListener('click',startTournament);
+  el.ready.addEventListener('click',beginCountdown);
+  el.lobbyButton.addEventListener('click',returnToLobby);
+  el.rotateLobby.addEventListener('click',returnToLobby);
+  el.endLobby.addEventListener('click',returnToLobby);
   for(const round of R.ROUNDS){
     $('practice-'+round.id).addEventListener('click',()=>startPractice(round.id));
     $('end-practice-'+round.id).addEventListener('click',()=>startPractice(round.id));
