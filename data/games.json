@@ -2,6 +2,33 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "high_corn_maze",
+      "addedAt": "2026-11-10T08:07:00+09:00",
+      "title": "옥수수밭 탈출",
+      "href": "games/high-corn-maze/index.html",
+      "category": "trivia",
+      "age": "high",
+      "ages": [
+        "high"
+      ],
+      "icon": "🌽",
+      "cover": "assets/gate-image/high_corn_maze_cover.svg",
+      "description": "빽빽한 3D 옥수수밭을 1인칭으로 탐험해요. 길목의 지도를 읽고 내 위치를 추리해 출구를 찾으세요. 괴물 없이 탐험하거나 느린 추격자를 피하는 모드에도 도전할 수 있어요.",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 12,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
+    },
+    {
       "id": "probability_dice_survival",
       "addedAt": "2026-11-03T14:42:00+09:00",
       "title": "운명의 주사위",
