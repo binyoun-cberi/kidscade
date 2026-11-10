@@ -192,13 +192,17 @@ function depart(town,p){
   // A passenger physically approaching a second district needs one clear
   // curbside bay. Do not let unrelated walkers reserve it ahead of the bus.
   const reservedDrop=reservedShuttleDropBay(town);
-  const candidates=town.paths.slots.filter(s=>s.block.id!==p.block.id&&
+  const makingRoom=reservedDrop===p.slotId&&!p.reserved&&!p.errand;
+  const candidates=town.paths.slots.filter(s=>
+    (s.block.id!==p.block.id||makingRoom&&s.id!==p.slotId)&&
     !town.paths.occupied.has(s.id)&&s.id!==reservedDrop);
   const preferred=candidates.filter(s=>kinds.includes(s.block.kind));
   // Background neighbors can do another errand if a favorite district is full.
   // Clue residents retain their action/prop and only visit suitable places.
-  const pool=[...preferred.filter(s=>s.block.kind!==p.block.kind),...preferred.filter(s=>s.block.kind===p.block.kind),
-    ...(p.reserved||carrying?[]:candidates.filter(s=>!kinds.includes(s.block.kind)))];
+  const localRelief=makingRoom?candidates.filter(s=>s.block.id===p.block.id):[];
+  const pool=[...localRelief,...preferred.filter(s=>s.block.id!==p.block.id),
+    ...preferred.filter(s=>s.block.id===p.block.id&&!localRelief.includes(s)),
+    ...(p.reserved||carrying?[]:candidates.filter(s=>!kinds.includes(s.block.kind)&&!localRelief.includes(s)))];
   const busy=new Set();
   for(const q of town.people){
     if(q.state==='walking')for(const id of reservedNodes(town,q))busy.add(id);
@@ -208,7 +212,8 @@ function depart(town,p){
     }
   }
   pool.sort((a,b)=>{
-    const score=s=>(carrying?(s.block.kind===p.errand.goal?0:35):(kinds.includes(s.block.kind)?0:100))+
+    const score=s=>(makingRoom&&s.block.id===p.block.id?-100:
+      carrying?(s.block.kind===p.errand.goal?0:35):(kinds.includes(s.block.kind)?0:100))+
       Math.abs(town.paths.nodes.get(s.id).x-p.position.x)+Math.abs(town.paths.nodes.get(s.id).z-p.position.z);
     return score(a)-score(b);
   });
