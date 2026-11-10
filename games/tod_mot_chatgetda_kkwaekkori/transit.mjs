@@ -98,7 +98,15 @@ function startAlighting(town,station){
   const p=town.people.find(p=>p.id===bus.rider);
   if(!p||p.transit?.phase!=='riding'||p.transit.toIndex!==bus.stopIndex)return;
   const dock=town.paths.slots.find(s=>s.block.id===station.block.id&&s.index===station.dock);
-  if(!dock||town.paths.occupied.has(dock.id)){service.delayedAlighting++;return;}
+  if(!dock||town.paths.occupied.has(dock.id)){
+    service.delayedAlighting++;
+    const occupant=town.people.find(q=>q.slotId===dock?.id&&
+      q.state==='acting'&&!q.reserved&&!q.errand&&!q.socialWith);
+    // The resident steps aside on their own connected sidewalk, rather
+    // than moving the passenger diagonally across occupied activity bays.
+    if(occupant)occupant.routineAt=Math.min(occupant.routineAt,occupant.elapsed+.35);
+    return;
+  }
   const node=town.paths.nodes.get(dock.id);
   // Do not begin crossing the sidewalk while another walker is already
   // entering the vehicle-to-bay approach. This prevents mutual yield locks.
@@ -188,7 +196,7 @@ export function stepTransit(town,dt,clearance,uniqueActivity){
     if(!trafficLightAllows(town,bus.position,next,axis))return;
     // The entire bus mesh must clear a crossing resident; a center-only
     // 1.2-unit check still clipped the bus nose into crossing characters.
-    const nextBus={position:next,heading:Math.abs(dx)>Math.abs(dz)?Math.atan2(dx,dz):bus.heading};
+    const nextBus={position:next,heading:remaining>.001?Math.atan2(dx,dz):bus.heading};
     if(town.people.some(p=>p.id!==bus.rider&&p.state==='walking'&&
       busBodyGap(nextBus,p.position)<SHUTTLE.bodyMargin))return;
     // No bus may enter an occupied car intersection.
