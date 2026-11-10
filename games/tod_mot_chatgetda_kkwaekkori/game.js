@@ -58,6 +58,7 @@ const greetingMarkers = new Map();
 const cars = [];
 const trafficHeads=[];
 let lastTrafficPhase=null;
+let previewFrameAt=-Infinity;
 const mixers = [];
 const occluders = [];
 const citizenAssets = new Map();
@@ -157,6 +158,18 @@ function modelIn(group, url, longest, fallback, parent, revision) {
     if (!gltf || worldSerial !== revision || !parent.parent || !group.parent) return;
     const model = normalizedModel(gltf,longest,group.userData.footprint);
     if (!model) return;
+    if(group.userData.vehicle){
+      // Vehicle GLBs may face X or Z; normalize their real long axis
+      // to +Z before their parent receives the simulation road heading.
+      model.updateMatrixWorld(true);
+      const shape=new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+      if(shape.x>shape.z*1.08){
+        model.rotation.y+=Math.PI/2;
+        model.updateMatrixWorld(true);
+        const center=new THREE.Box3().setFromObject(model).getCenter(new THREE.Vector3());
+        model.position.x-=center.x;model.position.z-=center.z;
+      }
+    }
     if(group.userData.occluder)removeOccluder(fallback);
     group.remove(fallback);
     disposeProcedural(fallback);
@@ -381,16 +394,18 @@ function generateWorld() {
   if(rows>1) {
     for(let i=0;i<Math.min(3,Math.max(1,Math.floor(cols/2)));i++) {
       const holder=new THREE.Group();movingCars.add(holder);
-      const fallback=cube(1.05,.38,.62,[0x4e99d2,0xebc25d,0xe17e85][i]);fallback.position.y=.23;
-      modelIn(holder,MODEL.cars[i],1.25,fallback,holder,revision);
+      const fallback=cube(.62,.38,1.05,[0x4e99d2,0xebc25d,0xe17e85][i]);fallback.position.y=.23;
+      holder.userData.vehicle=true;
+       modelIn(holder,MODEL.cars[i],1.25,fallback,holder,revision);
       const roadRow=i%Math.max(1,rows-1);
       const z=(roadRow+.5-(rows-1)/2)*BLOCK_PITCH+(i%2?.25:-.25);
       cars.push({holder,z,phase:i*.33,direction:i%2?-1:1,speed:.9+i*.16,width,simCar:town.traffic?.cars[i]||null});
     }
     if(town.transit){
       const holder=new THREE.Group();movingCars.add(holder);
-      const fallback=cube(2.3,.75,.85,0xf0cc65);fallback.position.y=.42;
-      modelIn(holder,`${CITY}bus.glb`,2.5,fallback,holder,revision);
+      const fallback=cube(.85,.75,2.3,0xf0cc65);fallback.position.y=.42;
+      holder.userData.vehicle=true;
+       modelIn(holder,`${CITY}bus.glb`,2.5,fallback,holder,revision);
       const doorLamp=addPart(holder,ball(.12,0x4bdb9b),.72,1.04,.45);
       doorLamp.name='bus-door-ready';
       cars.push({holder,bus:true,routeBus:true,doorLamp});
@@ -399,7 +414,8 @@ function generateWorld() {
       const stop=town.blocks.find(b=>b.kind==='stop');
       if(stop){
         const c=getBlockCenter(stop,town.config),holder=new THREE.Group();movingCars.add(holder);
-        modelIn(holder,`${CITY}bus.glb`,2.5,cube(2.3,.75,.85,0xf0cc65),holder,revision);
+        holder.userData.vehicle=true;
+        modelIn(holder,`${CITY}bus.glb`,2.5,cube(.85,.75,2.3,0xf0cc65),holder,revision);
         cars.push({holder,z:c.z+3.5,stopX:c.x,phase:0,bus:true,width});
       }
     }
@@ -818,7 +834,22 @@ function hint(){
 }
 
 function updateCamera(){camera.position.copy(cameraLook).add(cameraOffset);camera.lookAt(cameraLook)}
+function tabletGraphicsBudget(){
+  const dpr=Math.max(1,devicePixelRatio||1);
+  return !!(window.matchMedia?.('(pointer: coarse)')?.matches||
+    navigator.maxTouchPoints>0||(Math.min(innerWidth,innerHeight)<=900&&dpr>=1.4));
+}
+function applyGraphicsBudget(){
+  const dpr=Math.max(1,devicePixelRatio||1),tablet=tabletGraphicsBudget();
+  // DPR 2 tablet: bound large-world pixel count while preserving desktop
+  // clue detail and the exact existing picking / saved puzzle coordinates.
+  const mainRatio=Math.min(dpr,tablet?(town?.people.length>=60?1:1.12):1.55);
+  const previewRatio=Math.min(dpr,tablet?1:1.4);
+  if(renderer.getPixelRatio()!==mainRatio)renderer.setPixelRatio(mainRatio);
+  if(previewRenderer.getPixelRatio()!==previewRatio)previewRenderer.setPixelRatio(previewRatio);
+}
 function resize(){
+  applyGraphicsBudget();
   const rect=canvas.getBoundingClientRect();
   const width=Math.max(1,rect.width),height=Math.max(1,rect.height),aspect=width/height;
   if(town&&!initialViewSize){
@@ -937,7 +968,7 @@ function animate(now){
     if(mode==='challenge'&&!celebration){
       timeRemaining=Math.max(0,timeRemaining-realDt);
       showChallengeHud();
-      if(timeRemaining<=0){finishChallenge();renderer.render(scene,camera);previewRenderer.render(previewScene,previewCamera);return;}
+      if(timeRemaining<=0){finishChallenge();renderer.render(scene,camera);previewRenderer.render(previewScene,previewCamera);previewFrameAt=now;return;}
     }
     positionEverything(dt);
     for(const entry of mixers)entry.mixer.setTime(entry.person.elapsed);
@@ -949,7 +980,12 @@ function animate(now){
     }
   }
   renderer.render(scene,camera);
-  previewRenderer.render(previewScene,previewCamera);
+  // The preview can animate smoothly at 24 FPS instead of uploading and
+  // rendering a second WebGL canvas on every high-DPR world frame.
+  if(now-previewFrameAt>=1000/24){
+    previewRenderer.render(previewScene,previewCamera);
+    previewFrameAt=now;
+  }
 }
 updateCamera();resize();requestAnimationFrame(animate);
 // Resuming is safe because the seed reconstructs all resident appearances and target order.
