@@ -68,3 +68,13 @@ test('map interaction can be derived from the same geometry as world collision',
    assert.equal(M.canStand(m,a.x+(b.x-a.x)*.49,a.z+(b.z-a.z)*.49),open);
  }
 });
+
+test('first map is at the entrance; following maps have useful separation',()=>{
+ for(let seed=1;seed<=100;seed++){
+  const maze=M.generate(seed),main=M.route(maze,maze.start,maze.exit);
+  assert.equal(maze.stations[0],maze.start);
+  assert.equal(maze.stations.length,4);
+  const positions=maze.stations.map(i=>main.indexOf(i));
+  assert.ok(positions.every((v,i)=>i===0||v>positions[i-1]+8),'avoid clustered map stations');
+ }
+});
