@@ -369,11 +369,14 @@ function generateWorld() {
     // Keep the sign 1.05 units inside the 2.65 sidewalk centerline.
     const x=center.x+stop.side*1.60,z=center.z;
     const sign=new THREE.Group();sign.name='real-bus-platform';
-    sign.position.set(x,0,z);scenery.add(sign);
+    sign.position.set(x,0,z-1.3);scenery.add(sign);
     addPart(sign,cylinder(.045,.055,1.2,0x667a82,8),0,.61,0);
     addPart(sign,cube(.35,.37,.06,0xffd475),0,1.24,0);
     addPart(sign,cube(.24,.10,.074,0x447a88),0,1.29,.035);
-    addPart(scenery,cube(.38,.024,1.05,0xf1d48a),x,.084,z);
+    // A real access strip links the recessed waiting pocket to the one-way
+    // perimeter walkway; parked riders do not occupy the walking lane.
+    addPart(scenery,cube(1.15,.024,.55,0xf1d48a),
+      center.x+stop.side*2.125,.084,z);
   }
 
   for(const person of town.people) {
