@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" role="img" aria-labelledby="t d">
+<title id="t">옥수수밭 탈출</title><desc id="d">황금빛 옥수수밭 사이의 미로와 지도판, 멀리 보이는 출구</desc>
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#668f7c"/><stop offset="1" stop-color="#c9aa73"/></linearGradient><linearGradient id="road" x2="0" y2="1"><stop stop-color="#5d6040"/><stop offset="1" stop-color="#d9bc75"/></linearGradient></defs>
+<rect width="1000" height="560" fill="url(#sky)"/><circle cx="790" cy="120" r="105" fill="#f4d493" opacity=".65"/>
+<path d="M0 270Q300 200 500 270T1000 260V560H0Z" fill="#35583a"/>
+<path d="M430 280L570 280 850 560H160Z" fill="url(#road)"/>
+<g stroke="#1f4630" stroke-width="13" stroke-linecap="round" fill="none">
+<path d="M80 560V260M140 560V230M205 560V280M285 560V270M340 560V310M900 560V260M840 560V230M775 560V280M710 560V270M635 560V310"/>
+</g><g fill="#71964b" stroke="#315e30" stroke-width="5">
+<path d="M80 420Q10 360 5 320Q95 335 80 420ZM140 370Q65 295 60 280Q165 300 140 370ZM205 450Q130 390 125 360Q220 380 205 450ZM285 380Q360 315 375 295Q268 316 285 380ZM340 480Q400 410 422 395Q330 400 340 480Z"/>
+<path d="M900 420Q990 360 995 320Q890 335 900 420ZM840 370Q935 295 940 280Q815 300 840 370ZM775 450Q850 390 875 360Q755 380 775 450ZM710 380Q625 315 620 295Q725 316 710 380ZM635 480Q575 410 570 395Q645 400 635 480Z"/>
+</g><g fill="#e7ca77"><ellipse cx="137" cy="305" rx="10" ry="32"/><ellipse cx="841" cy="302" rx="11" ry="32"/><ellipse cx="284" cy="345" rx="10" ry="28"/><ellipse cx="712" cy="343" rx="10" ry="29"/></g>
+<path d="M458 322V264M542 322V264M451 264H549" stroke="#7e5535" stroke-width="15"/><rect x="469" y="283" width="62" height="35" rx="4" fill="#f4de9d"/><text x="500" y="305" font-size="18" font-weight="bold" text-anchor="middle" fill="#513a25">EXIT</text>
+<rect x="42" y="47" width="626" height="171" rx="21" fill="#172c20" opacity=".85"/>
+<text x="80" y="125" font-family="system-ui,sans-serif" font-size="75" font-weight="900" fill="#ffe0a3">옥수수밭 탈출</text><text x="85" y="180" font-family="system-ui,sans-serif" font-size="27" fill="#f1e6c7">지도를 읽고, 길을 기억하고, 탈출하라!</text>
+</svg>

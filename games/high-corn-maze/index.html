@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>옥수수밭 탈출 | 키즈케이드</title>
+<link rel="stylesheet" href="./style.css">
+<script src="../../kidscade-game-sdk.js" data-game-id="high_corn_maze" data-title="옥수수밭 탈출" data-shell="true" data-orientation="landscape" data-mute="false"></script>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+</head>
+<body>
+<canvas id="world" aria-label="1인칭 옥수수밭 탈출 3D 게임"></canvas>
+<div id="hud">
+ <div class="top"><div class="stat"><strong>옥수수밭 탈출</strong><small id="time">00:00</small></div><div class="compass"><span id="heading">북 N</span></div><div class="stat right"><strong id="chaseStatus">길을 찾아보세요</strong><small id="caughtCount">붙잡힘 0회</small></div></div>
+ <div id="crosshair" aria-hidden="true">·</div>
+ <div id="notice" role="status" aria-live="polite">지도판을 찾아 현재 위치를 추리하세요.</div>
+ <div id="actionArea"><button id="interact" type="button" hidden>지도 살펴보기 [E]</button></div>
+ <div id="controlsHint">WASD 이동 · 마우스로 둘러보기 · Shift 빠르게 · E 상호작용 · ESC 마우스 해제</div>
+</div>
+<div id="touchControls">
+ <div id="joystick" aria-label="이동 조이스틱"><div id="thumb"></div></div>
+ <div class="touchActions"><button id="run" type="button">빠르게</button><button id="touchInteract" type="button">지도/탈출</button></div>
+</div>
+<div id="mapOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="mapTitle">
+ <div class="mapPanel">
+  <div class="mapHeader"><div><small>옥수수밭 안내도</small><h2 id="mapTitle">나는 지금 어디에 있을까?</h2></div><button id="closeMap" type="button">지도 닫기</button></div>
+  <p>나의 위치는 자동으로 표시되지 않아요. 북쪽과 갈림길, 지형지물을 살펴보고 <b>예상 위치를 지도에 찍어 보세요.</b></p>
+  <div class="mapSurface"><canvas id="mapCanvas" width="660" height="660" aria-label="미로 지도: 클릭하여 내 예상 위치 표시"></canvas></div>
+  <div class="mapLegend">● 붉은 점: 내 예상 위치　◆ 지형지물　□ 지도판　★ 출구</div>
+  <p class="mapWarning">지도 보는 동안에도 괴물은 움직입니다!</p>
+ </div>
+</div>
+<div id="startOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+ <div class="startPanel">
+  <span class="eyebrow">KIDSCADE · 1인칭 미로 탐험</span>
+  <h1 id="startTitle">옥수수밭 탈출</h1>
+  <p class="lead">키보다 훨씬 큰 옥수수 사이에서 출구를 찾아보세요. 갈림길의 지도는 <b>미로 전체를 보여 주지만 나의 위치는 알려주지 않아요.</b></p>
+  <div class="modes"><button class="mode selected" data-mode="normal" type="button"><b>추격 탐험</b><small>지도 추리 + 느린 괴물 추격</small></button><button class="mode" data-mode="explore" type="button"><b>안전 탐험</b><small>괴물 없이 미로만 탐험</small></button></div>
+  <label class="seedLabel">미로 번호 (친구와 같은 번호로 도전)<input id="seed" type="number" min="1" max="999999999" value="20261110" inputmode="numeric"></label>
+  <button id="startButton" class="primary" type="button">옥수수밭에 들어가기</button>
+  <p class="controlSummary">PC: WASD·마우스·E · 모바일/태블릿: 왼쪽 이동, 오른쪽 화면 드래그로 시점 조절</p>
+  <p class="gentle">갑작스러운 화면 점프 연출이나 공격 장면은 없습니다. 괴물에게 잡히면 마지막 지도판부터 다시 시작합니다.</p>
+ </div>
+</div>
+<div id="endOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+ <div class="startPanel"><span class="eyebrow">탈출 성공</span><h1 id="endTitle">옥수수밭을 빠져나왔어요!</h1><p id="endSummary" class="lead"></p><button id="retry" class="primary" type="button">새 미로 도전하기</button></div>
+</div>
+<script src="./maze.js"></script>
+<script type="module" src="./game.js"></script>
+</body>
+</html>

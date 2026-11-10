@@ -122,6 +122,7 @@
       'korean_vocab','swipe_spelling','language_arcade','hanja_test','high_body_muscle_lab','math_pi_memory','science_periodic_memory','kor_hand_twist_typing'
     ]),
     run:Object.freeze([
+      'high_corn_maze','probability_dice_survival',
       'physics_lab',
       'high_one_life','yi_sun_sin','dialect_tour',
       'squid_survival_versus',

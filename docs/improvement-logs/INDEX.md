@@ -15,3 +15,4 @@
 | `squid_survival` | 꼴뚜기 게임 | [squid_survival.md](./squid_survival.md) | PR CI 확인, 6관문 모바일 플레이 검증 |
 
 작성법: [README](./README.md) · [템플릿](./TEMPLATE.md)
+| `high_corn_maze` | 옥수수밭 탈출 | [high_corn_maze.md](./high_corn_maze.md) | PR CI 결과·실제 PC/태블릿 1인칭 플레이 및 성능 검수 |

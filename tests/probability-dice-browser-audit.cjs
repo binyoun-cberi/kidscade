@@ -190,5 +190,5 @@ const errors=[];
  try{socket?.close();}catch(_){}
  if(child&&!child.killed)child.kill('SIGTERM');
  await new Promise(resolve=>server.close(resolve));
- if(dir)fs.rmSync(dir,{recursive:true,force:true});
+ if(dir){await sleep(220);try{fs.rmSync(dir,{recursive:true,force:true,maxRetries:6,retryDelay:160});}catch(e){console.warn('[dice-browser] nonfatal Chrome profile cleanup:',e.code);}}
 });
