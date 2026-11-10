@@ -55,6 +55,7 @@ async function main(){
  await send('Emulation.setDeviceMetricsOverride',{width:1280,height:800,deviceScaleFactor:1,mobile:false});
  await send('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/games/high-corn-maze/index.html?cornQa=1'});
  await wait('Boolean(window.CornMaze&&document.querySelector("#startButton"))','boot');
+ await wait('Boolean(window.__cornQA)','3D game module ready');
  await ev('document.querySelector(".mode[data-mode=explore]").click();document.querySelector("#startButton").click()');
  await wait('window.__cornQA?.get()?.instances>0','3D corn generated');
  await shot('desktop');
