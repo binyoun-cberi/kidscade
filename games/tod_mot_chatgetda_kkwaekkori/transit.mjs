@@ -27,7 +27,7 @@ export function reservedShuttleDropBay(town){
   const passenger=town.people.find(p=>p.id===bus?.rider);
   if(!passenger?.transit)return null;
   const station=service.stations[passenger.transit.toIndex];
-  return town.paths.slots.find(s=>s.block.id===station.block.id&&s.index===station.dock)?.id||null;
+  return station.platformId;
 }
 export function createTransit(town,getBlockCenter,blockPitch){
   if(town.challenge)return null;
@@ -39,6 +39,15 @@ export function createTransit(town,getBlockCenter,blockPitch){
       x:center.x+side*blockPitch/2,z:center.z};
   });
   if(stations.length<2)return null;
+  // Dedicated, outbound-only platforms never compete with residents' four
+  // activity bays. The platform lies on the already-drawn perimeter sidewalk.
+  for(const station of stations){
+    const c=getBlockCenter(station.block,town.config);
+    const id=station.block.id+':bus-platform',side=station.side;
+    town.paths.nodes.set(id,{id,x:c.x+side*2.65,z:c.z,next:[
+      station.block.id+(side<0?':nw':':se')]});
+    station.platformId=id;
+  }
   const bus={position:{x:stations[0].x,z:stations[0].z},heading:0,
     phase:'stopped',stopIndex:0,targetIndex:1,dwellUntil:4.5,
     route:[],routeIndex:0,rider:null};
@@ -97,16 +106,8 @@ function startAlighting(town,station){
   const service=town.transit,bus=service.bus;
   const p=town.people.find(p=>p.id===bus.rider);
   if(!p||p.transit?.phase!=='riding'||p.transit.toIndex!==bus.stopIndex)return;
-  const dock=town.paths.slots.find(s=>s.block.id===station.block.id&&s.index===station.dock);
-  if(!dock||town.paths.occupied.has(dock.id)){
-    service.delayedAlighting++;
-    const occupant=town.people.find(q=>q.slotId===dock?.id&&
-      q.state==='acting'&&!q.reserved&&!q.errand&&!q.socialWith);
-    // The resident steps aside on their own connected sidewalk, rather
-    // than moving the passenger diagonally across occupied activity bays.
-    if(occupant)occupant.routineAt=Math.min(occupant.routineAt,occupant.elapsed+.35);
-    return;
-  }
+  const dock={id:station.platformId,index:-1};
+  if(town.paths.occupied.has(dock.id)){service.delayedAlighting++;return;}
   const node=town.paths.nodes.get(dock.id);
   // Do not begin crossing the sidewalk while another walker is already
   // entering the vehicle-to-bay approach. This prevents mutual yield locks.
@@ -136,7 +137,8 @@ function moveDoorPassenger(town,person,dt,clearance,uniqueActivity){
     person.state='riding';trip.phase='riding';service.boarded++;
   }else{
     person.transit=null;person.state='acting';person.trips++;
-    person.lastNode=person.slotId;person.routineAt=person.elapsed+10;
+    // Leave the short-lived, exclusive curb platform via the real one-way sidewalk.
+    person.lastNode=person.slotId;person.routineAt=person.elapsed+.35;
     person.nextBusAt=town.time+42;
     const nextActivity=person.block.kind==='school'?'read':'map';
     if(uniqueActivity(town,person,nextActivity))person.activity=nextActivity;
