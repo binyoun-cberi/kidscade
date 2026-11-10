@@ -115,7 +115,7 @@ export function getStreetPlan(town){
   for(const [from,start] of town.paths.nodes)for(const to of start.next){
     // The platform-to-corner path lies directly on an existing sidewalk
     // segment; don't draw a duplicate patch or alter public crossing counts.
-    if(from.endsWith(':bus-platform'))continue;
+    if(from.endsWith(':bus-platform')||from.endsWith(':bus-curb'))continue;
     const key=[from,to].sort().join('|');
     if(seen.has(key))continue;
     seen.add(key);
