@@ -28,7 +28,7 @@ function clearWorld(){for(const child of [...world.children]){world.remove(child
 function mesh(mat,geo,x=0,y=0,z=0){const a=new THREE.Mesh(geo,mat);a.position.set(x,y,z);return a;}
 function banner(text,w=2.1,h=.76){const cv=document.createElement('canvas');cv.width=512;cv.height=190;const c=cv.getContext('2d');c.fillStyle='#e8d5a5';c.fillRect(0,0,512,190);c.fillStyle='#544027';c.strokeStyle='#614528';c.lineWidth=14;c.strokeRect(7,7,498,176);c.textAlign='center';c.font='bold 94px system-ui';c.fillText(text,256,126);const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;return mesh(new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}),new THREE.PlaneGeometry(w,h));}
 function standAt(cell,label,color=0x876d46){
- const p=M.center(state.maze,cell),g=new THREE.Group();g.position.set(p.x,0,p.z);
+ const p=M.center(state.maze,cell),g=new THREE.Group();g.position.set(p.x+1.35,0,p.z+1.35);
  const wood=new THREE.MeshLambertMaterial({color}),post=mesh(wood,new THREE.BoxGeometry(.21,1.9,.21),0,.95,0);g.add(post);
  const board=mesh(wood,new THREE.BoxGeometry(2.2,1.55,.15),0,1.9,0);g.add(board);
  const sign=banner(label);sign.position.set(0,1.9,.09);g.add(sign);
