@@ -29,7 +29,7 @@ const server=http.createServer((req,res)=>{
   res.writeHead(200,{'content-type':{'.html':'text/html','.js':'text/javascript','.css':'text/css','.glb':'model/gltf-binary','.obj':'text/plain','.svg':'image/svg+xml'}[path.extname(file)]||'application/octet-stream'});res.end(data)
  });
 });
-let chrome,ws,profile;const exceptions=[],network=[];
+let chrome,ws,profile;const exceptions=[],network=[],consoleErrors=[];
 async function main(){
  await new Promise(r=>server.listen(0,'127.0.0.1',r));profile=fs.mkdtempSync(path.join(os.tmpdir(),'kc-corn-browser-'));
  chrome=cp.spawn(CHROME,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--enable-unsafe-swiftshader','--use-angle=swiftshader','--remote-debugging-port=0','--remote-allow-origins=*','--disable-background-networking','--user-data-dir='+profile,'about:blank'],{stdio:'ignore'});
@@ -43,13 +43,15 @@ async function main(){
  ws=new WebSocket(url);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j});
  let id=0;const pending=new Map();
  ws.onmessage=e=>{const m=JSON.parse(String(e.data));if(m.method==='Runtime.exceptionThrown')exceptions.push(m.params?.exceptionDetails?.exception?.description||'exception');
+ if(m.method==='Log.entryAdded'&&m.params?.entry?.level==='error')consoleErrors.push(m.params.entry.text);
+ if(m.method==='Runtime.consoleAPICalled'&&m.params?.type==='error')consoleErrors.push(m.params.args?.map(x=>x.value||x.description).join(' ')||'console error');
  if(m.method==='Network.responseReceived'&&m.params?.response?.status>=400)network.push(m.params.response.url);
  const v=pending.get(m.id);if(!v)return;pending.delete(m.id);m.error?v[1](Error(m.error.message)):v[0](m.result||{})};
  const send=(method,params={})=>new Promise((r,j)=>{const key=++id;pending.set(key,[r,j]);ws.send(JSON.stringify({id:key,method,params}))});
  const ev=async expression=>{const result=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw Error(JSON.stringify(result.exceptionDetails).slice(0,1100));return result.result?.value};
- const wait=async(exp,label)=>{for(let i=0;i<130;i++){if(await ev(exp).catch(()=>false))return;await sleep(100)}throw Error('Timeout '+label+' errors '+exceptions.slice(-2))};
+ const wait=async(exp,label)=>{for(let i=0;i<130;i++){if(await ev(exp).catch(()=>false))return;await sleep(100)}throw Error('Timeout '+label+' errors='+exceptions.slice(-2)+' http='+network.slice(-8)+' console='+consoleErrors.slice(-8)+' page='+JSON.stringify(await ev("({qa:typeof window.__cornQA,game:document.querySelector('#startOverlay')?.className,title:document.title,scripts:[...document.scripts].map(s=>s.src),resources:performance.getEntriesByType('resource').filter(x=>x.name.includes('three-r160')).slice(-12).map(x=>x.name)})").catch(e=>e.message)))};
  const shot=async label=>{await sleep(150);const x=await send('Page.captureScreenshot',{format:'png'});const size=Buffer.from(x.data,'base64').length;assert.ok(size>6000,label+' screenshot too small '+size);console.log('[corn browser] screenshot '+label+' bytes='+size)};
- await send('Page.enable');await send('Runtime.enable');await send('Network.enable');
+ await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Log.enable');
  await send('Emulation.setDeviceMetricsOverride',{width:1280,height:800,deviceScaleFactor:1,mobile:false});
  await send('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/games/high-corn-maze/index.html?cornQa=1'});
  await wait('Boolean(window.CornMaze&&document.querySelector("#startButton"))','boot');
