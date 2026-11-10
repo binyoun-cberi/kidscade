@@ -7,7 +7,7 @@
 새 게임별 로그를 작성할 때 아래 표에 추가합니다.
 | 게임 ID | 게임명 | 이력 파일 | 다음 시작점 |
 | --- | --- | --- | --- |
-| `tod_mot_chatgetda_kkwaekkori` | 못 찾겠다 꾀꼬리 | [개선 이력](./tod_mot_chatgetda_kkwaekkori.md) | #752 병합 완료 · 실기기 FPS·정류장 교착·차체 중첩 시각 검수 |
+| `tod_mot_chatgetda_kkwaekkori` | 못 찾겠다 꾀꼬리 | [개선 이력](./tod_mot_chatgetda_kkwaekkori.md) | PR #756 실제 Chrome 품질 검증 · 소도시 버스 대기와 실기기 FPS 점검 |
 | `high_ota_typographic_horror` | 오타 — 이름을 잃어버린 밤 | [개선 이력](./high_ota_typographic_horror.md) | PR CI와 실제 Chrome 플레이, 창문 렌더링 검증 |
 | `squid_survival` | 꼴뚜기 게임 | [squid_survival.md](./squid_survival.md) | PR CI 확인, 6관문 모바일 플레이 검증 |
 | `high_corn_maze` | 옥수수밭 탈출 | [high_corn_maze.md](./high_corn_maze.md) | 품질 생성기 PR 검증 · 실제 학생 플레이 및 저사양 모바일 FPS 측정 |
