@@ -374,8 +374,25 @@ test('every on-screen sidewalk and crosswalk is an actual navigation edge',async
     for(const [id,node] of town.paths.nodes)for(const next of node.next)
       routeEdges.add([id,next].sort().join('|'));
     const renderedEdges=new Set([...plan.walks,...plan.crossings].map(s=>[s.from,s.to].sort().join('|')));
-    assert.equal(renderedEdges.size,routeEdges.size,'all footpaths must be drawn once');
-    for(const edge of routeEdges)assert.ok(renderedEdges.has(edge),edge);
+    // A platform has two real navigation links: its dedicated yellow access
+    // strip (rendered separately), and the merge into the existing sidewalk.
+    // Neither is a second painted zebra or a duplicated footway instance.
+    const stationAccess=new Set();
+    for(const station of town.transit?.stations||[]){
+      const platform=town.paths.nodes.get(station.platformId);
+      const curb=town.paths.nodes.get(station.gateId);
+      assert.ok(platform&&curb,'real bus platform and sidewalk gate must be routable');
+      assert.ok(Math.hypot(platform.x-curb.x,platform.z-curb.z)>=.9);
+      for(const node of [platform,curb])for(const next of node.next){
+        assert.ok(town.paths.nodes.has(next),'station access must lead to a real sidewalk');
+        stationAccess.add([node.id,next].sort().join('|'));
+      }
+    }
+    assert.equal(stationAccess.size,(town.transit?.stations.length||0)*2);
+    assert.equal(renderedEdges.size+stationAccess.size,routeEdges.size,
+      'public pavement plus dedicated bus access must cover every navigation edge');
+    for(const edge of routeEdges)assert.ok(renderedEdges.has(edge)||stationAccess.has(edge),edge);
+    assert.match(code,/cube\(1\.15,\.024,\.55/, 'station access must also be drawn');
     for(const cross of plan.crossings){
       const a=town.paths.nodes.get(cross.from),b=town.paths.nodes.get(cross.to);
       assert.ok(a&&b);
