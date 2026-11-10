@@ -78,3 +78,13 @@ test('first map is at the entrance; following maps have useful separation',()=>{
   assert.ok(positions.every((v,i)=>i===0||v>positions[i-1]+8),'avoid clustered map stations');
  }
 });
+
+test('First-person renderer imports only available vendored loaders and existing corn assets',()=>{
+ const fs=require('node:fs'),path=require('node:path'),root=path.resolve(__dirname,'..');
+ const game=fs.readFileSync(path.join(root,'games/high-corn-maze/game.js'),'utf8');
+ assert.match(game,/FBXLoader/);
+ assert.doesNotMatch(game,/OBJLoader/);
+ for(const rel of ['assets/vendor/three-r160/addons/loaders/FBXLoader.js','assets/vendor/three-r160/addons/loaders/GLTFLoader.js','assets/game/crops/FBX/Corn_4.fbx','assets/game/3d/characters/monsters/ultimate-monsters-bundle/ghost.glb']){
+  assert.ok(fs.existsSync(path.join(root,rel)),'missing dependency '+rel);
+ }
+});
