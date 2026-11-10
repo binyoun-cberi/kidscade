@@ -1,7 +1,34 @@
 // Renderer-independent shuttle on the town's existing public road grid.
 import { trafficLightAllows, reserveBusRoad, releaseBusRoad, TRAFFIC_RULES } from './traffic.mjs';
 // Never consumes the seeded puzzle RNG or changes target/foil identities.
-export const SHUTTLE = Object.freeze({speed:2.35,dwell:5.5,doorSeconds:2.1,capacity:1});
+export const SHUTTLE = Object.freeze({speed:2.35,dwell:5.5,doorSeconds:2.1,capacity:1,
+  halfLength:1.25,halfWidth:.44,personRadius:.22,bodyMargin:.075});
+// Signed edge-to-edge spacing from a standing/walking resident to the
+// bus's oriented actual visible footprint (not center-to-center distance).
+export function busBodyGap(bus,point){
+  const dx=point.x-bus.position.x,dz=point.z-bus.position.z;
+  const length=dx*Math.sin(bus.heading)+dz*Math.cos(bus.heading);
+  const side=dx*Math.cos(bus.heading)-dz*Math.sin(bus.heading);
+  return Math.hypot(Math.max(0,Math.abs(length)-SHUTTLE.halfLength),
+    Math.max(0,Math.abs(side)-SHUTTLE.halfWidth))-SHUTTLE.personRadius;
+}
+export function walkingClearOfBus(town,p,next){
+  const bus=town.transit?.bus;
+  if(!bus||p.transit)return true;
+  const upcoming=busBodyGap(bus,next),before=busBodyGap(bus,p.position);
+  // If the vehicle is already at the crossing, wait outside its footprint.
+  // If already within that footprint, walk outward to avoid imprisoning
+  // people or deadlocking against a stationary door.
+  return upcoming>=SHUTTLE.bodyMargin-1e-6||
+    (before<SHUTTLE.bodyMargin-1e-6&&upcoming>before+1e-6);
+}
+export function reservedShuttleDropBay(town){
+  const service=town.transit,bus=service?.bus;
+  const passenger=town.people.find(p=>p.id===bus?.rider);
+  if(!passenger?.transit)return null;
+  const station=service.stations[passenger.transit.toIndex];
+  return town.paths.slots.find(s=>s.block.id===station.block.id&&s.index===station.dock)?.id||null;
+}
 export function createTransit(town,getBlockCenter,blockPitch){
   if(town.challenge)return null;
   const hubs=town.blocks.filter(b=>b.kind==='stop'||b.kind==='school');
@@ -15,7 +42,7 @@ export function createTransit(town,getBlockCenter,blockPitch){
   const bus={position:{x:stations[0].x,z:stations[0].z},heading:0,
     phase:'stopped',stopIndex:0,targetIndex:1,dwellUntil:4.5,
     route:[],routeIndex:0,rider:null};
-  return {stations,bus,pitch:blockPitch,boarded:0,alighted:0,arrivals:0,recent:[]};
+  return {stations,bus,pitch:blockPitch,boarded:0,alighted:0,arrivals:0,recent:[],delayedAlighting:0,maxDestinationHold:0};
 }
 function routeOnRoads(town,from,to){
   const {rows}=town.config;
@@ -71,7 +98,7 @@ function startAlighting(town,station){
   const p=town.people.find(p=>p.id===bus.rider);
   if(!p||p.transit?.phase!=='riding'||p.transit.toIndex!==bus.stopIndex)return;
   const dock=town.paths.slots.find(s=>s.block.id===station.block.id&&s.index===station.dock);
-  if(!dock||town.paths.occupied.has(dock.id))return;
+  if(!dock||town.paths.occupied.has(dock.id)){service.delayedAlighting++;return;}
   const node=town.paths.nodes.get(dock.id);
   // Do not begin crossing the sidewalk while another walker is already
   // entering the vehicle-to-bay approach. This prevents mutual yield locks.
@@ -128,8 +155,11 @@ export function stepTransit(town,dt,clearance,uniqueActivity){
     // occupied. Stay on the road until the existing walker can depart.
     if(rider?.transit?.phase==='riding'&&rider.transit.toIndex===bus.stopIndex){
       bus.dwellUntil=Math.max(bus.dwellUntil,town.time+.7);
+      bus.destinationWaitSince??=town.time;
+      service.maxDestinationHold=Math.max(service.maxDestinationHold,town.time-bus.destinationWaitSince);
       return;
     }
+    bus.destinationWaitSince=null;
     if(!bus.rider)startBoarding(town,station);
     const doorBusy=town.people.some(p=>p.id===bus.rider&&
       ['boarding','alighting'].includes(p.transit?.phase));
@@ -156,9 +186,11 @@ export function stepTransit(town,dt,clearance,uniqueActivity){
     // The visible signal applies to this actual route segment.
     const axis=Math.abs(dx)>Math.abs(dz)?'horizontal':'vertical';
     if(!trafficLightAllows(town,bus.position,next,axis))return;
-    // A pedestrian has priority even when the vehicle aspect is green.
+    // The entire bus mesh must clear a crossing resident; a center-only
+    // 1.2-unit check still clipped the bus nose into crossing characters.
+    const nextBus={position:next,heading:Math.abs(dx)>Math.abs(dz)?Math.atan2(dx,dz):bus.heading};
     if(town.people.some(p=>p.id!==bus.rider&&p.state==='walking'&&
-      Math.hypot(next.x-p.position.x,next.z-p.position.z)<1.2))return;
+      busBodyGap(nextBus,p.position)<SHUTTLE.bodyMargin))return;
     // No bus may enter an occupied car intersection.
     if(town.traffic?.cars.some(car=>
       Math.hypot(next.x-car.position.x,next.z-car.position.z)<TRAFFIC_RULES.vehicleClearance))return;
