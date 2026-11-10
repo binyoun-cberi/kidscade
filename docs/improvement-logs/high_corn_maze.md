@@ -88,6 +88,6 @@
 
 - 최종 측정(수정 브랜치, 1~400번): 최단 경로 85~122칸, 중앙값 91칸. 외곽 출구/회전 제한/단서 옆길 배치/모든 칸 연결 검사 위반 0건. V8 환경의 400시드 검사 약 22.97초.
 - 상태: 부분 검증. 실제 사용자가 직접 플레이한 시간과 태블릿 FPS 미측정. CI Chromium 및 전체 회귀는 확인 후 기재.
-- PR: 생성 후 링크 갱신 예정. 작성 시점 main 미병합·Cloudflare 미배포.
+- PR: https://github.com/binyoun-cberi/kidscade/pull/755 (작성 시점 열림; CI 결과 미확인, main 미병합·Cloudflare 미배포).
 - 보존: 기존 게임 ID, Three.js와 FBX/GLB, 터치 조작, Kidscade SDK 및 Cloudflare Workers/D1/Durable Objects; 비밀키·유료 API·원격 D1·실배포 접근 없음.
 - 다음 단계: PR CI 확인 후 사용자가 이번 메시지에서 승인한 병합을 진행하되, 병합 커밋 [skip ci]로 main push 자동 원격 D1/Cloudflare 배포 트리거를 막는다.
