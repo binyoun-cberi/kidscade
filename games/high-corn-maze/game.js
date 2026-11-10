@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {OBJLoader} from 'three/addons/loaders/OBJLoader.js';
+import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 const M=window.CornMaze,$=id=>document.getElementById(id);
 const ui={canvas:$('world'),time:$('time'),heading:$('heading'),status:$('chaseStatus'),caught:$('caughtCount'),notice:$('notice'),interact:$('interact'),touchInteract:$('touchInteract'),map:$('mapOverlay'),mapCanvas:$('mapCanvas'),intro:$('startOverlay'),end:$('endOverlay'),summary:$('endSummary'),seed:$('seed'),stick:$('joystick'),thumb:$('thumb'),run:$('run')};
@@ -79,7 +79,7 @@ function populateCorn(group,positions){
  world.add(collection);return collection;
 }
 async function loadCorn(token,positions,fallback){
- try{const root=await new OBJLoader().loadAsync('../../assets/game/crops/OBJ/Corn_4.obj');if(token!==state.generation)return;
+ try{const root=await new FBXLoader().loadAsync('../../assets/game/crops/FBX/Corn_4.fbx');if(token!==state.generation)return;
   const built=populateCorn(root,positions);if(fallback.parent){fallback.parent.remove(fallback);fallback.traverse(n=>{if(n.isMesh){n.geometry.dispose();n.material.dispose();}});}return built;
  }catch(e){console.warn('Corn model fallback',e.message);}
 }
