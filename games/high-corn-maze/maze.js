@@ -17,27 +17,86 @@ function route(maze,from,to){if(from<0||to<0)return[];const prev=new Int16Array(
 function center(maze,i){return{x:((i%maze.size)-(maze.size-1)/2)*maze.cell,z:(Math.floor(i/maze.size)-(maze.size-1)/2)*maze.cell};}
 function current(maze,x,z){const c=Math.floor((x+maze.size*maze.cell/2)/maze.cell),r=Math.floor((z+maze.size*maze.cell/2)/maze.cell);return r<0||c<0||r>=maze.size||c>=maze.size?-1:id(r,c,maze.size);}
 function canStand(maze,x,z,radius=.43){const at=current(maze,x,z);if(at<0)return false;const p=center(maze,at),dx=x-p.x,dz=z-p.z,limit=maze.cell/2-radius,wall=maze.links[at];return !((dx>limit&&!(wall&2))||(dx< -limit&&!(wall&8))||(dz>limit&&!(wall&4))||(dz< -limit&&!(wall&1)));}
-function generate(seed=20261110,size=SIZE){size=Math.max(11,Math.min(29,Math.round(size)|1));let winner=null;
-for(let attempt=0;attempt<32;attempt++){
- const random=rng((seed>>>0)^(Math.imul(attempt+1,0x9e3779b9))),count=size*size,links=new Uint8Array(count),seen=new Uint8Array(count),stack=[0];seen[0]=1;
- while(stack.length){const at=stack[stack.length-1],choices=[];for(let d=0;d<4;d++){const n=neighbor(at,d,size);if(n>=0&&!seen[n])choices.push(d);}if(!choices.length){stack.pop();continue;}const d=choices[Math.floor(random()*choices.length)],n=neighbor(at,d,size);carve(links,at,d,size);seen[n]=1;stack.push(n);}
- const maze={size,cell:CELL,seed:seed>>>0,links:Array.from(links)};
- const closed=[];for(let i=0;i<count;i++)for(const d of [1,2]){const n=neighbor(i,d,size);if(n>=0&&!(links[i]&BITS[d]))closed.push([i,d,n]);}
- const extra=Math.max(10,Math.floor(size*size*.048));
- for(let n=0,tries=0;n<extra&&tries<closed.length*3;tries++){const k=Math.floor(random()*closed.length),edge=closed.splice(k,1)[0];if(!edge)break;if(route(maze,edge[0],edge[2]).length<8)continue;carve(links,edge[0],edge[1],size);maze.links[edge[0]]=links[edge[0]];maze.links[edge[2]]=links[edge[2]];n++;}
- maze.links=Array.from(links);
- const dists=distances(maze,0);let exit=1;for(let i=2;i<count;i++)if(dists[i]>dists[exit])exit=i;
- const main=route(maze,0,exit);
- const junctions=maze.links.filter(v=>[0,1,2,3].reduce((n,d)=>n+!!(v&BITS[d]),0)>=3).length;
- const deadEnds=maze.links.filter(v=>[0,1,2,3].reduce((n,d)=>n+!!(v&BITS[d]),0)===1).length;
- const stations=[0,.32,.60,.82].map(f=>main[Math.floor((main.length-1)*f)]);
- const landmarks=[.14,.35,.57,.76].map((f,i)=>({cell:main[Math.floor((main.length-1)*f)],name:LABELS[i],type:i}));
- Object.assign(maze,{start:0,exit,stations,landmarks,metrics:{shortest:main.length-1,junctions,deadEnds}});
- const score=Math.abs(main.length-120)+Math.abs(junctions-45)*.6;
- if(!winner||score<winner.score)winner={maze,score};
- if(main.length>=70&&main.length<=185&&junctions>=18&&deadEnds>=12)return maze;
+// Rate the actual shortest walking route rather than only the number of cells.
+function pathQuality(path){
+ const steps=path.length-1;let turns=0,streak=0,maxTurnStreak=0,longestStraight=1,straight=1;
+ for(let i=2;i<path.length;i++)if(path[i]-path[i-1]!==path[i-1]-path[i-2]){
+  turns++;streak++;maxTurnStreak=Math.max(maxTurnStreak,streak);
+  longestStraight=Math.max(longestStraight,straight);straight=1;
+ }else{straight++;streak=0;}
+ return {steps,turns,turnRatio:turns/Math.max(1,steps-1),maxTurnStreak,longestStraight:Math.max(straight,longestStraight)};
 }
-return winner.maze;
+// A few clues should reward short detours, not trace a painted line to the exit.
+function pickBranch(maze,anchor,onSolution,used,random){
+ const hops=distances(maze,anchor),items=[];
+ for(let i=0;i<maze.links.length;i++){
+  if(onSolution.has(i)||used.has(i)||hops[i]<2||hops[i]>4)continue;
+  if([...used].some(other=>Math.abs(Math.floor(i/maze.size)-Math.floor(other/maze.size))+Math.abs(i%maze.size-other%maze.size)<2))continue;
+  items.push({cell:i,score:Math.abs(hops[i]-3)*4+random()});
+ }
+ items.sort((a,b)=>a.score-b.score);
+ return items.length?items[0].cell:-1;
+}
+function generate(seed=20261110,size=SIZE){
+ size=Math.max(11,Math.min(29,Math.round(size)|1));
+ const scale=size/SIZE,minSteps=Math.max(20,Math.round(85*scale)),maxSteps=Math.round(145*scale),MAX_ATTEMPTS=96;
+ for(let attempt=0;attempt<MAX_ATTEMPTS;attempt++){
+  const random=rng((seed>>>0)^(Math.imul(attempt+1,0x9e3779b9))),count=size*size,links=new Uint8Array(count),seen=new Uint8Array(count),stack=[0];seen[0]=1;
+  while(stack.length){
+   const at=stack[stack.length-1],choices=[];
+   for(let d=0;d<4;d++){const n=neighbor(at,d,size);if(n>=0&&!seen[n])choices.push(d);}
+   if(!choices.length){stack.pop();continue;}
+   const d=choices[Math.floor(random()*choices.length)],n=neighbor(at,d,size);
+   carve(links,at,d,size);seen[n]=1;stack.push(n);
+  }
+  const maze={size,cell:CELL,seed:seed>>>0,links:Array.from(links)},closed=[];
+  for(let i=0;i<count;i++)for(const d of [1,2]){
+   const n=neighbor(i,d,size);if(n>=0&&!(links[i]&BITS[d]))closed.push([i,d,n]);
+  }
+  const extra=Math.max(6,Math.floor(size*size*.048));
+  for(let n=0,tries=0;n<extra&&tries<closed.length*3;tries++){
+   const k=Math.floor(random()*closed.length),edge=closed.splice(k,1)[0];if(!edge)break;
+   if(route(maze,edge[0],edge[2]).length<8)continue;
+   carve(links,edge[0],edge[1],size);
+   maze.links[edge[0]]=links[edge[0]];maze.links[edge[2]]=links[edge[2]];n++;
+  }
+  maze.links=Array.from(links);
+  const junctions=maze.links.filter(v=>BITS.reduce((n,bit)=>n+!!(v&bit),0)>=3).length;
+  const deadEnds=maze.links.filter(v=>BITS.reduce((n,bit)=>n+!!(v&bit),0)===1).length;
+  if(junctions<Math.floor(18*scale*scale)||deadEnds<Math.floor(12*scale*scale))continue;
+  // One BFS supplies distance and predecessors for all opposite-border exit candidates.
+  const depth=new Int16Array(count).fill(-1),prev=new Int16Array(count).fill(-1),q=[0];depth[0]=0;prev[0]=0;
+  for(let h=0;h<q.length;h++)for(const n of adjacent(maze,q[h]))if(depth[n]<0){depth[n]=depth[q[h]]+1;prev[n]=q[h];q.push(n);}
+  const candidates=[];
+  for(let i=1;i<count;i++){
+   const row=Math.floor(i/size),col=i%size;
+   if(row!==size-1&&col!==size-1)continue;
+   if(depth[i]<minSteps||depth[i]>maxSteps)continue;
+   const path=[];for(let p=i;p!==0;p=prev[p])path.push(p);
+   path.push(0);path.reverse();
+   const quality=pathQuality(path);
+   if(quality.turnRatio>.68||quality.maxTurnStreak>12||quality.longestStraight<4)continue;
+   const deadExit=((links[i]&(links[i]-1))===0);
+   candidates.push({exit:i,path,quality,score:Math.abs(quality.steps-111*scale)+Math.max(0,quality.turnRatio-.58)*90+(deadExit?0:6)+random()*2});
+  }
+  if(!candidates.length)continue;
+  candidates.sort((a,b)=>a.score-b.score);
+  const chosen=candidates[0],main=chosen.path,onSolution=new Set(main),used=new Set([0,chosen.exit]),at=f=>main[Math.floor((main.length-1)*f)];
+  const stations=[0,at(.32)],branch=pickBranch(maze,at(.60),onSolution,new Set([...used,...stations]),random);
+  if(branch<0)continue;
+  stations.push(branch,at(.82));stations.forEach(x=>used.add(x));
+  const landmarks=[];
+  for(let i=0;i<LABELS.length;i++){
+   const anchor=at([.14,.38,.64,.77][i]),offRoute=i===1||i===3;
+   const cell=offRoute?pickBranch(maze,anchor,onSolution,used,random):anchor;
+   if(cell<0||used.has(cell))break;
+   used.add(cell);landmarks.push({cell,name:LABELS[i],type:i});
+  }
+  if(landmarks.length!==4)continue;
+  Object.assign(maze,{start:0,exit:chosen.exit,stations,landmarks,metrics:{shortest:chosen.quality.steps,junctions,deadEnds,turns:chosen.quality.turns,turnRatio:chosen.quality.turnRatio,maxTurnStreak:chosen.quality.maxTurnStreak,generationAttempts:attempt+1}});
+  return maze;
+ }
+ throw new Error('Unable to generate a fair corn maze for seed '+seed+' and size '+size);
 }
 function createHunter(maze,mode='normal'){return{phase:mode==='explore'?'disabled':'waiting',timer:mode==='explore'?0:70,elapsed:0,routeTimer:0,path:[],x:0,z:0,encounters:0,caught:0,lost:0};}
 function spawnHunter(maze,hunter,player){const at=current(maze,player.x,player.z);if(at<0)return false;const hop=distances(maze,at),options=[];for(let i=0;i<hop.length;i++)if(hop[i]>=6&&hop[i]<=11&&i!==maze.exit&&!maze.stations.includes(i))options.push(i);if(!options.length)return false;const cell=options[(maze.seed+hunter.encounters*23)%options.length];const p=center(maze,cell);hunter.x=p.x;hunter.z=p.z;hunter.phase='warning';hunter.timer=3;hunter.elapsed=0;hunter.lost=0;hunter.encounters++;return true;}
