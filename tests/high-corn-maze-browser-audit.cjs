@@ -8,7 +8,7 @@ const hook=`
 if(new URL(location.href).searchParams.has('cornQa')){
  window.__cornQA={
   get:()=>({seed:state.maze?.seed,won:state.won,phase:state.hunter?.phase,elapsed:state.elapsed,player:{...state.player},guess:state.guess,mapOpen:state.mapOpen,instances:world.children.reduce((n,c)=>n+Number(!!c.isInstancedMesh)+c.children.filter(x=>x.isInstancedMesh).length,0),shortest:M.route(state.maze,0,state.maze.exit).length-1}),
-  first:()=>state.maze.stations[0],exit:()=>state.maze.exit,action:()=>nearAction(),
+  first:()=>state.maze.stations[0],second:()=>state.maze.stations[1],exit:()=>state.maze.exit,action:()=>nearAction(),
   go:(end)=>{const path=M.route(state.maze,M.current(state.maze,state.player.x,state.player.z),end);if(!path.length)throw Error('No route');
    let steps=0;for(const cell of path.slice(1)){const dest=M.center(state.maze,cell);state.yaw=Math.atan2(-(dest.x-state.player.x),-(dest.z-state.player.z));state.keys.add('KeyW');
     for(let n=0;n<90;n++){const distance=Math.hypot(dest.x-state.player.x,dest.z-state.player.z);if(distance<.012)break;const before=distance;step(Math.min(.05,distance/3.65));steps++;if(Math.hypot(dest.x-state.player.x,dest.z-state.player.z)>before-.0001)throw Error('Blocked movement '+cell);}
@@ -63,12 +63,14 @@ async function main(){
  assert.ok(await ev('window.__cornQA.get().guess>=0'),'Cannot mark map');
  await shot('map');
  await ev('document.querySelector("#closeMap").click()');
+ const second=await ev('window.__cornQA.go(window.__cornQA.second())');
+ assert.ok(second.steps>100,'Player must physically traverse the maze to next map');
  const end=await ev('window.__cornQA.go(window.__cornQA.exit())');
  assert.equal(await ev('window.__cornQA.action().type'),'exit');
  await ev('document.querySelector("#interact").click()');
  assert.equal(await ev('window.__cornQA.get().won'),true);
  await shot('escape');
- console.log('[corn browser] PASS walking first='+JSON.stringify(first)+' finish='+JSON.stringify(end));
+ console.log('[corn browser] PASS walking first='+JSON.stringify(first)+' second='+JSON.stringify(second)+' finish='+JSON.stringify(end));
  await send('Emulation.setDeviceMetricsOverride',{width:430,height:932,deviceScaleFactor:1,mobile:true});
  await ev('document.querySelector("#retry").click()');
  await wait('window.__cornQA?.get()?.instances>0','mobile re-entry');
