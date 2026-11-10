@@ -57,3 +57,16 @@
 - GitHub: PR https://github.com/binyoun-cberi/kidscade/pull/754, 작업 브랜치 `feat/high-corn-maze-escape-20261110`. 이 시점 **main 미병합, Cloudflare 미배포**.
 - 남은 문제: 브라우저 실행 실패 원인 진단/수정, 자동 완주 통과, 장시간 몬스터 추격과 시각성, 실기기 로딩/FPS 측정.
 - 다음 계획: 최신 CI 타임아웃 상세 진단 로그 확인 후 하나의 원인에 집중하여 수정하고, 수용 기준을 만족하면 PR 병합. 실제 배포·원격 DB 변경은 실행하지 않음.
+
+
+### 2026-11-10 — Chromium 준비 순서 수정 및 성공한 회귀 검증
+
+- 증상: 브라우저 자동 검사에서 `Timeout 3D corn generated`. 초기에는 존재하지 않는 OBJ 로더 참조가 있었고 FBXLoader로 수정한 후에도 재현.
+- 재분석: 검사 스크립트가 `window.CornMaze`(동기 스크립트) 준비만 확인하고 비동기 `game.js` 모듈이 로드되기 전에 시작 버튼을 클릭할 수 있음을 발견.
+- 수정: `tests/high-corn-maze-browser-audit.cjs`에서 `window.__cornQA`가 제공된 뒤에만 게임 시작. 실제 Three.js 렌더링, 지도판 열기/위치 찍기, 통로 이동, 출구 상호작용, 모바일 뷰포트, 괴물 추격을 자동 플레이 검사에 포함.
+- 실제 검증: GitHub Actions `Kidscade architecture checks` 실행 `42732919533`, `node-tests` 잡의 `Run all regression tests and audits` 단계가 **성공**. 해당 회귀 목록에는 신규 옥수수밭 Chromium 플레이 테스트가 포함되어 있음. `Check platform health baseline`, `Build Cloudflare static artifact` 단계도 성공. 동일 실행의 Openmon·Gigacity 브라우저 검사 통과. 작성 시 다른 별도 잡 결과는 확인 중.
+- 난이도 판정: 최단 경로를 보는 가상 플레이에서는 쉬운 편(최단 주행 중앙값 약 2.8분). 실제 지도 없이 기억 기반 DFS는 더 오래 걸림(중앙값 약 12.1분, 90분위 약 20.5분). 이에 따라 첫 지도판을 입구로 옮겨 길찾기 초반 진입 장벽을 낮춤. 이 수치는 실제 학생 플레이 측정이 아니며 인간의 난도는 미검증.
+- 최종 상태(작성 시): **부분 검증** — 미로/추격 시뮬레이션 및 자동 Chromium 경로 플레이 검증, 실제 사람의 수동 플레이·실기기 FPS는 미검증.
+- PR: https://github.com/binyoun-cberi/kidscade/pull/754. 사용자 명시 승인으로 병합 예정. `main` 푸시 시 Cloudflare 원격 D1 마이그레이션·배포 자동화가 연결되어 있으므로 **병합 커밋에 `[skip ci]`를 사용하여 사용자 승인 없는 배포를 피할 계획**. 워크플로 설정 자체는 변경하지 않음.
+- 미실행: 실제 Cloudflare 배포, 원격 D1 변경, 비밀키 조회, 유료 API, 학생 정보 접근.
+- 다음 시작점: 실기기에서 첫 플레이로 길 찾기 시간, 프레임, 옥수수 시야/밀도 및 괴물 추격의 체감 난도를 평가하고 필요시 별도 PR로 보정.
