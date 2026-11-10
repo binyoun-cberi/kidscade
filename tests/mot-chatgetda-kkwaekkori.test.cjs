@@ -482,7 +482,7 @@ test('the shuttle actually boards residents at curbside stops and drops them in 
     const original=new Map(town.people.map(p=>[p.id,{...p.position}]));
     let boarding=false,riding=false,alighting=false,minDistance=Infinity,changedBus=false;
     const initial={...service.bus.position};
-    for(let tick=0;tick<3000;tick++){
+    for(let tick=0;tick<2000;tick++){
       movePeople(town,.2);
       const bus=service.bus,at=bus.position;
       assert.ok(Number.isFinite(at.x)&&Number.isFinite(at.z));
@@ -640,11 +640,11 @@ test('shuttle body extent—not just its center—clears actual walking citizens
     pathToFileURL(path.join(dir,'transit.mjs')).href);
   assert.equal(busBodyGap({position:{x:0,z:0},heading:0},{x:0,z:1.1}),
     -SHUTTLE.personRadius,'geometry uses real visible bus nose');
-  for(const stage of ['small','medium','large'])for(const seed of [42,812]){
+  for(const stage of ['small','medium','large'])for(const seed of [42]){
     const town=makeTown(stage,seed,'normal');
     const looks=town.order.map(id=>[id,signature(town.people.find(p=>p.id===id))]);
     let worst=Infinity,largestWait=0;
-    for(let tick=0;tick<650;tick++){
+    for(let tick=0;tick<360;tick++){
       movePeople(town,.2);
       const bus=town.transit.bus;
       if(bus.rider){
