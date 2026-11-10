@@ -30,7 +30,7 @@ for(let attempt=0;attempt<32;attempt++){
  const main=route(maze,0,exit);
  const junctions=maze.links.filter(v=>[0,1,2,3].reduce((n,d)=>n+!!(v&BITS[d]),0)>=3).length;
  const deadEnds=maze.links.filter(v=>[0,1,2,3].reduce((n,d)=>n+!!(v&BITS[d]),0)===1).length;
- const stations=[.19,.39,.62,.82].map(f=>main[Math.floor((main.length-1)*f)]);
+ const stations=[0,.32,.60,.82].map(f=>main[Math.floor((main.length-1)*f)]);
  const landmarks=[.14,.35,.57,.76].map((f,i)=>({cell:main[Math.floor((main.length-1)*f)],name:LABELS[i],type:i}));
  Object.assign(maze,{start:0,exit,stations,landmarks,metrics:{shortest:main.length-1,junctions,deadEnds}});
  const score=Math.abs(main.length-120)+Math.abs(junctions-45)*.6;
