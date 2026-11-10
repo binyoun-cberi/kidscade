@@ -192,12 +192,18 @@ function depart(town,p){
   const routine=ROUTINES[p.routine];
   const carrying=p.errand?.phase==='carrying';
   const kinds=carrying?['park','home']:p.reserved?visits[p.activity]:[routine[(p.lifeStop+1)%routine.length][0]];
-  const candidates=town.paths.slots.filter(s=>s.block.id!==p.block.id&&!town.paths.occupied.has(s.id));
+  const leavingPlatform=p.slotId.endsWith(':bus-platform')&&!p.reserved;
+  const candidates=town.paths.slots.filter(s=>
+    (s.block.id!==p.block.id||leavingPlatform)&&!town.paths.occupied.has(s.id));
   const preferred=candidates.filter(s=>kinds.includes(s.block.kind));
   // Background neighbors can do another errand if a favorite district is full.
   // Clue residents retain their action/prop and only visit suitable places.
-  const pool=[...preferred.filter(s=>s.block.kind!==p.block.kind),...preferred.filter(s=>s.block.kind===p.block.kind),
-    ...(p.reserved||carrying?[]:candidates.filter(s=>!kinds.includes(s.block.kind)))];
+  // A rider should clear the boarding pocket into a free nearby bay before
+  // competing for long cross-town paths. It is a real one-way sidewalk trip.
+  const nearby=leavingPlatform?candidates.filter(s=>s.block.id===p.block.id):[];
+  const pool=[...nearby,...preferred.filter(s=>s.block.id!==p.block.id),
+    ...preferred.filter(s=>s.block.id===p.block.id&&!nearby.includes(s)),
+    ...(p.reserved||carrying?[]:candidates.filter(s=>!kinds.includes(s.block.kind)&&!nearby.includes(s)))];
   const busy=new Set();
   for(const q of town.people){
     if(q.state==='walking')for(const id of reservedNodes(town,q))busy.add(id);
@@ -207,7 +213,8 @@ function depart(town,p){
     }
   }
   pool.sort((a,b)=>{
-    const score=s=>(carrying?(s.block.kind===p.errand.goal?0:35):(kinds.includes(s.block.kind)?0:100))+
+    const score=s=>(leavingPlatform&&s.block.id===p.block.id?-100:
+      carrying?(s.block.kind===p.errand.goal?0:35):(kinds.includes(s.block.kind)?0:100))+
       Math.abs(town.paths.nodes.get(s.id).x-p.position.x)+Math.abs(town.paths.nodes.get(s.id).z-p.position.z);
     return score(a)-score(b);
   });
