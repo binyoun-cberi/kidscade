@@ -12,9 +12,21 @@ test('300 seeds produce deterministic, fully reachable mazes with consistent wal
    assert.ok(distances.every(v=>v>=0),'all cells must be connected: '+seed);
    const path=M.route(maze,maze.start,maze.exit);
    min=Math.min(min,path.length-1);max=Math.max(max,path.length-1);
-   assert.ok(path.length>=45,'exit should not be trivial: '+seed);
-   for(const stop of [...maze.stations,...maze.landmarks.map(l=>l.cell)])assert.ok(path.includes(stop),'station / landmark on main route: '+seed);
+   assert.ok(path.length-1>=85&&path.length-1<=145,'balanced shortest path: '+seed);
+   const er=Math.floor(maze.exit/maze.size),ec=maze.exit%maze.size;
+   assert.ok(er===maze.size-1||ec===maze.size-1,'exit must be on opposite perimeter: '+seed);
+   assert.ok(er+ec>=maze.size-1,'exit cannot be beside entrance: '+seed);
+   assert.notEqual(maze.exit,maze.size*maze.size-1,'two-way corner exits are ambiguous');
+   assert.ok(maze.metrics.turnRatio<=.68,'too many rapid turns: '+seed);
+   assert.ok(maze.metrics.maxTurnStreak<=12,'uninterrupted zigzag: '+seed);
+   assert.ok(maze.metrics.generationAttempts>=1&&maze.metrics.generationAttempts<=192);
+   const onRoute=new Set(path);
+   assert.equal(maze.stations.filter(cell=>!onRoute.has(cell)).length,1,'one map requires a detour: '+seed);
+   assert.equal(maze.landmarks.filter(place=>!onRoute.has(place.cell)).length,2,'some clues must reward exploration: '+seed);
    assert.equal(new Set(maze.stations).size,maze.stations.length);
+   assert.equal(new Set(maze.landmarks.map(place=>place.cell)).size,maze.landmarks.length);
+   assert.ok(maze.stations.every(cell=>cell>=0&&cell<maze.links.length));
+   assert.ok(maze.landmarks.every(place=>place.cell>=0&&place.cell<maze.links.length));
    for(let i=0;i<maze.links.length;i++)for(let dir=0;dir<4;dir++)if(maze.links[i]&(1<<dir)){
      const other=M.neighbor(i,dir,maze.size);
      assert.ok(other>=0);
@@ -69,14 +81,40 @@ test('map interaction can be derived from the same geometry as world collision',
  }
 });
 
-test('first map is at the entrance; following maps have useful separation',()=>{
+test('first map is at the entrance; later maps are meaningfully separated but findable',()=>{
  for(let seed=1;seed<=100;seed++){
   const maze=M.generate(seed),main=M.route(maze,maze.start,maze.exit);
   assert.equal(maze.stations[0],maze.start);
   assert.equal(maze.stations.length,4);
-  const positions=maze.stations.map(i=>main.indexOf(i));
-  assert.ok(positions.every((v,i)=>i===0||v>positions[i-1]+8),'avoid clustered map stations');
+  const positions=[0,1,3].map(i=>main.indexOf(maze.stations[i]));
+  assert.ok(positions[1]>8&&positions[2]>positions[1]+8,'maps on main route must be spaced apart');
+  assert.equal(main.includes(maze.stations[2]),false,'one side-branch map');
+  const sideAnchor=main[Math.floor((main.length-1)*.60)];
+  const hop=M.distances(maze,sideAnchor)[maze.stations[2]];
+  assert.ok(hop>=2&&hop<=4,'detour map must remain nearby');
+  for(const index of [1,3]){
+    const anchor=main[Math.floor((main.length-1)*[.14,.38,.64,.77][index])];
+    const d=M.distances(maze,anchor)[maze.landmarks[index].cell];
+    assert.ok(d>=2&&d<=4,'landmark detour must be fair');
+  }
  }
+});
+test('known nonsensical mazes are rejected and regenerated deterministically',()=>{
+ for(const seed of [139,304,394,447,626,832,1013,1246,20261110]){
+  const maze=M.generate(seed),repeat=M.generate(seed);
+  assert.deepEqual(maze,repeat,'seed '+seed+' must be repeatable');
+  const row=Math.floor(maze.exit/maze.size),col=maze.exit%maze.size;
+  assert.ok(row===maze.size-1||col===maze.size-1,'opposite edge for '+seed);
+  assert.ok(M.route(maze,maze.start,maze.exit).length-1>=85,'nontrivial route for '+seed);
+  assert.ok(maze.metrics.turnRatio<=.68,'no unreasonable wiggle route for '+seed);
+ }
+});
+test('cornfield exit opening is kept clear in the actual Three.js renderer',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const game=fs.readFileSync(path.join(__dirname,'../games/high-corn-maze/game.js'),'utf8');
+ assert.match(game,/i===m\.exit&&col===S-1/);
+ assert.match(game,/i===m\.exit&&row===S-1/);
+ assert.match(game,/gate\.rotation\.y=/);
 });
 
 test('First-person renderer imports only available vendored loaders and existing corn assets',()=>{

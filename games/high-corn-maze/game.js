@@ -56,8 +56,8 @@ function cornPositions(){
  const m=state.maze,positions=[],random=randomFor(m.seed^0xfa23ba),S=m.size;
  function segment(x1,z1,x2,z2){for(let j=0;j<5;j++){const f=(j+.28+random()*.44)/5;const x=x1+(x2-x1)*f,z=z1+(z2-z1)*f;const normalX=z2-z1?1:0,normalZ=x2-x1?1:0;positions.push({x:x+normalX*(random()-.5)*.63,z:z+normalZ*(random()-.5)*.63,s:.9+random()*.24,rot:random()*Math.PI*2});}}
  for(let i=0;i<m.links.length;i++){const col=i%S,row=Math.floor(i/S),p=M.center(m,i),h=m.cell/2,link=m.links[i];
-  if(!(link&2))segment(p.x+h,p.z-h,p.x+h,p.z+h);
-  if(!(link&4))segment(p.x-h,p.z+h,p.x+h,p.z+h);
+  if(!(link&2)&&!(i===m.exit&&col===S-1))segment(p.x+h,p.z-h,p.x+h,p.z+h);
+  if(!(link&4)&&!(i===m.exit&&row===S-1))segment(p.x-h,p.z+h,p.x+h,p.z+h);
   if(col===0)segment(p.x-h,p.z-h,p.x-h,p.z+h);
   if(row===0)segment(p.x-h,p.z-h,p.x+h,p.z-h);
  }
@@ -108,6 +108,8 @@ function construct(){
  state.maze.stations.forEach(i=>standAt(i,'지도'));
  state.maze.landmarks.forEach(buildLandmark);
  const p=M.center(state.maze,state.maze.exit),gate=new THREE.Group();gate.position.set(p.x,0,p.z);
+ // Open the outer corn fence and face the sign toward the arriving player.
+ gate.rotation.y=state.maze.exit%state.maze.size===state.maze.size-1?-Math.PI/2:Math.PI;
  const gold=new THREE.MeshLambertMaterial({color:0xd5ae60}),dark=new THREE.MeshLambertMaterial({color:0x5a3a23});
  gate.add(mesh(dark,new THREE.BoxGeometry(.33,4,.35),-1.65,2,0));
  gate.add(mesh(dark,new THREE.BoxGeometry(.33,4,.35),1.65,2,0));
