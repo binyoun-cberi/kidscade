@@ -39,7 +39,7 @@ function pickBranch(maze,anchor,onSolution,used,random){
 }
 function generate(seed=20261110,size=SIZE){
  size=Math.max(11,Math.min(29,Math.round(size)|1));
- const scale=size/SIZE,minSteps=Math.max(20,Math.round(85*scale)),maxSteps=Math.round(145*scale),MAX_ATTEMPTS=96;
+ const scale=size/SIZE,minSteps=Math.max(20,Math.round(85*scale)),maxSteps=Math.round(145*scale),MAX_ATTEMPTS=192;
  for(let attempt=0;attempt<MAX_ATTEMPTS;attempt++){
   const random=rng((seed>>>0)^(Math.imul(attempt+1,0x9e3779b9))),count=size*size,links=new Uint8Array(count),seen=new Uint8Array(count),stack=[0];seen[0]=1;
   while(stack.length){
@@ -70,7 +70,7 @@ function generate(seed=20261110,size=SIZE){
   const candidates=[];
   for(let i=1;i<count;i++){
    const row=Math.floor(i/size),col=i%size;
-   if(row!==size-1&&col!==size-1)continue;
+   if((row!==size-1&&col!==size-1)||(row===size-1&&col===size-1))continue;
    if(depth[i]<minSteps||depth[i]>maxSteps)continue;
    const path=[];for(let p=i;p!==0;p=prev[p])path.push(p);
    path.push(0);path.reverse();
