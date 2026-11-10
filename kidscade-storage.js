@@ -128,6 +128,7 @@
     squidTugRecord: 'kidscade_squid_mini_tug_v1',
     squidMarblesRecord: 'kidscade_squid_mini_marbles_v1',
     squidFinalRecord: 'kidscade_squid_mini_final_v1',
+    probabilityDiceBest: 'kidscade_dice_survival_best_v1',
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
