@@ -8,7 +8,7 @@
 
 | 게임 ID | 게임명 | 이력 파일 | 다음 시작점 |
 | --- | --- | --- | --- |
-| `tod_mot_chatgetda_kkwaekkori` | 못 찾겠다 꾀꼬리 | [개선 이력](./tod_mot_chatgetda_kkwaekkori.md) | #752 병합 완료 · 실기기 FPS·정류장 교착·차체 중첩 시각 검수 |
+| `tod_mot_chatgetda_kkwaekkori` | 못 찾겠다 꾀꼬리 | [개선 이력](./tod_mot_chatgetda_kkwaekkori.md) | PR #756 실제 Chrome 품질 검증 · 소도시 버스 대기와 실기기 FPS 점검 |
 
 | `high_ota_typographic_horror` | 오타 — 이름을 잃어버린 밤 | [개선 이력](./high_ota_typographic_horror.md) | PR CI와 실제 Chrome 플레이, 창문 렌더링 검증 |
 
