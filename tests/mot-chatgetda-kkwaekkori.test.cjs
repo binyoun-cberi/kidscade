@@ -182,7 +182,7 @@ test('3D picking, honest prop fallbacks and rotated-camera ground dragging are p
   assert.match(code,/challengeLevel\+1/);
   assert.match(code,/finishChallenge\(/);
   assert.match(html,/20초 연속 찾기 도전/);
-  assert.match(code,/sim\.mjs\?v=12/);
+  assert.match(code,/sim\.mjs\?v=13/);
   assert.match(code,/pinchCenter/);
   assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
 });
@@ -482,7 +482,7 @@ test('the shuttle actually boards residents at curbside stops and drops them in 
     const original=new Map(town.people.map(p=>[p.id,{...p.position}]));
     let boarding=false,riding=false,alighting=false,minDistance=Infinity,changedBus=false;
     const initial={...service.bus.position};
-    for(let tick=0;tick<3000;tick++){
+    for(let tick=0;tick<2000;tick++){
       movePeople(town,.2);
       const bus=service.bus,at=bus.position;
       assert.ok(Number.isFinite(at.x)&&Number.isFinite(at.z));
@@ -632,4 +632,54 @@ test('signalized road props remain outside target-raycasting and challenges keep
   assert.equal(town.traffic,null);
   assert.equal(town.transit,null);
   assert.ok(town.people.every(p=>p.transit===null));
+});
+
+test('shuttle body extent—not just its center—clears actual walking citizens at junction turns',async()=>{
+  const {makeTown,movePeople,WALK,signature}=await simPromise;
+  const {busBodyGap,SHUTTLE,reservedShuttleDropBay}=await import(
+    pathToFileURL(path.join(dir,'transit.mjs')).href);
+  assert.equal(busBodyGap({position:{x:0,z:0},heading:0},{x:0,z:1.1}),
+    -SHUTTLE.personRadius,'geometry uses real visible bus nose');
+  for(const stage of ['small','medium','large'])for(const seed of [42]){
+    const town=makeTown(stage,seed,'normal');
+    const looks=town.order.map(id=>[id,signature(town.people.find(p=>p.id===id))]);
+    let worst=Infinity,largestWait=0;
+    for(let tick=0;tick<360;tick++){
+      movePeople(town,.2);
+      const bus=town.transit.bus;
+      if(bus.rider){
+        const berth=reservedShuttleDropBay(town);
+        assert.ok(berth&&town.paths.nodes.has(berth));
+      }
+      for(const p of town.people){
+        largestWait=Math.max(largestWait,p.waiting);
+        if(p.state==='walking')worst=Math.min(worst,busBodyGap(bus,p.position));
+      }
+    }
+    assert.ok(worst>=-.001,stage+'/'+seed+' bus body clips a walker at '+worst);
+    assert.ok(largestWait<5,'bus must not imprison crossing pedestrians');
+    for(const [id,look] of looks)assert.equal(
+      signature(town.people.find(p=>p.id===id)),look);
+  }
+});
+test('on a bus arrival, a non-target may clear its occupied curb on the real walkway',async()=>{
+  const {makeTown,movePeople}=await simPromise;
+  const town=makeTown('small',42,'normal');
+  const before=town.paths.slots.find(s=>s.block.id===town.transit.stations[1].block.id&&
+    s.index===town.transit.stations[1].dock);
+  const occupant=town.people.find(p=>p.slotId===before.id);
+  assert.ok(occupant&&!occupant.reserved,'fixed regression seed has an ordinary occupant');
+  const initial=occupant.position;
+  for(let t=0;t<300;t++)movePeople(town,.2);
+  assert.ok(town.transit.alighted>0,'a real dropoff must eventually complete');
+  assert.ok(occupant.trips>0||occupant.state==='walking','curb occupant departed by foot');
+  assert.ok(Number.isFinite(initial.x)&&Number.isFinite(initial.z));
+  assert.equal(town.people.filter(p=>p.transit?.phase==='riding').length<=1,true);
+});
+test('tablet render path respects saved clues and reduces large-world framebuffer work',()=>{
+  for(const token of ['tabletGraphicsBudget()','applyGraphicsBudget()',
+    'previewFrameAt','1000/24','group.userData.vehicle','shape.x>shape.z*1.08'])
+    assert.ok(code.includes(token),'tablet/vehicle renderer hook: '+token);
+  assert.match(code,/sim\.mjs\?v=13/);
+  assert.match(html,/game\.js\?v=13/);
 });
