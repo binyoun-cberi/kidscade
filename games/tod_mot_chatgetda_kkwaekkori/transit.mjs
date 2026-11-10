@@ -43,10 +43,15 @@ export function createTransit(town,getBlockCenter,blockPitch){
   // activity bays. The platform lies on the already-drawn perimeter sidewalk.
   for(const station of stations){
     const c=getBlockCenter(station.block,town.config);
-    const id=station.block.id+':bus-platform',side=station.side;
-    town.paths.nodes.set(id,{id,x:c.x+side*2.65,z:c.z,next:[
-      station.block.id+(side<0?':nw':':se')]});
+    const id=station.block.id+':bus-platform',gate=station.block.id+':bus-curb',side=station.side;
+    // The platform is a pocket INSIDE the parcel, 1.05 from the busy
+    // outer sidewalk; departing riders merge into the existing one-way
+    // pavement through a short, visible perpendicular access strip.
+    town.paths.nodes.set(id,{id,x:c.x+side*1.6,z:c.z,next:[gate]});
+    town.paths.nodes.set(gate,{id:gate,x:c.x+side*2.65,z:c.z,
+      next:[station.block.id+(side<0?':nw':':se')]});
     station.platformId=id;
+    station.gateId=gate;
   }
   const bus={position:{x:stations[0].x,z:stations[0].z},heading:0,
     phase:'stopped',stopIndex:0,targetIndex:1,dwellUntil:4.5,
