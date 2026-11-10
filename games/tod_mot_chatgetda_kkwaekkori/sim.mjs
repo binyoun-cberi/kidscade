@@ -1,5 +1,5 @@
 // Seeded, renderer-independent town activities and fair observation puzzles.
-import { createTransit, stepTransit, shuttleDoorLaneBusy } from './transit.mjs';
+import { createTransit, stepTransit, shuttleDoorLaneBusy, walkingClearOfBus, reservedShuttleDropBay } from './transit.mjs';
 import { createTraffic, stepTraffic, pedestrianTrafficGuard } from './traffic.mjs';
 export const WORLD_VERSION = 3;
 export const BLOCK_PITCH = 7;
@@ -189,7 +189,11 @@ function depart(town,p){
   const routine=ROUTINES[p.routine];
   const carrying=p.errand?.phase==='carrying';
   const kinds=carrying?['park','home']:p.reserved?visits[p.activity]:[routine[(p.lifeStop+1)%routine.length][0]];
-  const candidates=town.paths.slots.filter(s=>s.block.id!==p.block.id&&!town.paths.occupied.has(s.id));
+  // A passenger physically approaching a second district needs one clear
+  // curbside bay. Do not let unrelated walkers reserve it ahead of the bus.
+  const reservedDrop=reservedShuttleDropBay(town);
+  const candidates=town.paths.slots.filter(s=>s.block.id!==p.block.id&&
+    !town.paths.occupied.has(s.id)&&s.id!==reservedDrop);
   const preferred=candidates.filter(s=>kinds.includes(s.block.kind));
   // Background neighbors can do another errand if a favorite district is full.
   // Clue residents retain their action/prop and only visit suitable places.
@@ -401,7 +405,7 @@ export function movePeople(town,deltaSeconds){
     const next=distance?{x:p.position.x+dx/distance*step,z:p.position.z+dz/distance*step}:{...p.position};
     // A bus door approach is a brief crossing: walkers enter only after
     // the door closes, avoiding face-to-face deadlock with boarding citizens.
-    if(shuttleDoorLaneBusy(town,next)||pedestrianTrafficGuard(town,p,next)){
+    if(shuttleDoorLaneBusy(town,next)||!walkingClearOfBus(town,p,next)||pedestrianTrafficGuard(town,p,next)){
       p.waiting+=dt;continue;
     }
     const blocked=town.people.some(q=>{
