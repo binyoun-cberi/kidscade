@@ -192,3 +192,13 @@
 - **기능 상태:** V8 36개 도시/난이도/시드×300초 모두 승객 탑승·다른 구역 하차, 실제 버스 차체-보행자 겹침 0, 일반 보행자 최대 대기 2.6초, 최소 보행자 중심 거리 0.85, 초기 정답/외형/좌표 900개 세계 비교 모두 동일. 남은 제한: 특히 작은 마을 정류장 독립 플랫폼 점유로 버스 대기 최대 약 110초 사례; 차체 실제 메시를 모든 프레임에서 감시하는 사람 눈 검수와 모바일 기기 FPS 평가도 남음.
 - **병합/배포 상태:** PR #757은 오픈·미병합, main에 직접 푸시하지 않음. 기존 Cloudflare Actions/Wrangler, Workers/D1/Durable Objects, 저장 버전 3/정답/도전 기능 보존. 수동 배포/원격 D1 마이그레이션/유료 AI API/비밀·학생정보 접근 없음.
 - 다음: 작은 마을 버스 정류장의 플랫폼 회전율/대기 시간 추가 개선, 실제 iPad FPS 및 스크린샷 사람이 직접 보는 장면 겹침/색상 점검.
+
+### 2026-11-11 — 최종 검수 후 PR #757 승인 병합
+
+- 사용자 요청: “검수하고 병합해”. 게임 ID `tod_mot_chatgetda_kkwaekkori`, 검토 대상 [PR #757](https://github.com/binyoun-cberi/kidscade/pull/757), 사전 `main` `2195a3da70906748ac3329bed3f068bb839046aa`. PR 변경 파일 9개: 꾀꼬리 게임 `transit.mjs`, `sim.mjs`, `game.js`, `index.html`, 관련 테스트 2개, README 및 게임 개선 로그·INDEX. 타 게임 소스, 워크플로, 저장 버전 3 및 기존 Workers/D1/Durable Objects 기능 변경 없음.
+- **최종 검수 실제 근거:** [Actions #42827487488](https://github.com/binyoun-cberi/kidscade/actions/runs/42827487488) **workflow success**, `node-tests`/ `kkwaekkori-browser-audit` **양쪽 job success**. 실제 전체 Node 회귀 **2,908개 모두 통과, 실패 0**, 저장 네임스페이스·배포 경로·아키텍처 감사 PASS. 실제 Chrome/WebGL **12개 자동 플레이 시나리오 성공**, JS 오류 0, 버스·일반차 GLB 길이/폭 2.50/.795 및 1.25/.735, 한 캡처 시점에 모델 겹침 없음.
+- 동일 Actions의 태블릿 DPR2(1024×768, 대도시) SwiftShader A/B: 주 화면 1,888,530→786,432 픽셀(약 58.4% 절감), FPS 이전 2.6→개선 4.0. 이전 독립 성공 실행에서도 3.0→5.5, 5.9→9.9 등 상대적 향상을 확인했지만 **실물 iPad FPS 측정이 아님**. 별도 V8 이전 검증 36개 도시/난이도/시드×300초에서 버스-보행자 몸체 겹침 0, 일반 주민 보행 최장 대기 2.6초, 초기 900개 마을 정답/외형/좌표 유지. 이 값들을 현재 요청에서 새로 다시 실기기로 측정했다고 주장하지 않음.
+- **병합 완료:** 사용자의 명시 승인을 받고 GitHub `merge_pull_request`로 PR #757을 **merged/closed**, `main` 병합 커밋 `1dbfc192c5e23552b03e3b6ffa9202ac3147fa7a` 확인. 기존 병합 불가 #756은 별도로 미병합 종료된 상태. 검토 후 코드를 추가 수정할 만한 새 회귀 오류는 발견되지 않아 기존 PR 그대로 병합.
+- **배포는 하지 않음:** 현재 main의 `.github/workflows/deploy-cloudflare.yml`은 `main` 게임 변경 푸시 시 원격 D1 마이그레이션 `wrangler d1 migrations apply --remote`과 `wrangler deploy`를 호출. 사용자는 **병합만 승인**했으므로 merge commit title에 `[skip ci]`를 포함해 자동 운영 배포를 실행하지 않도록 함. 병합 직후 GitHub Actions에서 해당 커밋의 배포 실행도 조회되지 않았음. 원격 DB/Cloudflare/유료 API/비밀·학생정보 접근 없음.
+- **남은 문제와 다음 시작점:** 작은 마을은 플랫폼 점유로 버스 자체가 최대 약 110초 기다리는 사례가 관찰된 바 있음. 일반 보행 교착과는 별개의 교통 UX 문제이며 후속 개선 대상. 실제 학생용 태블릿 FPS와 터치 및 사람이 스크린샷을 직접 보며 수행하는 시각 검수는 별도 미실시. 다음에는 소도시 플랫폼 회전율과 중복 버스 탑승, 실기기 성능·실제 장면 가독성을 분석. 별도 배포는 별도 명시 승인 필요.
+- 기록 보완: `docs/kkwaekkori-merge-757-20261111` 문서만 변경, 코드·배포 경로 추가 수정 없음. 완료 이후 이 문서 PR 상태는 GitHub에서 별도 확인.
