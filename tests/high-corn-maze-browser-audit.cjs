@@ -7,8 +7,8 @@ const root=path.resolve(__dirname,'..'),sleep=ms=>new Promise(r=>setTimeout(r,ms
 const hook=`
 if(new URL(location.href).searchParams.has('cornQa')){
  window.__cornQA={
-  get:()=>({seed:state.maze?.seed,won:state.won,phase:state.hunter?.phase,elapsed:state.elapsed,player:{...state.player},guess:state.guess,mapOpen:state.mapOpen,instances:world.children.reduce((n,c)=>n+Number(!!c.isInstancedMesh)+c.children.filter(x=>x.isInstancedMesh).length,0),shortest:M.route(state.maze,0,state.maze.exit).length-1}),
-  first:()=>state.maze.stations[0],second:()=>state.maze.stations[1],exit:()=>state.maze.exit,action:()=>nearAction(),
+  get:()=>({seed:state.maze?.seed,won:state.won,phase:state.hunter?.phase,elapsed:state.elapsed,player:{...state.player},guess:state.guess,mapOpen:state.mapOpen,instances:world.children.reduce((n,c)=>n+Number(!!c.isInstancedMesh)+c.children.filter(x=>x.isInstancedMesh).length,0),cornChunks:world.children.find(c=>c.userData.cornfield)?.children.length||0,cornPatches:world.children.find(c=>c.userData.cornfield)?.children.reduce((n,c)=>n+c.children.filter(x=>x.isInstancedMesh).length,0)||0,shortest:M.route(state.maze,0,state.maze.exit).length-1}),
+  first:()=>state.maze.stations[0],second:()=>state.maze.stations[1],exit:()=>state.maze.exit,action:()=>nearAction(),walkable:(x,z)=>canWalk(x,z,.48),landmark:()=>{const a=state.maze.landmarks[0],p=M.center(state.maze,a.cell);return{x:p.x+LANDMARK_OFFSET,z:p.z+LANDMARK_OFFSET,cell:a.cell}},
   go:(end)=>{const path=M.route(state.maze,M.current(state.maze,state.player.x,state.player.z),end);if(!path.length)throw Error('No route');
    let steps=0;for(const cell of path.slice(1)){const dest=M.center(state.maze,cell);state.yaw=Math.atan2(-(dest.x-state.player.x),-(dest.z-state.player.z));state.keys.add('KeyW');
     for(let n=0;n<90;n++){const distance=Math.hypot(dest.x-state.player.x,dest.z-state.player.z);if(distance<.012)break;const before=distance;step(Math.min(.05,distance/3.65));steps++;if(Math.hypot(dest.x-state.player.x,dest.z-state.player.z)>before-.0001)throw Error('Blocked movement '+cell);}
@@ -50,20 +50,38 @@ async function main(){
  const send=(method,params={})=>new Promise((r,j)=>{const key=++id;pending.set(key,[r,j]);ws.send(JSON.stringify({id:key,method,params}))});
  const ev=async expression=>{const result=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw Error(JSON.stringify(result.exceptionDetails).slice(0,1100));return result.result?.value};
  const wait=async(exp,label)=>{for(let i=0;i<130;i++){if(await ev(exp).catch(()=>false))return;await sleep(100)}throw Error('Timeout '+label+' errors='+exceptions.slice(-2)+' http='+network.slice(-8)+' console='+consoleErrors.slice(-8)+' page='+JSON.stringify(await ev("({qa:typeof window.__cornQA,game:document.querySelector('#startOverlay')?.className,title:document.title,scripts:[...document.scripts].map(s=>s.src),resources:performance.getEntriesByType('resource').filter(x=>x.name.includes('three-r160')).slice(-12).map(x=>x.name)})").catch(e=>e.message)))};
- const shot=async label=>{await sleep(150);const x=await send('Page.captureScreenshot',{format:'png'});const size=Buffer.from(x.data,'base64').length;assert.ok(size>6000,label+' screenshot too small '+size);console.log('[corn browser] screenshot '+label+' bytes='+size)};
+ const shot=async label=>{await sleep(150);const x=await send('Page.captureScreenshot',{format:'png'});const bytes=Buffer.from(x.data,'base64'),size=bytes.length;assert.ok(size>6000,label+' screenshot too small '+size);const dir=process.env.KIDSCADE_CORN_AUDIT_OUT;if(dir){fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(path.join(dir,label+'.png'),bytes)}console.log('[corn browser] screenshot '+label+' bytes='+size)};
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Log.enable');
  await send('Emulation.setDeviceMetricsOverride',{width:1280,height:800,deviceScaleFactor:1,mobile:false});
  await send('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/games/high-corn-maze/index.html?cornQa=1'});
  await wait('Boolean(window.CornMaze&&document.querySelector("#startButton"))','boot');
  await wait('Boolean(window.__cornQA)','3D game module ready');
  await ev('document.querySelector(".mode[data-mode=explore]").click();document.querySelector("#startButton").click()');
- await wait('window.__cornQA?.get()?.instances>0','3D corn generated');
+ await wait('window.__cornQA?.get()?.cornChunks>0','3D corn generated');
+ const chunks=await ev('window.__cornQA.get()');
+ assert.equal(chunks.cornChunks,16,'21×21 maze should use 16 coarse chunks to limit draw calls');
+ assert.ok(chunks.cornPatches>=chunks.cornChunks,'actual corn geometries must be instanced');
+ const landmark=await ev('window.__cornQA.landmark()');
+ assert.equal(await ev('window.__cornQA.walkable('+landmark.x+','+landmark.z+')'),false,'landmarks must be solid');
  await shot('desktop');
  const first=await ev('window.__cornQA.go(window.__cornQA.first())');
  assert.equal(await ev('window.__cornQA.action().type'),'map');
  await ev('document.querySelector("#interact").click()');assert.equal(await ev('window.__cornQA.get().mapOpen'),true);
- await ev(`(()=>{const c=document.querySelector('#mapCanvas'),r=c.getBoundingClientRect();c.dispatchEvent(new PointerEvent('pointerdown',{clientX:r.left+r.width*.5,clientY:r.top+r.height*.5,bubbles:true}));})()`);
- assert.ok(await ev('window.__cornQA.get().guess>=0'),'Cannot mark map');
+ await ev('document.querySelector("#mapZoomIn").click()');
+ const zoom=await ev('parseFloat(document.querySelector("#mapZoomValue").textContent)');
+ assert.ok(zoom>100,'map zoom button failed');
+ await ev(`(()=>{const v=document.querySelector('#mapViewport'),r=v.getBoundingClientRect();const x=r.left+r.width*.5,y=r.top+r.height*.5;
+  v.dispatchEvent(new PointerEvent('pointerdown',{pointerId:71,clientX:x,clientY:y,bubbles:true}));v.dispatchEvent(new PointerEvent('pointerup',{pointerId:71,clientX:x,clientY:y,bubbles:true}));})()`);
+ assert.ok(await ev('window.__cornQA.get().guess>=0'),'Cannot mark zoomed map');
+ const guessBefore=await ev('window.__cornQA.get().guess');
+ const pan=await ev(`(()=>{const v=document.querySelector('#mapViewport'),r=v.getBoundingClientRect();const x=r.left+r.width*.5,y=r.top+r.height*.5;
+  const before=document.querySelector('#mapCanvas').style.transform;
+  v.dispatchEvent(new PointerEvent('pointerdown',{pointerId:72,clientX:x,clientY:y,bubbles:true}));
+  v.dispatchEvent(new PointerEvent('pointermove',{pointerId:72,clientX:x+45,clientY:y+10,bubbles:true}));
+  v.dispatchEvent(new PointerEvent('pointerup',{pointerId:72,clientX:x+45,clientY:y+10,bubbles:true}));
+  return{before,after:document.querySelector('#mapCanvas').style.transform}})()`);
+ assert.notEqual(pan.before,pan.after,'drag must move zoomed map');
+ assert.equal(await ev('window.__cornQA.get().guess'),guessBefore,'drag must not create an accidental location guess');
  await shot('map');
  await ev('document.querySelector("#closeMap").click()');
  const second=await ev('window.__cornQA.go(window.__cornQA.second())');
@@ -80,9 +98,21 @@ async function main(){
  const mobile=await ev(`(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,controls:getComputedStyle(document.querySelector('#touchControls')).display}))()`);
  assert.ok(mobile.scroll<=mobile.width+2,'mobile horizontal overflow');
  assert.equal(mobile.controls,'block');await shot('mobile');
+ await send('Emulation.setDeviceMetricsOverride',{width:932,height:430,deviceScaleFactor:1,mobile:true});
+ await ev('document.querySelector("#touchInteract").click()');
+ await wait('document.querySelector("#mapOverlay")&&!document.querySelector("#mapOverlay").classList.contains("hidden")','landscape map');
+ const landscape=await ev(`(()=>({map:document.querySelector('#mapViewport').getBoundingClientRect().width,zoom:document.querySelector('#mapZoomIn').getBoundingClientRect().width,
+  width:innerWidth,dialog:document.querySelector('#mapOverlay').getBoundingClientRect().width,toolsBottom:document.querySelector('.mapTools').getBoundingClientRect().bottom,panelBottom:document.querySelector('.mapPanel').getBoundingClientRect().bottom}))()`);
+ assert.ok(landscape.map>=260,'Landscape maze map should be at least 260px, got '+landscape.map);
+ assert.ok(landscape.zoom>=38,'Map zoom target too small');
+ assert.ok(landscape.toolsBottom<landscape.panelBottom-5,'Landscape map toolbar is clipped');
+ await shot('landscape-map');
+ await ev('document.querySelector("#closeMap").click()');
  await ev('document.querySelector(".mode[data-mode=normal]").click();document.querySelector("#startButton").click()');
  assert.equal(await ev('window.__cornQA.advance(74)'),'chase');
  assert.equal(await ev('window.__cornQA.get().phase'),'chase');
+ assert.equal(await ev('document.querySelector("#hud").classList.contains("chasing")'),true,'chase should have visible warning');
+ await shot('chase-mobile');
  console.log('[corn browser] PASS pursuit + mobile',JSON.stringify(mobile));
  assert.deepEqual(exceptions,[],'Browser JS exceptions');assert.deepEqual(network,[],'HTTP error');
 }

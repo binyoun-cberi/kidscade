@@ -10,6 +10,6 @@
 | `tod_mot_chatgetda_kkwaekkori` | 못 찾겠다 꾀꼬리 | [개선 이력](./tod_mot_chatgetda_kkwaekkori.md) | PR #757 병합 완료 · 소도시 버스 플랫폼 대기·실기기 FPS·시각 검수 |
 | `high_ota_typographic_horror` | 오타 — 이름을 잃어버린 밤 | [개선 이력](./high_ota_typographic_horror.md) | PR CI와 실제 Chrome 플레이, 창문 렌더링 검증 |
 | `squid_survival` | 꼴뚜기 게임 | [squid_survival.md](./squid_survival.md) | PR CI 확인, 6관문 모바일 플레이 검증 |
-| `high_corn_maze` | 옥수수밭 탈출 | [high_corn_maze.md](./high_corn_maze.md) | 품질 생성기 PR 검증 · 실제 학생 플레이 및 저사양 모바일 FPS 측정 |
+| `high_corn_maze` | 옥수수밭 탈출 | [high_corn_maze.md](./high_corn_maze.md) | 모바일 지도 확대·충돌·GPU 최적화 CI 및 실기기 디자인 검수 |
 
 작성법: [README](./README.md) · [템플릿](./TEMPLATE.md)

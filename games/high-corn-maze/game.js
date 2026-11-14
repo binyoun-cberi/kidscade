@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 const M=window.CornMaze,$=id=>document.getElementById(id);
-const ui={canvas:$('world'),time:$('time'),heading:$('heading'),status:$('chaseStatus'),caught:$('caughtCount'),notice:$('notice'),interact:$('interact'),touchInteract:$('touchInteract'),map:$('mapOverlay'),mapCanvas:$('mapCanvas'),intro:$('startOverlay'),end:$('endOverlay'),summary:$('endSummary'),seed:$('seed'),stick:$('joystick'),thumb:$('thumb'),run:$('run')};
+const ui={hud:$('hud'),mapViewport:$('mapViewport'),mapZoomIn:$('mapZoomIn'),mapZoomOut:$('mapZoomOut'),mapReset:$('mapReset'),mapZoomValue:$('mapZoomValue'),mapGuessReadout:$('mapGuessReadout'),canvas:$('world'),time:$('time'),heading:$('heading'),status:$('chaseStatus'),caught:$('caughtCount'),notice:$('notice'),interact:$('interact'),touchInteract:$('touchInteract'),map:$('mapOverlay'),mapCanvas:$('mapCanvas'),intro:$('startOverlay'),end:$('endOverlay'),summary:$('endSummary'),seed:$('seed'),stick:$('joystick'),thumb:$('thumb'),run:$('run')};
 const renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.45));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,matchMedia('(pointer:coarse)').matches?1.2:1.45));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.13;
@@ -16,6 +16,8 @@ const world=new THREE.Group();scene.add(world);
 const hunterGroup=new THREE.Group();scene.add(hunterGroup);hunterGroup.visible=false;
 const state={running:false,won:false,maze:null,hunter:null,mode:'normal',player:{x:0,z:0},yaw:0,pitch:0,elapsed:0,keys:new Set(),joy:{x:0,y:0},runningTouch:false,stationsVisited:new Set(),checkpoint:0,mapOpen:false,guess:-1,interactType:null,interactCell:-1,noticeUntil:0,noticeText:'',generation:0,monsterMixer:null};
 const NAMES=['북','동','남','서'];
+const LANDMARK_OFFSET=1.4;
+const mapView={zoom:1,x:0,y:0,pointers:new Map(),pinchDistance:0,pinchZoom:1,gesture:false};
 function randomFor(seed){let x=seed>>>0;return()=>{x=(Math.imul(x,1664525)+1013904223)>>>0;return x/4294967296;};}
 const cornFallback=()=>{
  const stalk=new THREE.Group(),mat=new THREE.MeshLambertMaterial({color:0x5b7e33,side:THREE.DoubleSide});
@@ -28,14 +30,18 @@ function clearWorld(){for(const child of [...world.children]){world.remove(child
 function mesh(mat,geo,x=0,y=0,z=0){const a=new THREE.Mesh(geo,mat);a.position.set(x,y,z);return a;}
 function banner(text,w=2.1,h=.76){const cv=document.createElement('canvas');cv.width=512;cv.height=190;const c=cv.getContext('2d');c.fillStyle='#e8d5a5';c.fillRect(0,0,512,190);c.fillStyle='#544027';c.strokeStyle='#614528';c.lineWidth=14;c.strokeRect(7,7,498,176);c.textAlign='center';c.font='bold 94px system-ui';c.fillText(text,256,126);const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;return mesh(new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}),new THREE.PlaneGeometry(w,h));}
 function standAt(cell,label,color=0x876d46){
- const p=M.center(state.maze,cell),g=new THREE.Group();g.position.set(p.x+1.35,0,p.z+1.35);
- const wood=new THREE.MeshLambertMaterial({color}),post=mesh(wood,new THREE.BoxGeometry(.21,1.9,.21),0,.95,0);g.add(post);
- const board=mesh(wood,new THREE.BoxGeometry(2.2,1.55,.15),0,1.9,0);g.add(board);
- const sign=banner(label);sign.position.set(0,1.9,.09);g.add(sign);
+ const p=M.center(state.maze,cell),g=new THREE.Group();g.position.set(p.x+1.65,0,p.z+(cell===state.maze.start?-1.65:1.65));
+ const wood=new THREE.MeshLambertMaterial({color});
+ g.add(mesh(wood,new THREE.BoxGeometry(.17,2.55,.17),0,1.28,0));
+ g.add(mesh(wood,new THREE.BoxGeometry(1.45,1.05,.12),0,1.82,0));
+ const front=banner(label,1.35,.63);front.position.set(0,1.85,.073);g.add(front);
+ const back=banner(label,1.35,.63);back.position.set(0,1.85,-.073);back.rotation.y=Math.PI;g.add(back);
+ // A small lantern makes a map post findable above the corn, without a point light.
+ g.add(mesh(new THREE.MeshBasicMaterial({color:0xffd98d}),new THREE.OctahedronGeometry(.27),0,3.75,0));
  world.add(g);return g;
 }
 function buildLandmark(info){
- const p=M.center(state.maze,info.cell),g=new THREE.Group();g.position.set(p.x+1.25,0,p.z+1.05);
+ const p=M.center(state.maze,info.cell),g=new THREE.Group();g.position.set(p.x+LANDMARK_OFFSET,0,p.z+LANDMARK_OFFSET);g.scale.setScalar(info.type===2?.60:.80);
  const wood=new THREE.MeshLambertMaterial({color:0x8f6a3d}),stone=new THREE.MeshLambertMaterial({color:0xabb0a0}),roof=new THREE.MeshLambertMaterial({color:0x76513b}),blue=new THREE.MeshLambertMaterial({color:0x6f8b8a});
  if(info.type===0){g.add(mesh(wood,new THREE.CylinderGeometry(.55,.9,5.2,6),0,2.6,0));const blades=new THREE.Group();blades.position.set(0,4.8,.84);for(let i=0;i<4;i++){const b=mesh(new THREE.MeshLambertMaterial({color:0xe8d2a1}),new THREE.BoxGeometry(.38,2.0,.13),0,1,0);b.rotation.z=i*Math.PI/2;blades.add(b);}g.add(blades);}
  if(info.type===1){g.add(mesh(stone,new THREE.CylinderGeometry(.9,.9,.8,12),0,.5,0));g.add(mesh(blue,new THREE.CylinderGeometry(.67,.67,.1,12),0,.95,0));g.add(mesh(wood,new THREE.BoxGeometry(.13,2.2,.13),-1.05,1.3,0));g.add(mesh(wood,new THREE.BoxGeometry(.13,2.2,.13),1.05,1.3,0));g.add(mesh(roof,new THREE.BoxGeometry(2.5,.18,1.7),0,2.5,0));}
@@ -44,17 +50,31 @@ function buildLandmark(info){
  g.add(banner(info.name,1.5,.52));g.children[g.children.length-1].position.set(0,3.1,1.0);
  world.add(g);
 }
+function canWalk(x,z,radius=.48){
+ if(!M.canStand(state.maze,x,z,radius))return false;
+ // The buildings and map posts must not be walk-through decorations.
+ for(const info of state.maze.landmarks){
+  const p=M.center(state.maze,info.cell),dx=x-p.x-LANDMARK_OFFSET,dz=z-p.z-LANDMARK_OFFSET;
+  const obstacle=[.72,.72,.78,.28][info.type]+radius;
+  if(dx*dx+dz*dz<obstacle*obstacle)return false;
+ }
+ for(const cell of state.maze.stations){
+  const p=M.center(state.maze,cell),dx=x-p.x-1.65,dz=z-p.z-(cell===state.maze.start?-1.65:1.65);
+  if(dx*dx+dz*dz<(radius+.24)**2)return false;
+ }
+ return true;
+}
 function addGround(){
  const m=state.maze,side=m.size*m.cell;
  const grass=mesh(new THREE.MeshLambertMaterial({color:0x73864d}),new THREE.PlaneGeometry(side+90,side+90));grass.rotation.x=-Math.PI/2;grass.position.y=-.09;world.add(grass);
- const ground=new THREE.InstancedMesh(new THREE.PlaneGeometry(m.cell+.025,m.cell+.025),new THREE.MeshLambertMaterial({color:0xa18a5d}),m.links.length);
+ const ground=new THREE.InstancedMesh(new THREE.PlaneGeometry(m.cell+.025,m.cell+.025),new THREE.MeshLambertMaterial({color:0x827a5d}),m.links.length);
  const dummy=new THREE.Object3D(),rand=randomFor(m.seed);
- for(let i=0;i<m.links.length;i++){const p=M.center(m,i);dummy.position.set(p.x,-.065,p.z);dummy.rotation.set(-Math.PI/2,0,0);dummy.scale.setScalar(1);dummy.updateMatrix();ground.setMatrixAt(i,dummy.matrix);ground.setColorAt(i,new THREE.Color().setHSL(.104+rand()*.02,.29,.48+rand()*.065));}
+ for(let i=0;i<m.links.length;i++){const p=M.center(m,i);dummy.position.set(p.x,-.065,p.z);dummy.rotation.set(-Math.PI/2,0,0);dummy.scale.setScalar(1);dummy.updateMatrix();ground.setMatrixAt(i,dummy.matrix);ground.setColorAt(i,new THREE.Color().setHSL(.115+rand()*.015,.20,.39+rand()*.045));}
  ground.instanceMatrix.needsUpdate=true;world.add(ground);
 }
 function cornPositions(){
  const m=state.maze,positions=[],random=randomFor(m.seed^0xfa23ba),S=m.size;
- function segment(x1,z1,x2,z2){for(let j=0;j<5;j++){const f=(j+.28+random()*.44)/5;const x=x1+(x2-x1)*f,z=z1+(z2-z1)*f;const normalX=z2-z1?1:0,normalZ=x2-x1?1:0;positions.push({x:x+normalX*(random()-.5)*.63,z:z+normalZ*(random()-.5)*.63,s:.9+random()*.24,rot:random()*Math.PI*2});}}
+ function segment(x1,z1,x2,z2){const normalX=z2-z1?1:0,normalZ=x2-x1?1:0;for(let row=0;row<2;row++)for(let j=0;j<(row?3:4);j++){const slots=row?3:4,f=(j+.18+random()*.64)/slots;const x=x1+(x2-x1)*f,z=z1+(z2-z1)*f,offset=(row? .27:-.27)+(random()-.5)*.22;positions.push({x:x+normalX*offset,z:z+normalZ*offset,s:.88+random()*.27,rot:random()*Math.PI*2});}}
  for(let i=0;i<m.links.length;i++){const col=i%S,row=Math.floor(i/S),p=M.center(m,i),h=m.cell/2,link=m.links[i];
   if(!(link&2)&&!(i===m.exit&&col===S-1))segment(p.x+h,p.z-h,p.x+h,p.z+h);
   if(!(link&4)&&!(i===m.exit&&row===S-1))segment(p.x-h,p.z+h,p.x+h,p.z+h);
@@ -68,13 +88,27 @@ function populateCorn(group,positions){
  group.updateMatrixWorld(true);
  const templates=[];group.traverse(n=>{if(n.isMesh&&n.geometry){const geo=n.geometry.clone();geo.applyMatrix4(n.matrixWorld);geo.translate(-cen.x,-bbox.min.y,-cen.z);geo.scale(factor,factor,factor);templates.push(geo);}});
  if(!templates.length)throw new Error('Empty corn model');
- const collection=new THREE.Group(),dummy=new THREE.Object3D();
- for(let k=0;k<templates.length;k++){
-   const color=k%3===0?0x638835:k%3===1?0x78944a:0x527432;
-   const leaf=new THREE.InstancedMesh(templates[k],new THREE.MeshLambertMaterial({color,side:THREE.DoubleSide}),positions.length);
-   leaf.frustumCulled=false;
-   for(let i=0;i<positions.length;i++){const a=positions[i];dummy.position.set(a.x,0,a.z);dummy.rotation.set(0,a.rot,0);dummy.scale.setScalar(a.s);dummy.updateMatrix();leaf.setMatrixAt(i,dummy.matrix);}
-   leaf.instanceMatrix.needsUpdate=true;collection.add(leaf);
+ // Frustum-cull spatial buckets instead of rendering every stalk behind the player.
+ const chunkSize=state.maze.cell*6,side=state.maze.size*state.maze.cell,chunkCount=Math.ceil(side/chunkSize),buckets=new Map();
+ for(const plant of positions){
+  const bx=Math.max(0,Math.min(chunkCount-1,Math.floor((plant.x+side/2)/chunkSize))),bz=Math.max(0,Math.min(chunkCount-1,Math.floor((plant.z+side/2)/chunkSize))),key=bx+','+bz;
+  if(!buckets.has(key))buckets.set(key,[]);
+  buckets.get(key).push(plant);
+ }
+ const collection=new THREE.Group();collection.userData.cornfield=true;
+ const materials=templates.map((_,k)=>new THREE.MeshLambertMaterial({color:k%3===0?0x638835:k%3===1?0x78944a:0x527432,side:THREE.DoubleSide}));
+ for(const plants of buckets.values()){
+  const chunk=new THREE.Group(),dummy=new THREE.Object3D(),midX=plants.reduce((n,p)=>n+p.x,0)/plants.length,midZ=plants.reduce((n,p)=>n+p.z,0)/plants.length;
+  chunk.userData={x:midX,z:midZ,radius:chunkSize*.85};
+  for(let k=0;k<templates.length;k++){
+   const leaf=new THREE.InstancedMesh(templates[k],materials[k],plants.length);
+   for(let i=0;i<plants.length;i++){
+    const a=plants[i];dummy.position.set(a.x,0,a.z);dummy.rotation.set(0,a.rot,0);dummy.scale.setScalar(a.s);dummy.updateMatrix();leaf.setMatrixAt(i,dummy.matrix);
+   }
+   leaf.instanceMatrix.needsUpdate=true;leaf.computeBoundingSphere();
+   chunk.add(leaf);
+  }
+  collection.add(chunk);
  }
  world.add(collection);return collection;
 }
@@ -121,7 +155,7 @@ function notify(message,seconds=3){state.noticeText=message;state.noticeUntil=st
 function begin(){
  const raw=Number(ui.seed.value),seed=Number.isFinite(raw)&&raw>0?Math.min(999999999,Math.floor(raw)):20261110;
  state.mode=document.querySelector('.mode.selected')?.dataset.mode||'normal';
- state.generation++;state.maze=M.generate(seed);state.hunter=M.createHunter(state.maze,state.mode);
+ state.generation++;resetMapView();state.maze=M.generate(seed);state.hunter=M.createHunter(state.maze,state.mode);
  state.player=M.center(state.maze,0);state.stationsVisited.clear();state.checkpoint=0;state.elapsed=0;state.guess=-1;state.won=false;state.mapOpen=false;state.keys.clear();state.running=true;state.monsterMixer=null;
  const next=M.adjacent(state.maze,0)[0],q=M.center(state.maze,next);state.yaw=Math.atan2(-(q.x-state.player.x),-(q.z-state.player.z));state.pitch=0;
  construct();ui.intro.classList.add('hidden');ui.end.classList.add('hidden');ui.map.classList.add('hidden');
@@ -141,7 +175,7 @@ function interact(){
  if(!state.running||state.mapOpen)return;
  const action=nearAction();if(!action)return;
  if(action.type==='exit')return win();
- state.checkpoint=action.cell;state.stationsVisited.add(action.cell);state.mapOpen=true;ui.map.classList.remove('hidden');document.exitPointerLock?.();drawMap();ui.closeMap?.focus?.();
+ state.checkpoint=action.cell;state.stationsVisited.add(action.cell);state.mapOpen=true;ui.map.classList.remove('hidden');document.exitPointerLock?.();updateMapView();drawMap();ui.mapGuessReadout.textContent=state.guess>=0?'이전에 표시한 예상 위치를 확인하세요.':'지도의 한 칸을 눌러 위치를 추측하세요.';$('closeMap').focus();
 }
 function closeMap(){state.mapOpen=false;ui.map.classList.add('hidden');notify('갈림길과 주변 건물을 기억하며 이동하세요.',3);}
 function win(){state.running=false;state.won=true;hunterGroup.visible=false;document.exitPointerLock?.();const minutes=Math.floor(state.elapsed/60),seconds=Math.floor(state.elapsed%60);ui.summary.textContent='탈출 시간 '+minutes+'분 '+seconds+'초 · 지도판 '+state.stationsVisited.size+'곳 · 붙잡힘 '+state.hunter.caught+'회 · 미로 번호 '+state.maze.seed;ui.end.classList.remove('hidden');try{window.KidscadeGame?.result?.({scope:'run',status:'completed',outcome:'clear',cleared:true,score:Math.max(1,Math.round(1000-state.elapsed-state.hunter.caught*70)),seconds:Math.round(state.elapsed),seed:state.maze.seed});}catch(_){}}
@@ -158,7 +192,66 @@ function drawMap(){
  if(state.guess>=0){const[gx,gy]=at(state.guess);c.strokeStyle='#ad362a';c.lineWidth=3;c.beginPath();c.arc(gx,gy,8,0,Math.PI*2);c.stroke();c.fillStyle='#ad362a';c.beginPath();c.arc(gx,gy,3,0,Math.PI*2);c.fill();}
  c.font='bold 20px system-ui';c.fillStyle='#674b2c';c.fillText('N ↑',cvs.width-50,20);
 }
-ui.mapCanvas.addEventListener('pointerdown',e=>{if(!state.mapOpen)return;const r=ui.mapCanvas.getBoundingClientRect(),x=(e.clientX-r.left)*ui.mapCanvas.width/r.width,y=(e.clientY-r.top)*ui.mapCanvas.height/r.height,s=state.maze.size,P=32,T=(ui.mapCanvas.width-P*2)/s,col=Math.floor((x-P)/T),row=Math.floor((y-P)/T);if(col>=0&&row>=0&&col<s&&row<s){state.guess=row*s+col;drawMap();}});
+function updateMapView(){
+ const {zoom}=mapView,view=ui.mapViewport;
+ const limitX=Math.max(0,(zoom-1)*view.clientWidth/2),limitY=Math.max(0,(zoom-1)*view.clientHeight/2);
+ mapView.x=Math.max(-limitX,Math.min(limitX,mapView.x));mapView.y=Math.max(-limitY,Math.min(limitY,mapView.y));
+ ui.mapCanvas.style.transform='translate('+mapView.x+'px,'+mapView.y+'px) scale('+zoom+')';
+ ui.mapZoomValue.textContent=Math.round(zoom*100)+'%';
+ ui.mapZoomOut.disabled=zoom<=1;ui.mapZoomIn.disabled=zoom>=4;
+}
+function setMapZoom(zoom){mapView.zoom=Math.max(1,Math.min(4,Math.round(zoom*100)/100));updateMapView();}
+function resetMapView(){mapView.zoom=1;mapView.x=0;mapView.y=0;mapView.pointers.clear();mapView.gesture=false;mapView.pinchDistance=0;updateMapView();}
+function markMapGuess(clientX,clientY){
+ if(!state.mapOpen)return;
+ const rect=ui.mapCanvas.getBoundingClientRect(),x=(clientX-rect.left)*ui.mapCanvas.width/rect.width,y=(clientY-rect.top)*ui.mapCanvas.height/rect.height;
+ const size=state.maze.size,padding=32,cell=(ui.mapCanvas.width-padding*2)/size;
+ const col=Math.floor((x-padding)/cell),row=Math.floor((y-padding)/cell);
+ if(col<0||row<0||col>=size||row>=size)return;
+ state.guess=row*size+col;
+ ui.mapGuessReadout.textContent='예상 위치를 표시했어요. 주변 지형지물과 길 모양을 다시 비교해 보세요.';
+ drawMap();
+}
+ui.mapZoomIn.addEventListener('click',()=>setMapZoom(mapView.zoom+.65));
+ui.mapZoomOut.addEventListener('click',()=>setMapZoom(mapView.zoom-.65));
+ui.mapReset.addEventListener('click',resetMapView);
+ui.mapViewport.addEventListener('wheel',e=>{if(!state.mapOpen)return;e.preventDefault();setMapZoom(mapView.zoom+(e.deltaY<0?.3:-.3));},{passive:false});
+ui.mapViewport.addEventListener('pointerdown',e=>{
+ if(!state.mapOpen)return;
+ mapView.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,moved:false});
+ if(mapView.pointers.size===2){
+  const [a,b]=[...mapView.pointers.values()];mapView.pinchDistance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));mapView.pinchZoom=mapView.zoom;mapView.gesture=true;
+ }
+ try{ui.mapViewport.setPointerCapture(e.pointerId)}catch(_){}
+});
+ui.mapViewport.addEventListener('pointermove',e=>{
+ const p=mapView.pointers.get(e.pointerId);if(!p)return;
+ const dx=e.clientX-p.x,dy=e.clientY-p.y;
+ p.x=e.clientX;p.y=e.clientY;
+ if(Math.hypot(p.x-p.sx,p.y-p.sy)>7)p.moved=true;
+ if(mapView.pointers.size>=2){
+  const [a,b]=[...mapView.pointers.values()],distance=Math.hypot(a.x-b.x,a.y-b.y);
+  if(mapView.pinchDistance)setMapZoom(mapView.pinchZoom*distance/mapView.pinchDistance);
+ }else if(mapView.zoom>1){mapView.x+=dx;mapView.y+=dy;updateMapView();}
+});
+function finishMapPointer(e,cancelled){
+ const p=mapView.pointers.get(e.pointerId);if(!p)return;
+ const tap=mapView.pointers.size===1&&!mapView.gesture&&!p.moved&&Math.hypot(e.clientX-p.sx,e.clientY-p.sy)<8;
+ mapView.pointers.delete(e.pointerId);
+ if(mapView.pointers.size<2)mapView.pinchDistance=0;
+ if(mapView.pointers.size===0)mapView.gesture=false;
+ if(tap&&!cancelled)markMapGuess(e.clientX,e.clientY);
+}
+ui.mapViewport.addEventListener('pointerup',e=>finishMapPointer(e,false));
+ui.mapViewport.addEventListener('pointercancel',e=>finishMapPointer(e,true));
+ui.mapViewport.addEventListener('keydown',e=>{
+ if(!state.mapOpen)return;
+ if(e.key==='+'||e.key==='='){e.preventDefault();setMapZoom(mapView.zoom+.5);}
+ else if(e.key==='-'){e.preventDefault();setMapZoom(mapView.zoom-.5);}
+ else if(e.key==='0'){e.preventDefault();resetMapView();}
+ else if(e.key==='Enter'){e.preventDefault();const r=ui.mapViewport.getBoundingClientRect();markMapGuess(r.left+r.width/2,r.top+r.height/2);}
+ else if(e.key.startsWith('Arrow')){e.preventDefault();mapView.x+=e.key==='ArrowLeft'?26:e.key==='ArrowRight'?-26:0;mapView.y+=e.key==='ArrowUp'?26:e.key==='ArrowDown'?-26:0;updateMapView();}
+});
 function step(dt){
  if(!state.running)return;
  state.elapsed+=dt;
@@ -168,8 +261,8 @@ function step(dt){
   let forward=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-state.joy.y;
   const len=Math.hypot(side,forward);if(len>1){side/=len;forward/=len;}
   const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight')||state.runningTouch?4.55:3.65),vx=(-Math.sin(state.yaw)*forward+Math.cos(state.yaw)*side)*speed*dt,vz=(-Math.cos(state.yaw)*forward-Math.sin(state.yaw)*side)*speed*dt;
-  if(M.canStand(state.maze,state.player.x+vx,state.player.z,.48))state.player.x+=vx;
-  if(M.canStand(state.maze,state.player.x,state.player.z+vz,.48))state.player.z+=vz;
+  if(canWalk(state.player.x+vx,state.player.z,.48))state.player.x+=vx;
+  if(canWalk(state.player.x,state.player.z+vz,.48))state.player.z+=vz;
  }
  const h=M.stepHunter(state.maze,state.hunter,dt,state.player);
  if(h.caught){state.player=M.center(state.maze,state.checkpoint);state.guess=-1;state.mapOpen=false;ui.map.classList.add('hidden');notify('괴물에게 들켰어요! 마지막으로 발견한 지도판으로 돌아왔습니다.',5);}
@@ -180,10 +273,13 @@ function step(dt){
  const status=state.hunter.phase;ui.status.textContent=status==='chase'?'괴물이 따라오고 있어요!':status==='warning'?'옥수수 사이에서 소리가 들립니다…':status==='disabled'?'안전 탐험':'출구를 찾아보세요';
  ui.caught.textContent='붙잡힘 '+state.hunter.caught+'회';
  ui.notice.classList.toggle('alert',status==='chase'||status==='warning');
+ ui.hud.classList.toggle('warning',status==='warning');ui.hud.classList.toggle('chasing',status==='chase');
  if(state.elapsed>state.noticeUntil){ui.notice.textContent=status==='chase'?'괴물은 나보다 조금 느려요. 모퉁이를 활용하세요.':status==='warning'?'주변을 둘러보세요!':'지도판에서 나의 위치를 추측하고 출구를 찾아보세요.';}
  ui.time.textContent=String(Math.floor(state.elapsed/60)).padStart(2,'0')+':'+String(Math.floor(state.elapsed%60)).padStart(2,'0');
  compass();
- const a=state.mapOpen?null:nearAction();ui.interact.hidden=!a;ui.interact.textContent=a?.label||'';state.interactType=a?.type||null;
+ const a=state.mapOpen?null:nearAction();ui.interact.hidden=!a;ui.interact.textContent=a?.label||'';
+ ui.touchInteract.hidden=!a;ui.touchInteract.textContent=a?.type==='exit'?'탈출하기':'지도 보기';state.interactType=a?.type||null;
+ for(const corn of world.children)if(corn.userData.cornfield)for(const chunk of corn.children){const {x,z,radius}=chunk.userData;chunk.visible=Math.hypot(state.player.x-x,state.player.z-z)<scene.fog.far+radius;}
  camera.position.set(state.player.x,1.67,state.player.z);camera.rotation.set(state.pitch,state.yaw,0,'YXZ');
 }
 function resize(){const w=ui.canvas.clientWidth||innerWidth,h=ui.canvas.clientHeight||innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
