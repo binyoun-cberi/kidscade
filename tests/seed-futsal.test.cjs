@@ -370,3 +370,38 @@ test('tablet coach drawer is accessible and closed before play to protect touch 
   assert.match(css,/\.match-layer\.coach-open \.match-side\{display:flex\}/);
   assert.match(css,/\.match-side\{display:none;position:absolute;top:60px/);
 });
+
+
+test('offscreen manager scoring tracks the physical five-a-side league scale',()=>{
+  const context={window:{},Image:class{set src(value){this.source=value;}},performance:{now:()=>0}};
+  vm.createContext(context);
+  for(const file of ['data.js','sim.js','futsal-history-match.js']){
+    vm.runInContext(fs.readFileSync(path.join(gameDir,file),'utf8'),context,{filename:file});
+  }
+  const D=context.window.SeedFCData,Sim=context.window.SeedFCSim,Physical=context.window.SeedFutsalHistory;
+  let physicalGoals=0,managerGoals=0;
+  for(let i=0;i<28;i++){
+    const home=D.clubs[(i+2)%8],away=D.clubs[(i+5)%8];
+    const formations=['1-2-1','2-2','3-1','4-0'],attacks=['short','direct','wide'];
+    const opts={homeClub:home,awayClub:away,
+      homeRoster:JSON.parse(JSON.stringify(home.players)),
+      awayRoster:JSON.parse(JSON.stringify(away.players)),
+      homeLineup:home.players.slice(0,5).map(p=>p.id),
+      awayLineup:away.players.slice(0,5).map(p=>p.id),
+      homeFormation:formations[(i+2)%4],awayFormation:formations[i%4],
+      homeTactics:{attack:attacks[(i+1)%3],press:i%2?'press':'shape',
+        mindset:i%3===0?'attack':'balanced',line:i%2?'high':'standard',
+        tempo:i%2?'fast':'normal',width:i%2?'wide':'normal'},
+      awayTactics:{attack:'short',press:'shape',mindset:'balanced',
+        line:'standard',tempo:'normal',width:'normal'},
+      formations:D.formations,seed:'validation-seed-'+i};
+    const a=Physical.create(opts),b=Sim.create(opts);
+    a.runToEnd();b.runToEnd();
+    assert.ok(a.finished&&b.finished,'match did not end');
+    physicalGoals+=a.score[0]+a.score[1];managerGoals+=b.score[0]+b.score[1];
+  }
+  // Cohort-level guard, not a claim that each match should have the same score.
+  const ratio=managerGoals/Math.max(1,physicalGoals);
+  assert.ok(ratio>.63&&ratio<1.5,
+    'offscreen scoring diverged: '+managerGoals+' vs '+physicalGoals+' ('+ratio.toFixed(2)+')');
+});
