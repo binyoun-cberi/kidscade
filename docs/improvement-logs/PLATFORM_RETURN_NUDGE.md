@@ -71,3 +71,16 @@
 - Targeted verification: re-fetched updated platform source and test file from PR, ran 19 cases in the V8 Node-test shim again, **19 passed, 0 failed**.
 - Remaining validation: the new PR workflow run on head commit \`5a0427907fe769dc54bc08f525d2b30eb2ec0ca9\` was in progress when checked. Do not mark fixed CI as successful until its actual conclusion is confirmed.
 - Browser playthrough / physical Android Samsung Internet / audio heard / media volume detection: **not verified**.
+
+
+## 2026-11-14 검수·배포 요청: 실제 증거와 출시 제한
+
+- 사용자 요청: 검수하고 배포하고 테스트. Cloudflare 운영 배포는 이번 사용자 메시지에서 명시적으로 요청됨.
+- 실제 자동 테스트 근거: PR HEAD `e784ac9a3f981cde35bcc02888ac2c89386c02f7`의 GitHub Actions `Kidscade architecture checks` run `43574045562`가 **completed/success**. `node-tests`, `kkwaekkori-browser-audit` 작업 모두 success. 전체 회귀 `# tests 2933`, `# pass 2933`, `# fail 0`; 아키텍처 구조 검사 `rootRuntimeJs 69 / max 69` 통과, health/build 통과. 이 실행은 **복귀 안내 기능만의 실물 태블릿 음성 검증은 아님**.
+- 추가 결함 검토: 게임 일시정지를 제공하지 않는 게임은 돌아오기 대기 중 개별 게임 타이머가 계속 진행될 수 있고, 삼성 인터넷/실제 갤럭시탭 음성 목록과 미디어 볼륨은 실기기 점검이 필요함. 웹 Speech API로 기기의 무음을 실제 판정할 수는 없음.
+- 실제 브라우저 테스트 보강: `tests/return-nudge-browser-audit.cjs` 추가 (Chrome CDP, 390×844 태블릿 뷰포트, 실제 모달과 클릭 입력, 모의 음성 엔진의 구글 한국어 여성 음성 선택/volume=1, 오류 시 60초 카운트다운 가상 시간, 20분 초과 복귀 제외). `.github/workflows/architecture-tests.yml`에 별도 PR 검사 단계로 등록. 이 검사는 **실제 Android 삼성 인터넷/스피커 테스트를 대체하지 않음**.
+- 로컬 Chromium 시도: 컨테이너 정책에서 `Page.navigate`가 `net::ERR_BLOCKED_BY_ADMINISTRATOR`를 반환해 UI 검증 시작 전 차단됨. 이 상태를 브라우저 통과로 간주하지 않음. GitHub Actions 러너에서 실제 결과 확인 대기.
+- **운영 배포 미실행 사유**: `.github/workflows/deploy-cloudflare.yml`의 운영 배포는 `main` push / 수동 workflow_dispatch에서 진행되고 `npx wrangler d1 migrations apply kidscade-stats --remote`를 필수 실행함. 프로젝트 규칙상 PR 병합과 원격 D1 마이그레이션은 배포 승인과 별도의 명시 승인 대상. 운영 배포 워크플로를 현재 상태로 실행하면 승인되지 않은 원격 D1 변경이 포함되므로 실행하지 않음.
+- 다른 배포 방식: Vercel 연결된 프로젝트 목록 조회를 시도했으나 권한 없는 팀 스코프로 **403 Forbidden**을 반환해 대체 preview 배포 불가. 이 저장소는 Cloudflare Workers 기반이므로 별도 Vercel 신규 프로젝트/비용을 만들지 않았음.
+- PR `https://github.com/binyoun-cberi/kidscade/pull/763`는 별도 브랜치에서 열려 있음. main 직접 푸시/병합/배포/원격 DB 변경 없음. 학생 기록, 키, 유료 AI API는 건드리지 않음.
+- 다음 단계: 새 실제 Chrome 전용 감사 작업과 전체 PR CI 결과 확인 후 명시적인 PR 병합 및 원격 D1 실행 승인에 따라 운영 배포, 버전 매니페스트/복귀 모달 live smoke를 실행. 갤럭시탭 Chrome/삼성 인터넷은 실물 기기에서 수동 청취까지 검증 필요.
