@@ -11,6 +11,7 @@ const css = fs.readFileSync(path.join(dir,'style.css'),'utf8');
 const code = fs.readFileSync(path.join(dir,'game.js'),'utf8');
 const catalog = JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
 const simPromise = import(pathToFileURL(path.join(dir,'sim.mjs')).href);
+const lifePromise = import(pathToFileURL(path.join(dir,'life.mjs')).href);
 
 test('game is registered for preschool and lower-primary ages',()=>{
   const game=catalog.games.find(game=>game.id==='tod_mot_chatgetda_kkwaekkori');
@@ -182,7 +183,7 @@ test('3D picking, honest prop fallbacks and rotated-camera ground dragging are p
   assert.match(code,/challengeLevel\+1/);
   assert.match(code,/finishChallenge\(/);
   assert.match(html,/20초 연속 찾기 도전/);
-  assert.match(code,/sim\.mjs\?v=13/);
+  assert.match(code,/sim\.mjs\?v=14/);
   assert.match(code,/pinchCenter/);
   assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
 });
@@ -697,6 +698,81 @@ test('tablet render path respects saved clues and reduces large-world framebuffe
   for(const token of ['tabletGraphicsBudget()','applyGraphicsBudget()',
     'previewFrameAt','1000/24','group.userData.vehicle','shape.x>shape.z*1.08'])
     assert.ok(code.includes(token),'tablet/vehicle renderer hook: '+token);
-  assert.match(code,/sim\.mjs\?v=13/);
-  assert.match(html,/game\.js\?v=13/);
+  assert.match(code,/sim\.mjs\?v=14/);
+  assert.match(html,/game\.js\?v=14/);
+});
+
+test('living districts schedule distinct 3D stories without consuming puzzle randomness',async()=>{
+  const {makeTown,movePeople,signature,personIsDiscoverable}=await simPromise;
+  const {LIFE_CUES,LIFE_LIMIT}=await lifePromise;
+  assert.equal(Object.keys(LIFE_CUES).length,6);
+  assert.equal(Object.values(LIFE_CUES).flat().length,12);
+  for(const stage of ['small','medium','large'])for(const seed of [42]){
+    const town=makeTown(stage,seed,'normal');
+    const repeat=makeTown(stage,seed,'normal');
+    assert.equal(town.life.scenes.length,LIFE_LIMIT[stage]);
+    assert.deepEqual(town.life.scenes,repeat.life.scenes);
+    assert.equal(new Set(town.life.scenes.map(s=>s.kind)).size,6);
+    assert.equal(town.life.episodes,0);
+    const clues=town.order.map(id=>[id,signature(town.people.find(p=>p.id===id))]);
+    const initial=town.people.map(p=>[p.id,p.modelVariant,p.propVariant,p.position.x,p.position.z]);
+    assert.deepEqual(initial,repeat.people.map(p=>[p.id,p.modelVariant,p.propVariant,p.position.x,p.position.z]));
+    for(let tick=0;tick<140;tick++)movePeople(town,.2); // 28 simulated seconds; longer stress ran separately
+    assert.ok(town.life.episodes>=12,stage+' should have multiple neighborhood happenings');
+    assert.equal(Object.keys(town.life.counts).length,12,
+      'all 12 cues must appear, including birds, shops, school, and gardening');
+    for(const story of town.life.scenes){
+      assert.ok(Number.isFinite(story.phase)&&story.phase>=0&&story.phase<=1);
+      assert.ok(LIFE_CUES[story.kind].includes(story.cue));
+      assert.ok(story.episodes>=2);
+    }
+    for(const [id,clue] of clues){
+      const p=town.people.find(p=>p.id===id);
+      assert.equal(signature(p),clue);
+      assert.ok(personIsDiscoverable(town,id));
+      assert.ok(p.socialKind==null,'clue people do not participate in ambient handoffs');
+    }
+  }
+});
+test('background neighbor chat, wave and handoff are reciprocal and non-selectable',async()=>{
+  const {makeTown,movePeople,signature}=await simPromise;
+  const counts={chat:0,wave:0,handoff:0};
+  for(const stage of ['small'])for(const seed of [42]){
+    const town=makeTown(stage,seed,'easy');
+    const before=town.order.map(id=>[id,signature(town.people.find(p=>p.id===id))]);
+    for(let i=0;i<180;i++){
+      movePeople(town,.2);
+      for(const p of town.people)if(p.socialWith){
+        const q=town.people.find(q=>q.id===p.socialWith);
+        assert.ok(q&&q.socialWith===p.id&&q.socialKind===p.socialKind,
+          'an ambient interaction must have a real matching partner');
+        assert.ok(!p.reserved&&!q.reserved&&!p.errand&&!q.errand,
+          'important clue figures and active deliveries are not retasked');
+        assert.ok(Math.hypot(p.position.x-q.position.x,p.position.z-q.position.z)<=1.5);
+      }
+    }
+    for(const key of Object.keys(counts))counts[key]+=town.socialScenes[key];
+    for(const [id,clue] of before)assert.equal(signature(town.people.find(p=>p.id===id)),clue);
+  }
+  for(const key of Object.keys(counts))assert.ok(counts[key]>0,key+' scene must occur');
+});
+test('living props are scenery only and challenge mode retains the existing puzzle',async()=>{
+  const {makeTown,getChallengeSettings,movePeople}=await simPromise;
+  const source=require('node:fs').readFileSync(path.join(dir,'life.mjs'),'utf8');
+  for(const token of ['makeLivingNeighborhood();','updateLivingNeighborhood();',
+    'city-living-','city-neighbor-handoff','scenery.add(group)','marker.add(token)',
+    'swayingTrees','livingScenes.length=0','handoffMarkers.clear()']){
+    assert.ok(code.includes(token),token);
+  }
+  assert.match(code,/ray\.intersectObjects\(citizens\.children,true\)/);
+  assert.doesNotMatch(source,/fetch\(|WebSocket|localStorage|Math\.random\(/);
+  for(const level of [1,12,30]){
+    const c=getChallengeSettings(level);
+    const town=makeTown(c.stageName,42,'hard',true,c);
+    for(let i=0;i<25;i++)movePeople(town,.2);
+    assert.equal(town.life,null);
+    assert.deepEqual(town.socialScenes,{chat:0,wave:0,handoff:0});
+  }
+  assert.match(code,/sim\.mjs\?v=14/);
+  assert.match(html,/game\.js\?v=14/);
 });

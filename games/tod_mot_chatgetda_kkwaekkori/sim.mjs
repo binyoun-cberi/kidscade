@@ -1,6 +1,7 @@
 // Seeded, renderer-independent town activities and fair observation puzzles.
 import { createTransit, stepTransit, shuttleDoorLaneBusy, walkingClearOfBus } from './transit.mjs';
 import { createTraffic, stepTraffic, pedestrianTrafficGuard } from './traffic.mjs';
+import { createLivingCity, stepLivingCity } from './life.mjs';
 export const WORLD_VERSION = 3;
 export const BLOCK_PITCH = 7;
 // Critter Catchin' inspired optional arcade pacing; the untimed town mode is unchanged.
@@ -284,10 +285,13 @@ export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=t
   for(const p of people){p.routine=p.activity;p.lifeStop=Math.max(0,ROUTINES[p.routine].findIndex(([kind])=>kind===p.block.kind));}
   const town={stageName,config,seed,difficulty,challenge:!!challenge,blocks,people,paths,order:[],time:0};
   town.greetingCount=0;town.lastGreetingPulse=-1;
+  town.socialScenes={chat:0,wave:0,handoff:0};
   town.commerce={visits:0,purchases:0,meals:0,deliveries:0,completed:0,recent:[]};
   if(autoSelect)selectTargets(town,people.map(p=>p.id));
   town.traffic=town.challenge?null:createTraffic(town,getStreetPlan(town),BLOCK_PITCH);
-  town.transit=createTransit(town,getBlockCenter,BLOCK_PITCH);return town;
+  town.transit=createTransit(town,getBlockCenter,BLOCK_PITCH);
+  town.life=createLivingCity(town);
+  return town;
 }
 export function selectTargets(town,eligibleIds,previous=[]){
   const eligible=new Set(eligibleIds),random=createRng(town.seed^0x51fa77);
@@ -364,13 +368,18 @@ function greetNeighbors(town){
       Math.hypot(q.position.x-p.position.x,q.position.z-p.position.z)<=1.5);
     if(!companion)continue;
     const until=town.time+2.4;
+    // Visible micro-stories: market/bakery visitors exchange an item; other
+    // neighbors alternate between waving and chatting. No clue or prop edits.
+    const kind=['market','bakery'].includes(p.block.kind)?'handoff':
+      (Number(p.id.slice(7))+Math.floor(town.time/14))%2?'wave':'chat';
     for(const [who,friend] of [[p,companion],[companion,p]]){
-      who.socialWith=friend.id;who.socialUntil=until;
+      who.socialWith=friend.id;who.socialUntil=until;who.socialKind=kind;
       who.nextGreetingAt=who.elapsed+18+(Number(who.id.slice(7))%5)*1.6;
       who.routineAt=Math.max(who.routineAt,who.elapsed+3);
       who.greetings++;
     }
     town.greetingCount++;
+    town.socialScenes[kind]++;
     occupied.add(p.block.id);
     if(++activePairs>=maxPairs)break;
   }
@@ -386,7 +395,7 @@ export function movePeople(town,deltaSeconds){
     if(p.state!=='walking'){
       if(p.socialWith){
         if(town.time<p.socialUntil)continue;
-        p.socialWith=null;p.socialUntil=0;
+        p.socialWith=null;p.socialUntil=0;p.socialKind=null;
       }
       if(!p.reserved&&!p.found&&!town.challenge)startShopVisit(town,p);
       if(p.errand?.phase==='shopping'&&p.elapsed>=p.routineAt){
@@ -432,6 +441,7 @@ export function movePeople(town,deltaSeconds){
   greetNeighbors(town);
   stepTransit(town,dt,WALK.clearance,safeActivity);
   stepTraffic(town,dt);
+  stepLivingCity(town);
 }
 export function getClue(person,difficulty='easy'){
   if(!person)return null;const a=ACTIVITIES.find(a=>a.id===person.activity),prop=a.props[person.propVariant];
