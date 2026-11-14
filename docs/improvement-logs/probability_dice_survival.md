@@ -6,7 +6,7 @@
 - 최신 상태: **부분 검증** (실제 Chromium 종료·프로필 제거 모형 3/3 통과; 저장소 전체 CI 검증 대기)
 - 마지막 갱신일: 2026-11-14
 - 확정된 요구: 기존 주사위 1인/대전, 확률·기록, 3D 연출, 모바일 조작을 변경하지 않고 PR #750 병합 후 CI 실패를 해결한다.
-- 다음 시작점: 새 PR의 GitHub Actions 결과에서 `tests/probability-dice-browser-audit.cjs` 및 전체 `npm run test:ci` 재실행 결과를 확인하고, 같은 실패가 재발하면 로그를 기준으로 재현한다.
+- 다음 시작점: PR #764의 두 번째 전체 CI에서 120초 시간 초과를 방지한 분리 도시 시뮬레이션 그룹과 전체 회귀 검사의 결과를 확인한다.
 
 ## 현재 남은 문제
 
@@ -36,3 +36,10 @@
 - 실제 게임 플레이 및 모바일 기기: 미실행. 이전 PR #750의 GitHub Actions 주사위 브라우저 플레이 통과 기록만 확인.
 - GitHub: PR #764 생성 (https://github.com/binyoun-cberi/kidscade/pull/764); `main` 직접 수정/병합 및 Cloudflare 배포, 원격 D1 마이그레이션 없음. 기존 저장 데이터와 키, 비밀정보, 유료 API 접근 없음.
 - 다음 계획: PR CI 결과와 Chrome 임시 프로필 정리의 재발 여부 확인, 필요한 경우 3회 이내 근거 기반 재수정.
+
+#### 2026-11-14 — PR #764 실제 CI 1차 판정 및 후속 조정
+
+- GitHub Actions `Destiny Dice standalone smoke` 실행 #43572034549: **성공**. 실제 Chrome에서 desktop/solo/duel/mobile/20면체 주사위 모두 PASS, 정리 단계의 `ENOTEMPTY` 재발 없음.
+- GitHub Actions `Kidscade architecture checks` 실행 #43572034543: **실패**. 보안·구문·빌드 및 별도 꾀꼬리 Chrome 감사 통과; 통합 회귀 테스트에서 `tests/mot-chatgetda-kkwaekkori.test.cjs` 파일이 전체 `120000ms` 시간 제한을 초과함. 그 외 개별 검사 실패 0건; 저장 키/성취 프로필의 과거 오류는 이번 실행에서 재발하지 않음.
+- 후속 조정: `scripts/run-ci-tests.cjs`에서 긴 시뮬레이션만 별도 프로세스/240초 제한으로 옮기고, 기존 검사 항목·난이도·게임 로직을 그대로 보존. 상세 내용은 [못 찾겠다 꾀꼬리 로그](./tod_mot_chatgetda_kkwaekkori.md)에 기재.
+- 검증 상태: **부분 검증**. 주사위 실제 Chrome 감사 통과, 전체 CI는 최초 실패 후 분리 수정의 재검사 결과 대기. `main` 병합/배포 없음.
