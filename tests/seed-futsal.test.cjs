@@ -368,7 +368,7 @@ test('tablet coach drawer is accessible and closed before play to protect touch 
   assert.match(game,/step\.key==='tactic'\)setCoachPanelOpen\(true\)/);
   assert.match(css,/@media\(max-width:980px\)/);
   assert.match(css,/\.match-layer\.coach-open \.match-side\{display:flex\}/);
-  assert.match(css,/\.match-side\{display:none;position:absolute;top:60px/);
+  assert.match(css,/\.match-side\{display:none;position:absolute;top:72px);
 });
 
 
