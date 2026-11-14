@@ -30,7 +30,7 @@ function clearWorld(){for(const child of [...world.children]){world.remove(child
 function mesh(mat,geo,x=0,y=0,z=0){const a=new THREE.Mesh(geo,mat);a.position.set(x,y,z);return a;}
 function banner(text,w=2.1,h=.76){const cv=document.createElement('canvas');cv.width=512;cv.height=190;const c=cv.getContext('2d');c.fillStyle='#e8d5a5';c.fillRect(0,0,512,190);c.fillStyle='#544027';c.strokeStyle='#614528';c.lineWidth=14;c.strokeRect(7,7,498,176);c.textAlign='center';c.font='bold 94px system-ui';c.fillText(text,256,126);const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;return mesh(new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}),new THREE.PlaneGeometry(w,h));}
 function standAt(cell,label,color=0x876d46){
- const p=M.center(state.maze,cell),g=new THREE.Group();g.position.set(p.x+1.65,0,p.z+1.65);
+ const p=M.center(state.maze,cell),g=new THREE.Group();g.position.set(p.x+1.65,0,p.z+(cell===state.maze.start?-1.65:1.65));
  const wood=new THREE.MeshLambertMaterial({color});
  g.add(mesh(wood,new THREE.BoxGeometry(.17,2.55,.17),0,1.28,0));
  g.add(mesh(wood,new THREE.BoxGeometry(1.45,1.05,.12),0,1.82,0));
@@ -59,7 +59,7 @@ function canWalk(x,z,radius=.48){
   if(dx*dx+dz*dz<obstacle*obstacle)return false;
  }
  for(const cell of state.maze.stations){
-  const p=M.center(state.maze,cell),dx=x-p.x-1.65,dz=z-p.z-1.65;
+  const p=M.center(state.maze,cell),dx=x-p.x-1.65,dz=z-p.z-(cell===state.maze.start?-1.65:1.65);
   if(dx*dx+dz*dz<(radius+.24)**2)return false;
  }
  return true;
@@ -74,7 +74,7 @@ function addGround(){
 }
 function cornPositions(){
  const m=state.maze,positions=[],random=randomFor(m.seed^0xfa23ba),S=m.size;
- function segment(x1,z1,x2,z2){const normalX=z2-z1?1:0,normalZ=x2-x1?1:0;for(let row=0;row<2;row++)for(let j=0;j<4;j++){const f=(j+.18+random()*.64)/4;const x=x1+(x2-x1)*f,z=z1+(z2-z1)*f,offset=(row? .27:-.27)+(random()-.5)*.22;positions.push({x:x+normalX*offset,z:z+normalZ*offset,s:.88+random()*.27,rot:random()*Math.PI*2});}}
+ function segment(x1,z1,x2,z2){const normalX=z2-z1?1:0,normalZ=x2-x1?1:0;for(let row=0;row<2;row++)for(let j=0;j<(row?3:4);j++){const slots=row?3:4,f=(j+.18+random()*.64)/slots;const x=x1+(x2-x1)*f,z=z1+(z2-z1)*f,offset=(row? .27:-.27)+(random()-.5)*.22;positions.push({x:x+normalX*offset,z:z+normalZ*offset,s:.88+random()*.27,rot:random()*Math.PI*2});}}
  for(let i=0;i<m.links.length;i++){const col=i%S,row=Math.floor(i/S),p=M.center(m,i),h=m.cell/2,link=m.links[i];
   if(!(link&2)&&!(i===m.exit&&col===S-1))segment(p.x+h,p.z-h,p.x+h,p.z+h);
   if(!(link&4)&&!(i===m.exit&&row===S-1))segment(p.x-h,p.z+h,p.x+h,p.z+h);
@@ -89,9 +89,9 @@ function populateCorn(group,positions){
  const templates=[];group.traverse(n=>{if(n.isMesh&&n.geometry){const geo=n.geometry.clone();geo.applyMatrix4(n.matrixWorld);geo.translate(-cen.x,-bbox.min.y,-cen.z);geo.scale(factor,factor,factor);templates.push(geo);}});
  if(!templates.length)throw new Error('Empty corn model');
  // Frustum-cull spatial buckets instead of rendering every stalk behind the player.
- const chunkSize=state.maze.cell*6,side=state.maze.size*state.maze.cell,buckets=new Map();
+ const chunkSize=state.maze.cell*6,side=state.maze.size*state.maze.cell,chunkCount=Math.ceil(side/chunkSize),buckets=new Map();
  for(const plant of positions){
-  const bx=Math.floor((plant.x+side/2)/chunkSize),bz=Math.floor((plant.z+side/2)/chunkSize),key=bx+','+bz;
+  const bx=Math.max(0,Math.min(chunkCount-1,Math.floor((plant.x+side/2)/chunkSize))),bz=Math.max(0,Math.min(chunkCount-1,Math.floor((plant.z+side/2)/chunkSize))),key=bx+','+bz;
   if(!buckets.has(key))buckets.set(key,[]);
   buckets.get(key).push(plant);
  }
