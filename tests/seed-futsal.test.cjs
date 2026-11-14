@@ -48,7 +48,7 @@ test('Futsal History League exposes direct keyboard and touch controls',()=>{
   assert.match(html,/data-fh-action="through"/);
   assert.match(html,/data-fh-action="lob"/);
   assert.match(html,/data-fh-action="shoot"/);
-  assert.match(html,/futsal-history-match\.js\?v=16/);
+  assert.match(html,/futsal-history-match\.js\?v=17/);
 });
 
 
@@ -225,4 +225,99 @@ test('rival growth and history-card quiz reward are guarded',()=>{
   const quiz=game.slice(game.indexOf('function historyCardModal('),game.indexOf('function tacticImpactHtml('));
   assert.match(quiz,/<h2>이 인물은 누구일까요\?<\/h2>/);
   assert.doesNotMatch(quiz,/<h2>'\+esc\(p\.name\)/);
+});
+
+
+test('kick hold/release exposes power, and stronger shots are faster',()=>{
+  const html=fs.readFileSync(indexPath,'utf8'),game=fs.readFileSync(gamePath,'utf8');
+  assert.match(html,/id="kickPowerHud"/);
+  assert.match(game,/st\.chargeLevel/);
+  function fire(power){
+    const match=buildPhysicalMatch();
+    const p=match.teams[0].actors.find(a=>a.slot==='ST');
+    p.x=720;p.y=420;match.ball.owner=p;match.ball.x=p.x;match.ball.y=p.y;
+    match.setDirectControl(true);match.controlled=p;
+    match.handleAction('shoot',power);
+    return Math.hypot(match.ball.vx,match.ball.vy);
+  }
+  assert.ok(fire(1)>fire(.12)+150);
+  const match=buildPhysicalMatch(),p=match.teams[0].actors.find(a=>a.slot==='ST');
+  p.x=750;p.y=420;match.teams[1].actors.forEach(a=>{a.x=1350;a.y=75;});
+  match.ball.owner=p;match.ball.x=p.x;match.ball.y=p.y;
+  match.setDirectControl(true);match.controlled=p;
+  assert.equal(match.beginKick('shoot'),true);
+  for(let i=0;i<55;i++)match.update(.016,1);
+  assert.ok(match.getControlState().chargeLevel>.9);
+  assert.equal(match.releaseKick('shoot',true),true);
+  assert.equal(match.getControlState().chargeKind,null);
+  assert.ok(match.events.some(e=>e.type==='shot'));
+});
+
+test('real touches, not coaching or control messages, determine ball ownership',()=>{
+  const match=buildPhysicalMatch(),last=match.lastTouchId;
+  match.setDirectControl(true);
+  assert.equal(match.lastTouchId,last);
+  const owner=match.ball.owner;
+  match.setInstruction(owner.side,owner.id,'forward');
+  assert.equal(match.lastTouchId,last);
+  const attacker=match.teams[0].actors.find(a=>a.slot==='ST');
+  attacker.x=680;attacker.y=420;
+  match.teams[0].actors.filter(a=>a!==attacker).forEach((a,i)=>{a.x=80;a.y=120+i*85;});
+  match.teams[1].actors.forEach((a,i)=>{a.x=1350;a.y=80+i*85;});
+  match.ball.owner=attacker;match.ball.x=attacker.x;match.ball.y=attacker.y;
+  match.controlled=attacker;match.handleAction('pass');
+  // Simulate a slow ball coming to rest at its kicker's feet. Kick lockout
+  // prevents an implausible instant re-capture.
+  match.ball.x=attacker.x;match.ball.y=attacker.y;
+  match.ball.vx=0;match.ball.vy=0;match.ball.vz=0;match.ball.z=0;
+  match.update(.16,1);
+  assert.notEqual(match.ball.owner,attacker);
+});
+
+test('touchline and goal-line exits use correct kick-in corner or goal clearance',()=>{
+  for(const kind of ['kickin','corner','clearance']){
+    const match=buildPhysicalMatch();
+    match.ball.owner=null;
+    match.ball.x=kind==='kickin'?780:1505;
+    match.ball.y=kind==='kickin'?-4:105;
+    match.ball.vx=kind==='kickin'?0:120;
+    match.ball.vy=kind==='kickin'?-100:0;match.ball.vz=0;match.ball.z=0;
+    match.lastTouchId=match.teams[kind==='corner'?1:0].actors[1].id;
+    match.update(.017,1);
+    const incident=match.events.find(e=>e.type===kind);
+    assert.ok(incident,'missing restart event: '+kind);
+    const expectedSide=kind==='corner'?0:1;
+    assert.equal(incident.side,expectedSide);
+    for(let i=0;i<80;i++)match.update(.016,1);
+    const played=match.events.find(e=>e.type==='restart');
+    assert.ok(played,'restart never taken: '+kind);
+    assert.equal(played.side,expectedSide);
+  }
+});
+
+test('powerful shot is parried rather than glued to the keeper',()=>{
+  const match=buildPhysicalMatch();
+  const shooter=match.teams[0].actors.find(a=>a.slot==='ST');
+  const keeper=match.teams[1].actors.find(a=>a.slot==='GK');
+  shooter.x=820;shooter.y=420;
+  match.teams[0].actors.filter(a=>a!==shooter).forEach((a,i)=>{a.x=90;a.y=100+i*60;});
+  match.teams[1].actors.filter(a=>a!==keeper).forEach((a,i)=>{a.x=1100;a.y=80+i*60;});
+  keeper.x=1360;keeper.y=420;
+  match.ball.owner=shooter;match.ball.x=shooter.x;match.ball.y=shooter.y;
+  match.setDirectControl(true);match.controlled=shooter;match.handleAction('shoot',1);
+  for(let i=0;i<13;i++)match.update(.01,1);
+  match.ball.owner=null;match.ball.x=keeper.x-12;match.ball.y=keeper.y;
+  match.ball.z=0;match.ball.vx=750;match.ball.vy=0;match.ball.vz=0;
+  match.update(.02,1);
+  assert.ok(match.events.some(e=>e.type==='save'));
+  assert.notEqual(match.ball.owner,keeper);
+});
+
+test('rival signings are unique, persisted and applied to opponents',()=>{
+  const source=fs.readFileSync(gamePath,'utf8');
+  assert.match(source,/function runRivalTransfers\(\)/);
+  assert.match(source,/state\.rivalSignings=state\.rivalSignings\|\|\{\}/);
+  assert.match(source,/state\.season\+\+;state\.round=0;[\s\S]*?runRivalTransfers\(\)/);
+  assert.match(source,/roster\.push\(recruited\);signings\.push\(recruited\)/);
+  assert.match(source,/if\(!original\|\|rivalSignedIds\(\)\[original\.id\]\)return/);
 });
