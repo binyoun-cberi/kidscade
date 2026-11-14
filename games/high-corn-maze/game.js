@@ -171,7 +171,7 @@ function interact(){
  if(!state.running||state.mapOpen)return;
  const action=nearAction();if(!action)return;
  if(action.type==='exit')return win();
- state.checkpoint=action.cell;state.stationsVisited.add(action.cell);state.mapOpen=true;ui.map.classList.remove('hidden');document.exitPointerLock?.();drawMap();$('closeMap').focus();
+ state.checkpoint=action.cell;state.stationsVisited.add(action.cell);state.mapOpen=true;ui.map.classList.remove('hidden');document.exitPointerLock?.();updateMapView();drawMap();ui.mapGuessReadout.textContent=state.guess>=0?'이전에 표시한 예상 위치를 확인하세요.':'지도의 한 칸을 눌러 위치를 추측하세요.';$('closeMap').focus();
 }
 function closeMap(){state.mapOpen=false;ui.map.classList.add('hidden');notify('갈림길과 주변 건물을 기억하며 이동하세요.',3);}
 function win(){state.running=false;state.won=true;hunterGroup.visible=false;document.exitPointerLock?.();const minutes=Math.floor(state.elapsed/60),seconds=Math.floor(state.elapsed%60);ui.summary.textContent='탈출 시간 '+minutes+'분 '+seconds+'초 · 지도판 '+state.stationsVisited.size+'곳 · 붙잡힘 '+state.hunter.caught+'회 · 미로 번호 '+state.maze.seed;ui.end.classList.remove('hidden');try{window.KidscadeGame?.result?.({scope:'run',status:'completed',outcome:'clear',cleared:true,score:Math.max(1,Math.round(1000-state.elapsed-state.hunter.caught*70)),seconds:Math.round(state.elapsed),seed:state.maze.seed});}catch(_){}}
@@ -188,7 +188,66 @@ function drawMap(){
  if(state.guess>=0){const[gx,gy]=at(state.guess);c.strokeStyle='#ad362a';c.lineWidth=3;c.beginPath();c.arc(gx,gy,8,0,Math.PI*2);c.stroke();c.fillStyle='#ad362a';c.beginPath();c.arc(gx,gy,3,0,Math.PI*2);c.fill();}
  c.font='bold 20px system-ui';c.fillStyle='#674b2c';c.fillText('N ↑',cvs.width-50,20);
 }
-ui.mapCanvas.addEventListener('pointerdown',e=>{if(!state.mapOpen)return;const r=ui.mapCanvas.getBoundingClientRect(),x=(e.clientX-r.left)*ui.mapCanvas.width/r.width,y=(e.clientY-r.top)*ui.mapCanvas.height/r.height,s=state.maze.size,P=32,T=(ui.mapCanvas.width-P*2)/s,col=Math.floor((x-P)/T),row=Math.floor((y-P)/T);if(col>=0&&row>=0&&col<s&&row<s){state.guess=row*s+col;drawMap();}});
+function updateMapView(){
+ const {zoom}=mapView,view=ui.mapViewport;
+ const limitX=Math.max(0,(zoom-1)*view.clientWidth/2),limitY=Math.max(0,(zoom-1)*view.clientHeight/2);
+ mapView.x=Math.max(-limitX,Math.min(limitX,mapView.x));mapView.y=Math.max(-limitY,Math.min(limitY,mapView.y));
+ ui.mapCanvas.style.transform='translate('+mapView.x+'px,'+mapView.y+'px) scale('+zoom+')';
+ ui.mapZoomValue.textContent=Math.round(zoom*100)+'%';
+ ui.mapZoomOut.disabled=zoom<=1;ui.mapZoomIn.disabled=zoom>=4;
+}
+function setMapZoom(zoom){mapView.zoom=Math.max(1,Math.min(4,Math.round(zoom*100)/100));updateMapView();}
+function resetMapView(){mapView.zoom=1;mapView.x=0;mapView.y=0;mapView.pointers.clear();mapView.gesture=false;mapView.pinchDistance=0;updateMapView();}
+function markMapGuess(clientX,clientY){
+ if(!state.mapOpen)return;
+ const rect=ui.mapCanvas.getBoundingClientRect(),x=(clientX-rect.left)*ui.mapCanvas.width/rect.width,y=(clientY-rect.top)*ui.mapCanvas.height/rect.height;
+ const size=state.maze.size,padding=32,cell=(ui.mapCanvas.width-padding*2)/size;
+ const col=Math.floor((x-padding)/cell),row=Math.floor((y-padding)/cell);
+ if(col<0||row<0||col>=size||row>=size)return;
+ state.guess=row*size+col;
+ ui.mapGuessReadout.textContent='예상 위치를 표시했어요. 주변 지형지물과 길 모양을 다시 비교해 보세요.';
+ drawMap();
+}
+ui.mapZoomIn.addEventListener('click',()=>setMapZoom(mapView.zoom+.65));
+ui.mapZoomOut.addEventListener('click',()=>setMapZoom(mapView.zoom-.65));
+ui.mapReset.addEventListener('click',resetMapView);
+ui.mapViewport.addEventListener('wheel',e=>{if(!state.mapOpen)return;e.preventDefault();setMapZoom(mapView.zoom+(e.deltaY<0?.3:-.3));},{passive:false});
+ui.mapViewport.addEventListener('pointerdown',e=>{
+ if(!state.mapOpen)return;
+ mapView.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,moved:false});
+ if(mapView.pointers.size===2){
+  const [a,b]=[...mapView.pointers.values()];mapView.pinchDistance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));mapView.pinchZoom=mapView.zoom;mapView.gesture=true;
+ }
+ try{ui.mapViewport.setPointerCapture(e.pointerId)}catch(_){}
+});
+ui.mapViewport.addEventListener('pointermove',e=>{
+ const p=mapView.pointers.get(e.pointerId);if(!p)return;
+ const dx=e.clientX-p.x,dy=e.clientY-p.y;
+ p.x=e.clientX;p.y=e.clientY;
+ if(Math.hypot(p.x-p.sx,p.y-p.sy)>7)p.moved=true;
+ if(mapView.pointers.size>=2){
+  const [a,b]=[...mapView.pointers.values()],distance=Math.hypot(a.x-b.x,a.y-b.y);
+  if(mapView.pinchDistance)setMapZoom(mapView.pinchZoom*distance/mapView.pinchDistance);
+ }else if(mapView.zoom>1){mapView.x+=dx;mapView.y+=dy;updateMapView();}
+});
+function finishMapPointer(e,cancelled){
+ const p=mapView.pointers.get(e.pointerId);if(!p)return;
+ const tap=mapView.pointers.size===1&&!mapView.gesture&&!p.moved&&Math.hypot(e.clientX-p.sx,e.clientY-p.sy)<8;
+ mapView.pointers.delete(e.pointerId);
+ if(mapView.pointers.size<2)mapView.pinchDistance=0;
+ if(mapView.pointers.size===0)mapView.gesture=false;
+ if(tap&&!cancelled)markMapGuess(e.clientX,e.clientY);
+}
+ui.mapViewport.addEventListener('pointerup',e=>finishMapPointer(e,false));
+ui.mapViewport.addEventListener('pointercancel',e=>finishMapPointer(e,true));
+ui.mapViewport.addEventListener('keydown',e=>{
+ if(!state.mapOpen)return;
+ if(e.key==='+'||e.key==='='){e.preventDefault();setMapZoom(mapView.zoom+.5);}
+ else if(e.key==='-'){e.preventDefault();setMapZoom(mapView.zoom-.5);}
+ else if(e.key==='0'){e.preventDefault();resetMapView();}
+ else if(e.key==='Enter'){e.preventDefault();const r=ui.mapViewport.getBoundingClientRect();markMapGuess(r.left+r.width/2,r.top+r.height/2);}
+ else if(e.key.startsWith('Arrow')){e.preventDefault();mapView.x+=e.key==='ArrowLeft'?26:e.key==='ArrowRight'?-26:0;mapView.y+=e.key==='ArrowUp'?26:e.key==='ArrowDown'?-26:0;updateMapView();}
+});
 function step(dt){
  if(!state.running)return;
  state.elapsed+=dt;
