@@ -181,7 +181,10 @@ test('changing the defensive line and mentality moves the on-field players',()=>
   const advance=match=>{
     const striker=match.teams[0].actors.find(a=>a.slot==='ST');
     const defender=match.teams[0].actors.find(a=>a.slot==='CB');
-    match.ball.owner=striker;match.possession=0;
+    striker.x=670;striker.y=420;
+    match.ball.owner=striker;match.ball.x=striker.x;match.ball.y=striker.y;match.possession=0;
+    // Keep the attacker controlled so they do not independently shoot during this positioning comparison.
+    match.setDirectControl(true);match.controlled=striker;
     for(let i=0;i<20;i++)match.update(.05,1);
     return defender.x;
   };
