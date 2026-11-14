@@ -695,10 +695,10 @@ var MATCH_TUTORIAL_STEPS=[
   {key:'watch',title:'1. 먼저 지켜봐도 괜찮아요',text:'경기는 기본적으로 관전 모드로 시작해요. 선수들이 스스로 움직이므로 조작이 어렵다면 끝까지 지켜보기만 해도 됩니다.',goal:'지금은 관전 모드예요. 준비되면 “직접 해보기”를 눌러요.',manual:true,next:'직접 해보기'},
   {key:'direct_on',title:'2. 직접 조종을 켜 봐요',text:'위쪽의 🎮 직접 조종 켜기를 누르면 우리 팀 선수 한 명을 직접 움직일 수 있어요. 직접 조종 중에는 1× 속도로 고정됩니다.',goal:'🎮 직접 조종 켜기 버튼을 눌러 보세요.',target:'#directControlBtn'},
   {key:'move',title:'3. 선수를 움직여 봐요',text:'키보드는 방향키, 태블릿은 왼쪽 방향 버튼을 사용해요. 질주는 꼭 필요할 때만 쓰면 됩니다.',goal:'방향키 또는 이동 버튼을 한 번 사용해 보세요.',target:'.futsal-move-pad'},
-  {key:'pass',title:'4. 가장 먼저 패스를 배워요',text:'우리 선수가 공을 잡았을 때 S를 누르면 빈 동료를 자동으로 찾아 패스해요. 태블릿에서는 초록색 패스 버튼을 누르면 됩니다.',goal:'우리 팀이 공을 잡으면 S 또는 패스 버튼을 눌러 보세요.',target:'[data-fh-action="pass"]'},
+  {key:'pass',title:'4. 가장 먼저 패스를 배워요',text:'우리 선수가 공을 잡으면 S나 초록색 패스 버튼을 눌렀다가 떼세요. 오래 누르면 파워가 올라가요. 팀 동료에게 자동으로 패스해요.',goal:'우리 팀이 공을 잡으면 S 또는 패스 버튼을 눌러 보세요.',target:'[data-fh-action="pass"]'},
   {key:'switch',title:'5. 조작 선수를 바꿀 수 있어요',text:'수비할 때 원하는 선수를 잡고 싶다면 Q를 누르세요. 태블릿에서는 “전환” 버튼입니다.',goal:'Q 또는 전환 버튼으로 선수를 한 번 바꿔 보세요.',target:'[data-fh-action="switch"]'},
   {key:'tackle',title:'6. 태클은 초록색일 때!',text:'상대 공 보유자에게 가까이 가면 노란 표시가 뜨고, 더 가까워지면 초록색으로 바뀝니다. 초록색에서 D를 누르는 것이 핵심이에요.',goal:'초록색 “지금! D 태클” 표시에서 태클을 시도해 보세요.',target:'#shootTackleBtn'},
-  {key:'shoot',title:'7. 공격에서는 D가 슛이에요',text:'내가 조종하는 선수가 공을 가지고 있을 때 D는 태클이 아니라 슛이 됩니다. 버튼 글자도 “슛!”으로 바뀌어요.',goal:'공을 잡으면 D 또는 슛 버튼으로 한 번 슛해 보세요.',target:'#shootTackleBtn'},
+  {key:'shoot',title:'7. 공격에서는 D가 슛이에요',text:'공을 가진 채 D나 슛 버튼을 눌러 파워를 채우고 떼면 슛을 해요. 좌우 버튼을 누르면 방향도 바꿀 수 있어요.',goal:'공을 잡으면 D 또는 슛 버튼으로 한 번 슛해 보세요.',target:'#shootTackleBtn'},
   {key:'tactic',title:'8. 감독처럼 전술도 바꿔 봐요',text:'오른쪽 감독 지시에서 공격 방식·압박·라인·템포 등을 경기 도중 바로 바꿀 수 있어요.',goal:'감독 지시에서 아무 전술 버튼이나 하나 눌러 보세요.',target:'#liveTacticText'},
   {key:'direct_off',title:'9. 힘들면 언제든 다시 관전',text:'직접 조종이 버거우면 👀 관전으로 전환을 누르면 됩니다. 선수들이 다시 알아서 경기하고 감독 역할만 해도 돼요.',goal:'👀 관전으로 전환을 눌러 튜토리얼을 마쳐 보세요.',target:'#directControlBtn'}
 ];
@@ -766,11 +766,11 @@ function matchEvent(e){
     while(log.children.length>16)log.removeChild(log.lastChild);
   }
   if(e.type==='goal'){crowdSwell(.095);sound('success');}
-  else if(e.type==='save')matchSfx('save',1.12);
+  else if(e.type==='save'||e.type==='block')matchSfx('save',1.12);
   else if(e.type==='shot'){matchSfx('whoosh',1.08);passThump();}
   else if(e.type==='pass'||e.type==='cross'){matchSfx('pass',1.65);passThump();}
   else if(e.type==='tackle'){matchSfx('tackle',.92);crowdSwell(.040);}
-  else if(e.type==='foul'){whistleSfx(false);crowdSwell(.038);}
+  else if(e.type==='foul'||e.type==='kickin'||e.type==='corner'||e.type==='clearance'){whistleSfx(false);crowdSwell(.038);}
   else if(e.type==='call')teammateVoice(Math.random()<.48?'패스!':'여기!');
   else if(e.type==='tackle_hint'||e.type==='tackle_miss'){if($('controlHint'))$('controlHint').textContent=e.text;if(e.type==='tackle_miss')toast(e.text);}
   else if(e.type==='sub')matchSfx('confirm',1);
@@ -783,7 +783,7 @@ function setSpeed(s){
   });
 }
 function showControlTutorial(){
-  modalBody.innerHTML='<h2>🎮 직접 조종은 3가지만 기억해요</h2><div class="fact-box"><b>① 이동</b><br>방향키 또는 왼쪽 방향 버튼으로 움직여요. Shift/질주는 꼭 필요할 때만 써요.<br><br><b>② 공을 가졌을 때</b><br><b>S 패스</b>는 빈 동료를 자동으로 찾아 줘요. W는 앞으로 찔러 주는 스루패스, A는 크로스, <b>D는 슛</b>이에요. 좌우 방향을 누른 채 슛하면 방향을 조절할 수 있어요.<br><br><b>③ 공이 없을 때 태클</b><br>상대 공 보유자에게 가까이 가세요. 상대 둘레 표시가 <b style="color:#4ade80">초록색</b>이 되고 내 선수 위에 <b>“지금! D 태클”</b>이 뜰 때 D를 누르면 성공률이 아주 높아요. 노란색이면 조금 더 가까이 가면 돼요.<br><br><b>반칙은?</b><br>좋은 거리에서도 태클이 빗나가면 가끔 반칙이 될 수 있고, 그때는 심판 휘슬이 들려요.</div><p class="muted">직접 조종이 어렵다면 언제든 👀 관전으로 바꾸면 나머지는 AI가 계속 경기합니다.</p>';
+  modalBody.innerHTML='<h2>🎮 직접 조종은 3가지만 기억해요</h2><div class="fact-box"><b>① 이동</b><br>방향키 또는 왼쪽 방향 버튼으로 움직여요. Shift/질주는 꼭 필요할 때만 써요.<br><br><b>② 공을 가졌을 때</b><br><b>S 패스</b>는 빈 동료를 자동으로 찾아 줘요. W는 앞으로 찔러 주는 스루패스, A는 크로스, <b>D는 슛</b>이에요. 좌우 방향을 누른 채 슛하면 방향을 조절할 수 있어요. 슛·패스·스루·크로스 버튼을 길게 누르면 파워가 올라가고, 떼면 공을 찹니다.<br><br><b>③ 공이 없을 때 태클</b><br>상대 공 보유자에게 가까이 가세요. 상대 둘레 표시가 <b style="color:#4ade80">초록색</b>이 되고 내 선수 위에 <b>“지금! D 태클”</b>이 뜰 때 D를 누르면 성공률이 아주 높아요. 노란색이면 조금 더 가까이 가면 돼요.<br><br><b>반칙은?</b><br>좋은 거리에서도 태클이 빗나가면 가끔 반칙이 될 수 있고, 그때는 심판 휘슬이 들려요.</div><p class="muted">직접 조종이 어렵다면 언제든 👀 관전으로 바꾸면 나머지는 AI가 계속 경기합니다.</p>';
   modal.classList.remove('hidden');
 }
 function updateDirectControlUI(){
