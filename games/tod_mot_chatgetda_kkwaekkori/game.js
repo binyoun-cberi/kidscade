@@ -284,7 +284,7 @@ function makeLivingNeighborhood(){
       modelIn(loaf,BREADS[0],.26,cube(.22,.12,.17,0xdab67c),group,worldSerial);
       m.loaf=loaf;
     }else if(story.kind==='market'){
-      const bag=new THREE.Group();bag.position.set(.97,.60,.28);group.add(bag);
+      const bag=new THREE.Group();bag.position.set(.97,.81,.28);group.add(bag);
       addPart(bag,cube(.29,.38,.20,0xf0d6a0),0,0,0);
       const handle=owned(new THREE.Mesh(new THREE.TorusGeometry(.095,.02,5,10),flat(0xc99866)));
       handle.rotation.x=Math.PI/2;addPart(bag,handle,0,.25,0);
@@ -343,7 +343,7 @@ function updateLivingNeighborhood(){
       m.loaf.position.y=.77+(e.cue==='fresh-bread'?.22*p:0);
       m.loaf.rotation.y=Math.sin(t*.8)*.09;
     }else if(m.bag){
-      m.bag.position.y=.60+(e.cue==='market-bag'?.27*p:0);
+      m.bag.position.y=.81+(e.cue==='market-bag'?.27*p:0);
       m.bag.rotation.z=e.cue==='market-bag'?.23*p:0;
       m.ribbon.rotation.z=Math.sin(t*1.8)*.04+
         (e.cue==='market-awning'?wave*.16*p:0);
