@@ -40,6 +40,7 @@ function harness({
     return node;
   };
   const body = element('body');
+  body.appendChild = node => body.children.push(node);
   const iframe = game ? { contentWindow:{ KidscadeGame:game.sdk } } : null;
   const doc = {
     body, visibilityState:'visible',
