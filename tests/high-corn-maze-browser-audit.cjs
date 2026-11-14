@@ -59,7 +59,7 @@ async function main(){
  await ev('document.querySelector(".mode[data-mode=explore]").click();document.querySelector("#startButton").click()');
  await wait('window.__cornQA?.get()?.cornChunks>0','3D corn generated');
  const chunks=await ev('window.__cornQA.get()');
- assert.ok(chunks.cornChunks>=8&&chunks.cornChunks<=25,'corn sections should be bounded');
+ assert.equal(chunks.cornChunks,16,'21×21 maze should use 16 coarse chunks to limit draw calls');
  assert.ok(chunks.cornPatches>=chunks.cornChunks,'actual corn geometries must be instanced');
  const landmark=await ev('window.__cornQA.landmark()');
  assert.equal(await ev('window.__cornQA.walkable('+landmark.x+','+landmark.z+')'),false,'landmarks must be solid');
@@ -111,6 +111,8 @@ async function main(){
  await ev('document.querySelector(".mode[data-mode=normal]").click();document.querySelector("#startButton").click()');
  assert.equal(await ev('window.__cornQA.advance(74)'),'chase');
  assert.equal(await ev('window.__cornQA.get().phase'),'chase');
+ assert.equal(await ev('document.querySelector("#hud").classList.contains("chasing")'),true,'chase should have visible warning');
+ await shot('chase-mobile');
  console.log('[corn browser] PASS pursuit + mobile',JSON.stringify(mobile));
  assert.deepEqual(exceptions,[],'Browser JS exceptions');assert.deepEqual(network,[],'HTTP error');
 }
