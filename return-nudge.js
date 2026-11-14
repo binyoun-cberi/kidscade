@@ -211,13 +211,25 @@
     // showing the native top-layer dialog to keep the continue action reachable.
     try { if (document.fullscreenElement) document.exitFullscreen?.(); } catch (_) {}
     if (nativeModal) {
-      try { overlay.showModal(); } catch (_) {
-        // The fixed fallback still works if native modal support is unreliable.
+      try {
+        overlay.showModal();
         overlay.style.display = 'flex';
+      } catch (_) {
+        // A closed <dialog> may remain invisible even with a CSS display.
+        // Replace it with a real fixed overlay so children can always tap.
+        const fallback = document.createElement('div');
+        fallback.id = overlay.id;
+        fallback.style.cssText = overlay.style.cssText;
+        fallback.style.display = 'flex';
+        fallback.setAttribute('role', 'dialog');
+        fallback.setAttribute('aria-modal', 'true');
+        fallback.setAttribute('aria-label', '학습 이어하기');
+        fallback.append(panel);
+        overlay.remove();
+        document.body.appendChild(fallback);
+        notice.node = fallback;
       }
-    }
-    if (!nativeModal) overlay.style.display = 'flex';
-    else if (overlay.open) overlay.style.display = 'flex';
+    } else overlay.style.display = 'flex';
     button.focus?.();
   }
 
