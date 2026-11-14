@@ -16,7 +16,7 @@ const world=new THREE.Group();scene.add(world);
 const hunterGroup=new THREE.Group();scene.add(hunterGroup);hunterGroup.visible=false;
 const state={running:false,won:false,maze:null,hunter:null,mode:'normal',player:{x:0,z:0},yaw:0,pitch:0,elapsed:0,keys:new Set(),joy:{x:0,y:0},runningTouch:false,stationsVisited:new Set(),checkpoint:0,mapOpen:false,guess:-1,interactType:null,interactCell:-1,noticeUntil:0,noticeText:'',generation:0,monsterMixer:null};
 const NAMES=['북','동','남','서'];
-const LANDMARK_OFFSET=1.15;
+const LANDMARK_OFFSET=1.4;
 const mapView={zoom:1,x:0,y:0,pointers:new Map(),pinchDistance:0,pinchZoom:1,gesture:false};
 function randomFor(seed){let x=seed>>>0;return()=>{x=(Math.imul(x,1664525)+1013904223)>>>0;return x/4294967296;};}
 const cornFallback=()=>{
@@ -37,7 +37,7 @@ function standAt(cell,label,color=0x876d46){
  world.add(g);return g;
 }
 function buildLandmark(info){
- const p=M.center(state.maze,info.cell),g=new THREE.Group();g.position.set(p.x+LANDMARK_OFFSET,0,p.z+LANDMARK_OFFSET);g.scale.setScalar(info.type===2?.72:.83);
+ const p=M.center(state.maze,info.cell),g=new THREE.Group();g.position.set(p.x+LANDMARK_OFFSET,0,p.z+LANDMARK_OFFSET);g.scale.setScalar(info.type===2?.60:.80);
  const wood=new THREE.MeshLambertMaterial({color:0x8f6a3d}),stone=new THREE.MeshLambertMaterial({color:0xabb0a0}),roof=new THREE.MeshLambertMaterial({color:0x76513b}),blue=new THREE.MeshLambertMaterial({color:0x6f8b8a});
  if(info.type===0){g.add(mesh(wood,new THREE.CylinderGeometry(.55,.9,5.2,6),0,2.6,0));const blades=new THREE.Group();blades.position.set(0,4.8,.84);for(let i=0;i<4;i++){const b=mesh(new THREE.MeshLambertMaterial({color:0xe8d2a1}),new THREE.BoxGeometry(.38,2.0,.13),0,1,0);b.rotation.z=i*Math.PI/2;blades.add(b);}g.add(blades);}
  if(info.type===1){g.add(mesh(stone,new THREE.CylinderGeometry(.9,.9,.8,12),0,.5,0));g.add(mesh(blue,new THREE.CylinderGeometry(.67,.67,.1,12),0,.95,0));g.add(mesh(wood,new THREE.BoxGeometry(.13,2.2,.13),-1.05,1.3,0));g.add(mesh(wood,new THREE.BoxGeometry(.13,2.2,.13),1.05,1.3,0));g.add(mesh(roof,new THREE.BoxGeometry(2.5,.18,1.7),0,2.5,0));}
@@ -51,7 +51,7 @@ function canWalk(x,z,radius=.48){
  // The buildings and map posts must not be walk-through decorations.
  for(const info of state.maze.landmarks){
   const p=M.center(state.maze,info.cell),dx=x-p.x-LANDMARK_OFFSET,dz=z-p.z-LANDMARK_OFFSET;
-  const obstacle=[.78,.92,1.02,.40][info.type]+radius;
+  const obstacle=[.72,.72,.78,.28][info.type]+radius;
   if(dx*dx+dz*dz<obstacle*obstacle)return false;
  }
  for(const cell of state.maze.stations){
@@ -84,13 +84,27 @@ function populateCorn(group,positions){
  group.updateMatrixWorld(true);
  const templates=[];group.traverse(n=>{if(n.isMesh&&n.geometry){const geo=n.geometry.clone();geo.applyMatrix4(n.matrixWorld);geo.translate(-cen.x,-bbox.min.y,-cen.z);geo.scale(factor,factor,factor);templates.push(geo);}});
  if(!templates.length)throw new Error('Empty corn model');
- const collection=new THREE.Group(),dummy=new THREE.Object3D();
- for(let k=0;k<templates.length;k++){
-   const color=k%3===0?0x638835:k%3===1?0x78944a:0x527432;
-   const leaf=new THREE.InstancedMesh(templates[k],new THREE.MeshLambertMaterial({color,side:THREE.DoubleSide}),positions.length);
-   leaf.frustumCulled=false;
-   for(let i=0;i<positions.length;i++){const a=positions[i];dummy.position.set(a.x,0,a.z);dummy.rotation.set(0,a.rot,0);dummy.scale.setScalar(a.s);dummy.updateMatrix();leaf.setMatrixAt(i,dummy.matrix);}
-   leaf.instanceMatrix.needsUpdate=true;collection.add(leaf);
+ // Frustum-cull spatial buckets instead of rendering every stalk behind the player.
+ const chunkSize=state.maze.cell*6,side=state.maze.size*state.maze.cell,buckets=new Map();
+ for(const plant of positions){
+  const bx=Math.floor((plant.x+side/2)/chunkSize),bz=Math.floor((plant.z+side/2)/chunkSize),key=bx+','+bz;
+  if(!buckets.has(key))buckets.set(key,[]);
+  buckets.get(key).push(plant);
+ }
+ const collection=new THREE.Group();collection.userData.cornfield=true;
+ const materials=templates.map((_,k)=>new THREE.MeshLambertMaterial({color:k%3===0?0x638835:k%3===1?0x78944a:0x527432,side:THREE.DoubleSide}));
+ for(const plants of buckets.values()){
+  const chunk=new THREE.Group(),dummy=new THREE.Object3D(),midX=plants.reduce((n,p)=>n+p.x,0)/plants.length,midZ=plants.reduce((n,p)=>n+p.z,0)/plants.length;
+  chunk.userData={x:midX,z:midZ,radius:chunkSize*.85};
+  for(let k=0;k<templates.length;k++){
+   const leaf=new THREE.InstancedMesh(templates[k],materials[k],plants.length);
+   for(let i=0;i<plants.length;i++){
+    const a=plants[i];dummy.position.set(a.x,0,a.z);dummy.rotation.set(0,a.rot,0);dummy.scale.setScalar(a.s);dummy.updateMatrix();leaf.setMatrixAt(i,dummy.matrix);
+   }
+   leaf.instanceMatrix.needsUpdate=true;leaf.computeBoundingSphere();
+   chunk.add(leaf);
+  }
+  collection.add(chunk);
  }
  world.add(collection);return collection;
 }
