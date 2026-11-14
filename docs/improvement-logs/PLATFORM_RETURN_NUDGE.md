@@ -16,6 +16,7 @@
 - 로컬 Node: `node --check /mnt/data/kc-return-nudge/return-nudge.js` — 통과 (핵심 스크립트 초안 문법 검사).
 - 로컬 Node: `node --test /mnt/data/tests/return-nudge.test.cjs` — **6개 통과 / 0개 실패** (시간 범위, 중복 방지, 뒤로 가기/새로고침, 음성 API 부재, iframe).
 - 기존 저장소 전체 `npm run test:ci`, `npm run build`, `npm run health:strict` — **미실행** (GitHub 연결로 변경하고 전체 저장소를 로컬 실행할 수 없는 환경).
+- 2026-11-14 GitHub PR head 상태 조회: Vercel 상태 **failure**. 결과의 target URL에 `upgradeToPro=build-rate-limit`이 표시됨. 현재는 배포 빌드 제한으로 추정되며 코드 테스트 결과로 해석하지 않음.
 - 실제 갤럭시탭 Chrome 및 삼성 인터넷 터치/음성 플레이 — **미실행**. 브라우저 정책에 따라 자동 음성이 나오지 않을 수 있으므로 다시 듣기 버튼 제공.
 - 회귀 가설: 화면 꺼짐/앱 전환도 탭 변경과 구별되지 않고, 내부에서 같은 탭 페이지를 오간 경우 복귀 안내가 발생할 수 있음.
 
