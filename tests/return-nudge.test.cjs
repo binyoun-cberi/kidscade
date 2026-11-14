@@ -54,22 +54,35 @@ function harness({ navigationType = 'navigate', initialStore = null, speech = tr
   };
 }
 
-test('3 seconds to 20 minutes: once on return with spoken Korean and manual replay', () => {
+function playButton(h) {
+  const overlay = h.current();
+  return overlay?.children[0]?.children[2];
+}
+
+test('return shows a blocking dialog but does not autoplay or disappear', () => {
   const h = harness();
-  h.hide();
-  h.setNow(105000);
-  h.returnToSite();
+  h.hide(); h.setNow(105000); h.returnToSite();
   assert.equal(h.current()?.id, 'kidscade-return-nudge');
-  assert.match(h.calls[0], /다시/);
-  assert.equal(h.current().children[1].textContent, '🔊 다시 듣기');
-  h.current().children[1].handlers.click();
-  assert.equal(h.calls.length, 2);
-  h.pageshow();
-  assert.equal(h.calls.length, 2);
+  assert.equal(h.current()?.role, 'dialog');
+  assert.equal(h.current()?.['aria-modal'], 'true');
+  assert.equal(h.calls.length, 0);
+  assert.equal(h.timers.size, 0);
+  assert.equal(playButton(h).textContent, '▶ 게임 계속하기');
   assert.equal(h.storage.size, 0);
 });
 
-test('brief tab change and an absence of more than 20 minutes do not nag', () => {
+test('tapping the only continue button closes overlay and speaks synchronously', () => {
+  const h = harness();
+  h.hide(); h.setNow(105000); h.returnToSite();
+  playButton(h).handlers.click();
+  assert.equal(h.current(), undefined);
+  assert.equal(h.calls.length, 1);
+  assert.match(h.calls[0], /다시/);
+  h.pageshow();
+  assert.equal(h.calls.length, 1);
+});
+
+test('brief tab changes and absences beyond 20 minutes do not block the page', () => {
   const brief = harness();
   brief.hide(); brief.setNow(101000); brief.returnToSite();
   assert.equal(brief.current(), undefined);
@@ -78,32 +91,42 @@ test('brief tab change and an absence of more than 20 minutes do not nag', () =>
   assert.equal(long.current(), undefined);
 });
 
-test('twice within cooldown only plays once', () => {
+test('a second return inside the cooldown does not show another overlay', () => {
   const h = harness();
   h.hide(); h.setNow(105000); h.returnToSite();
+  playButton(h).handlers.click();
   h.setNow(110000); h.hide(); h.setNow(117000); h.returnToSite();
+  assert.equal(h.current(), undefined);
   assert.equal(h.calls.length, 1);
 });
 
-test('back-forward restore checks stored time, reload does not', () => {
+test('duplicate visibility and pageshow events do not stack dialogs', () => {
+  const h = harness();
+  h.hide(); h.setNow(105000); h.returnToSite();
+  h.pageshow();
+  assert.equal(h.body.children.length, 1);
+  assert.equal(h.calls.length, 0);
+});
+
+test('back-forward restore detects a prior visit but reload does not', () => {
   const back = harness({ navigationType: 'back_forward', initialStore: 95000 });
   back.pageshow();
-  assert.ok(back.current());
+  assert.equal(back.current()?.role, 'dialog');
+  assert.equal(back.calls.length, 0);
   const reload = harness({ navigationType: 'reload', initialStore: 95000 });
   reload.pageshow();
   assert.equal(reload.current(), undefined);
 });
 
-test('no speech API still shows visible replay control without errors', () => {
+test('a browser without speechSynthesis can still continue with one tap', () => {
   const h = harness({ speech: false });
   h.hide(); h.setNow(104000); h.returnToSite();
-  assert.ok(h.current());
-  h.current().children[1].handlers.click();
-  h.current().children[2].handlers.click();
+  playButton(h).handlers.click();
   assert.equal(h.current(), undefined);
+  assert.equal(h.calls.length, 0);
 });
 
-test('embedded game iframe does not install a second watcher', () => {
+test('embedded game iframes do not install another observer', () => {
   const h = harness({ topLevel: false });
   assert.equal(h.events.size, 0);
 });
