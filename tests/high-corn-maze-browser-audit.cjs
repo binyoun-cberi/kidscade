@@ -102,9 +102,10 @@ async function main(){
  await ev('document.querySelector("#touchInteract").click()');
  await wait('document.querySelector("#mapOverlay")&&!document.querySelector("#mapOverlay").classList.contains("hidden")','landscape map');
  const landscape=await ev(`(()=>({map:document.querySelector('#mapViewport').getBoundingClientRect().width,zoom:document.querySelector('#mapZoomIn').getBoundingClientRect().width,
-  width:innerWidth,dialog:document.querySelector('#mapOverlay').getBoundingClientRect().width}))()`);
+  width:innerWidth,dialog:document.querySelector('#mapOverlay').getBoundingClientRect().width,toolsBottom:document.querySelector('.mapTools').getBoundingClientRect().bottom,panelBottom:document.querySelector('.mapPanel').getBoundingClientRect().bottom}))()`);
  assert.ok(landscape.map>=260,'Landscape maze map should be at least 260px, got '+landscape.map);
  assert.ok(landscape.zoom>=38,'Map zoom target too small');
+ assert.ok(landscape.toolsBottom<landscape.panelBottom-5,'Landscape map toolbar is clipped');
  await shot('landscape-map');
  await ev('document.querySelector("#closeMap").click()');
  await ev('document.querySelector(".mode[data-mode=normal]").click();document.querySelector("#startButton").click()');
