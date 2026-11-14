@@ -126,3 +126,27 @@ test('First-person renderer imports only available vendored loaders and existing
   assert.ok(fs.existsSync(path.join(root,rel)),'missing dependency '+rel);
  }
 });
+
+
+test('redesigned mobile map has responsive viewport, touch zoom, and contextual actions',()=>{
+ const fs=require('node:fs'),path=require('node:path'),root=path.resolve(__dirname,'..');
+ const html=fs.readFileSync(path.join(root,'games/high-corn-maze/index.html'),'utf8');
+ const style=fs.readFileSync(path.join(root,'games/high-corn-maze/style.css'),'utf8');
+ const code=fs.readFileSync(path.join(root,'games/high-corn-maze/game.js'),'utf8');
+ for(const id of ['mapViewport','mapZoomIn','mapZoomOut','mapReset','mapZoomValue','mapGuessReadout','dangerGlow'])assert.ok(html.includes('id="'+id+'"'),'missing '+id);
+ assert.match(style,/#mapViewport\s*\{/);assert.match(style,/@media\(max-height:520px\)/);
+ assert.match(style,/#touchInteract\[hidden\]\{display:none!important\}/);
+ assert.match(code,/function markMapGuess/);assert.match(code,/function setMapZoom/);
+ assert.match(code,/ui\.mapViewport\.addEventListener\('pointermove'/);
+ assert.match(code,/ui\.touchInteract\.hidden=!a/);
+});
+test('scenery is an actual obstruction but does not replace the maze wall grid',()=>{
+ const fs=require('node:fs'),path=require('node:path'),code=fs.readFileSync(path.join(__dirname,'../games/high-corn-maze/game.js'),'utf8');
+ assert.match(code,/function canWalk\(x,z,radius/);
+ assert.match(code,/M\.canStand\(state\.maze,x,z,radius\)/);
+ assert.match(code,/if\(canWalk\(state\.player\.x\+vx/);
+ assert.match(code,/if\(canWalk\(state\.player\.x,state\.player\.z\+vz/);
+ assert.match(code,/const chunkSize=state\.maze\.cell\*6/);
+ assert.match(code,/leaf\.computeBoundingSphere\(\)/);
+ assert.match(code,/corn\.userData\.cornfield/);
+});
