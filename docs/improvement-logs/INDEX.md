@@ -14,4 +14,6 @@
 
 | `high_bridge_builder` | 다리야 버텨줘! | [high_bridge_builder.md](./high_bridge_builder.md) | PR CI 확인 및 iPad/Android 태블릿 실제 터치·화면 검증 |
 
+| `probability_dice_survival` | 운명의 주사위 | [probability_dice_survival.md](./probability_dice_survival.md) | CI 브라우저 검사 및 Chromium 프로필 정리 재검증 |
+
 작성법: [README](./README.md) · [템플릿](./TEMPLATE.md)
