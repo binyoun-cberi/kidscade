@@ -30,12 +30,12 @@
 | 회차 | 계획과 근거 | 변경 파일 | 실행된 검사와 결과 |
 | --- | --- | --- | --- |
 | 1 | 포인터 취소·두 번째 손가락·X 표본 누락 해결 및 자동 끝점 연결 | `bridge-builder.js` | 현재 게임 소스 로드 후 V8 모의 DOM으로 한 번에 그리기→자동주행 성공, 두 번째 손가락 무시, pointercancel 주행 취소 확인 |
-| 2 | iPad용 점 찍기 모드와 수동 출발·한 점 취소, 넓은 화면 확대·왜곡 방지 | `index.html`, `bridge-builder.css`, `bridge-builder.js` | V8 모의 DOM에서 2단계 바위를 점 1개로 피하고 주행 성공. 실제 화면 시각 검수 미실행 |
+| 2 | iPad용 점 찍기 모드와 수동 출발·한 점 취소, 넓은 화면 확대·왜곡 방지. 사후 검토에서 CSS `max-height:100%`가 가로 화면 확대 시 세로 왜곡을 일으킬 수 있음을 발견해 제한 제거 | `index.html`, `bridge-builder.css`, `bridge-builder.js` | V8 모의 DOM에서 2단계 바위를 점 1개로 피하고 주행 성공. 캔버스 종횡비는 코드/CSS 정적 검토만 완료했고 실제 화면 시각 검수 미실행 |
 | 3 | 16→40개 지형·장애물 배치 및 회귀 테스트 보강 | `bridge-builder.js`, `data/games.json`, `tests/bridge-builder.test.cjs`, `tests/bridge-builder-interaction.test.cjs` | V8에서 각 40개 단계에 대해 장애물별 목표 좌표로 구성한 경로를 주입해 주행: **40/40 통과**. 새 Node 테스트 파일은 작성했으나 GitHub Actions/Node 명령 직접 실행 전 |
 
 - 최종 검증 상태: **부분 검증** — 모의 DOM 기반 동작 및 40단계 주행 시뮬레이션, 실제 브라우저 플레이 미실행
 - 확인된 개선: 코드에 40단계, 점 찍기 모드, 포인터 취소 방어, 합성 경로와 주행 경로 통일을 구현
-- 미실행 검사: iOS Safari·Android 실제 패드 플레이, Chrome 시각 스크린샷, Node 테스트·건강 검사·빌드
+- 미실행 검사: iOS Safari·Android 실제 패드 플레이, Chrome 시각 스크린샷, Node 테스트·건강 검사·빌드 (GitHub Actions 검사는 진행 중)
 - 개인정보/Secrets/API 비용: 접근·변경 없음
 - GitHub: PR #762 열림 (병합·배포 전), `main` 직접 푸시/병합/배포/원격 D1 실행 없음
 - 다음 계획: PR CI를 확인한 뒤 태블릿 실기기와 학생 피드백으로 실패·지연·화면 겹침 재현하여 추가 수정
