@@ -431,6 +431,8 @@ function create(opts){
       var t=.24,lead={x:clamp(m.ball.x+m.ball.vx*t,45,FIELD_W-45),y:clamp(m.ball.y+m.ball.vy*t,45,FIELD_H-45)};
       move(a,lead.x,lead.y,dt,true);return;
     }
+    // An active user charge takes priority over the idle AI, even after 1.15 seconds.
+    if(m.charge&&m.ball.owner===a){a.vx*=Math.pow(.04,dt);a.vy*=Math.pow(.04,dt);return;}
     if(controlIdle>1.15&&m.ball.owner===a){aiCarrier(a,dt);return;}
     if(controlIdle>.55&&m.ball.owner!==a){
       if(!m.ball.owner&&m.ball.z<85){var ch=nearest(outfield(userSide),m.ball);if(ch===a){move(a,m.ball.x,m.ball.y,dt,true);return;}}
@@ -532,7 +534,7 @@ function create(opts){
 
   function userAction(kind,power){
     if(!m.directControl||m.finished||restart>0)return;controlIdle=0;var a=m.controlled;
-    if(kind==='switch'){cycleControl();notifyUserAction('switch',{controlledId:m.controlled&&m.controlled.id||null});return;}
+    if(kind==='switch'){m.charge=null;cycleControl();notifyUserAction('switch',{controlledId:m.controlled&&m.controlled.id||null});return;}
     if(!a)return;
     if(kind==='shoot'){
       if(m.ball.owner===a){if(shoot(a,power))notifyUserAction('shoot',{actorId:a.id,power:power});}
