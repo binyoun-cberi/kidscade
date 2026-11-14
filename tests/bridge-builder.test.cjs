@@ -28,7 +28,7 @@ test('only stage one is a plain gap and later stages add route-changing obstacle
   assert.match(runtime,/title:"6\. 지그재그 협곡"/);
   assert.match(runtime,/title:"7\. 두 개의 관문"/);
   assert.match(runtime,/title:"8\. 네 번 꺾기"/);
-  assert.match(runtime,/title:"16\. 마지막 대교"/);
+  assert.match(runtime,/title:"16\. 첫 번째 대교"/);
 });
 
 test('car collides with the authored obstacles instead of ignoring them',()=>{
@@ -83,9 +83,22 @@ test('only redraw control lives inside the visible play area',()=>{
   assert.match(css,/position:absolute/);
 });
 
-test('mobile play area keeps the 12 by 7 canvas and v13 runtime',()=>{
-  assert.match(css,/aspect-ratio:12\/7/);
-  assert.match(css,/width:100%!important/);
-  assert.match(html,/bridge-builder\.js\?v=13/);
-  assert.match(html,/bridge-builder\.css\?v=13/);
+test('tablet canvas fits without stretching and loads the updated v14 runtime',()=>{
+  assert.match(runtime,/var wide=r.width\/Math.max\(1,r.height\)>1.95/);
+  assert.doesNotMatch(css,/width:100%!important/);
+  assert.match(html,/bridge-builder\.js\?v=14/);
+  assert.match(html,/bridge-builder\.css\?v=14/);
+});
+
+test('40 stages, point mode, and safe tablet cancellation exist',()=>{
+  assert.match(runtime,/title:"40\. 무지개 대교"/);
+  assert.match(runtime,/function addWaypoint/);
+  assert.match(runtime,/function abortStroke/);
+  assert.match(runtime,/e.pointerId!==S.activePointerId/);
+  assert.match(runtime,/function rebuildWaypointPreview/);
+  assert.match(html,/id="modeBtn"/);
+  assert.match(html,/id="undoBtn"/);
+  assert.match(html,/id="goBtn"/);
+  assert.match(html,/40단계/);
+  assert.match(css,/min-height:44px/);
 });
