@@ -14,6 +14,7 @@ function harness({
   game = null,
   fullscreen = false,
   nativeModal = true,
+  modalThrows = false,
   topLevel = true
 } = {}) {
   let now = 100000;
@@ -33,7 +34,10 @@ function harness({
       focus() { this.focused = true; }
     };
     if (tag === 'dialog' && nativeModal) {
-      node.showModal = () => { node.open = true; };
+      node.showModal = () => {
+        if (modalThrows) throw new Error('showModal blocked');
+        node.open = true;
+      };
       node.close = () => { node.open = false; };
     }
     allElements.push(node);
@@ -297,4 +301,14 @@ test('history restore can prompt; a full reload does not reuse stale timestamps'
 test('no duplicate top-level observer in embedded iframe', () => {
   const h=harness({topLevel:false});
   assert.equal(h.events.size,0);
+});
+
+test('a failed native dialog degrades to a visible div and stays tappable', () => {
+  const h=harness({modalThrows:true});
+  h.hide();h.advance(4000);h.show();
+  assert.equal(h.overlay().tag,'div');
+  assert.equal(h.overlay().style.display,'flex');
+  assert.equal(h.button().textContent,'▶ 게임 계속하기');
+  h.button().handlers.click();
+  assert.equal(h.overlay(),undefined);
 });
