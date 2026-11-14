@@ -55,6 +55,9 @@ let active = false, zoomTouchDist = 0, pinchCenter = null, tapStart = null, last
 const pointerPositions = new Map();
 const citizenMeshes = new Map();
 const greetingMarkers = new Map();
+const livingScenes=[]; // Small non-pickable, reusable environment props.
+const handoffMarkers=new Map();
+const swayingTrees=[];
 const cars = [];
 const trafficHeads=[];
 let lastTrafficPhase=null;
@@ -256,6 +259,142 @@ function drawConnectedFootways(plan){
 }
 // A single surrounding landscape removes the abrupt, isolated board edges.
 // Instancing is two draw calls even for the largest city.
+
+/**
+ * Tiny animated street stories are scenery-only: they don't move puzzle
+ * residents, reserve paths, block character picking, or consume puzzle RNG.
+ * Each kind has two alternating scenes, so 30 seconds of looking around
+ * feels different from 30 seconds of watching a traffic simulation.
+ */
+function makeLivingNeighborhood(){
+  if(!town?.life)return;
+  for(const story of town.life.scenes){
+    const block=town.blocks.find(b=>b.id===story.blockId);
+    if(!block)continue;
+    const c=getBlockCenter(block,town.config);
+    const group=new THREE.Group();group.name='city-living-'+story.kind;
+    group.position.set(c.x,0,c.z);scenery.add(group);
+    const m={story,group};
+    if(story.kind==='bakery'){
+      const hinge=new THREE.Group();hinge.position.set(.83,0,.12);group.add(hinge);
+      addPart(hinge,cube(.31,.88,.07,0xa86e54),-.15,.48,0);
+      const knob=addPart(hinge,ball(.038,0xffd88b),-.25,.52,.06);
+      m.door=hinge;
+      const loaf=new THREE.Group();loaf.position.set(-.9,.77,.36);group.add(loaf);
+      modelIn(loaf,BREADS[0],.26,cube(.22,.12,.17,0xdab67c),group,worldSerial);
+      m.loaf=loaf;
+    }else if(story.kind==='market'){
+      const bag=new THREE.Group();bag.position.set(.97,.60,.28);group.add(bag);
+      addPart(bag,cube(.29,.38,.20,0xf0d6a0),0,0,0);
+      const handle=owned(new THREE.Mesh(new THREE.TorusGeometry(.095,.02,5,10),flat(0xc99866)));
+      handle.rotation.x=Math.PI/2;addPart(bag,handle,0,.25,0);
+      const ribbon=addPart(group,cube(.45,.15,.06,0xf19b77),-1.0,1.64,.15);
+      m.bag=bag;m.ribbon=ribbon;
+    }else if(story.kind==='park'){
+      const bird=new THREE.Group();bird.position.set(-1.18,.23,.35);group.add(bird);
+      addPart(bird,ball(.12,0xf4e7c1),0,.07,0);
+      addPart(bird,ball(.08,0xf4e7c1),0,.18,-.035);
+      const wings=[-1,1].map(side=>{
+        const wing=addPart(bird,cube(.20,.035,.14,0xe4b783),side*.15,.075,.02);
+        return wing;
+      });
+      const playBall=addPart(group,ball(.19,0xd9798f),1.13,.26,.30);
+      m.bird=bird;m.wings=wings;m.playBall=playBall;
+    }else if(story.kind==='home'){
+      const plant=addPart(group,cylinder(.15,.20,.3,0xc88d67),1.12,.20,.23);
+      addPart(plant,ball(.20,0x80ac72),0,.23,0);
+      const can=addPart(group,cube(.25,.17,.16,0x73b4c2),.59,.72,.20);
+      const droplets=[0,1,2].map(i=>addPart(group,ball(.055,0x8fdaeb),
+        .86+i*.11,.45-i*.13,.26));
+      const window=addPart(group,cube(.46,.48,.04,0x6f7c88),-.67,1.30,.13);
+      m.can=can;m.droplets=droplets;m.window=window;
+    }else if(story.kind==='school'){
+      const mast=addPart(group,cylinder(.035,.04,1.23,0x90a19d),-1.05,.66,.25);
+      const wheel=new THREE.Group();wheel.position.set(-1.05,1.37,.31);group.add(wheel);
+      for(let i=0;i<4;i++){
+        const petal=addPart(wheel,cube(.34,.13,.035,[0xf49b99,0xf4d081,0x9ac7e1,0x94c5a4][i]),.20,0,0);
+        petal.rotation.z=i*Math.PI/2;
+        petal.position.set(Math.cos(i*Math.PI/2)*.21,Math.sin(i*Math.PI/2)*.21,0);
+      }
+      addPart(wheel,ball(.07,0xfbf0d8),0,0,.07);
+      const bell=addPart(group,ball(.17,0xe8ba66),1.09,1.38,.21);
+      m.wheel=wheel;m.bell=bell;
+    }else if(story.kind==='stop'){
+      const board=addPart(group,cube(.60,.46,.07,0x79a1ad),.99,1.14,.11);
+      const flap=addPart(group,cube(.5,.14,.065,0xf5d19c),.99,1.16,.16);
+      const flags=[0,1,2].map(i=>{
+        const flag=addPart(group,cube(.26,.20,.035,[0xe6ab93,0xf0d98e,0x9cc9b2][i]),-1.30+i*.48,1.50,.17);
+        return flag;
+      });
+      m.board=board;m.flap=flap;m.flags=flags;
+    }
+    livingScenes.push(m);
+  }
+}
+function updateLivingNeighborhood(){
+  if(!town)return;
+  const t=town.time;
+  for(const {tree,phase} of swayingTrees)tree.rotation.z=Math.sin(t*.82+phase)*.027;
+  for(const m of livingScenes){
+    const e=m.story,p=e.active?Math.sin(Math.PI*e.phase):0;
+    const wave=Math.sin(t*6+e.start);
+    if(m.door){
+      m.door.rotation.y=e.cue==='shop-door'?-.80*p:0;
+      m.loaf.position.y=.77+(e.cue==='fresh-bread'?.22*p:0);
+      m.loaf.rotation.y=Math.sin(t*.8)*.09;
+    }else if(m.bag){
+      m.bag.position.y=.60+(e.cue==='market-bag'?.27*p:0);
+      m.bag.rotation.z=e.cue==='market-bag'?.23*p:0;
+      m.ribbon.rotation.z=Math.sin(t*1.8)*.04+
+        (e.cue==='market-awning'?wave*.16*p:0);
+    }else if(m.bird){
+      m.bird.position.y=.23+(e.cue==='bird-hop'?.36*Math.abs(wave)*p:0);
+      m.bird.position.x=-1.18+(e.cue==='bird-hop'?.25*e.phase:0);
+      for(let i=0;i<m.wings.length;i++)m.wings[i].rotation.z=
+        (i?-1:1)*((e.cue==='bird-hop'?.65*p:0)+Math.sin(t*2)*.09);
+      m.playBall.position.y=.26+(e.cue==='play-ball'?.44*Math.abs(wave)*p:0);
+      m.playBall.position.x=1.13+(e.cue==='play-ball'?.38*e.phase:0);
+    }else if(m.can){
+      m.can.rotation.z=e.cue==='water-flowers'?-.55*p:0;
+      for(let i=0;i<m.droplets.length;i++){
+        m.droplets[i].visible=e.active&&e.cue==='water-flowers';
+        m.droplets[i].position.y=.45-i*.13+.06*Math.sin(t*9+i);
+      }
+      m.window.material.color.setHex(e.active&&e.cue==='window-glow'?0xffdda0:0x6f7c88);
+    }else if(m.wheel){
+      m.wheel.rotation.z+=e.active&&e.cue==='pinwheel'?.11:.009;
+      m.bell.scale.setScalar(1+(e.active&&e.cue==='school-bell'?.20*p:0));
+    }else if(m.board){
+      m.flap.rotation.x=e.cue==='notice-board'?.28*p:0;
+      for(let i=0;i<m.flags.length;i++)m.flags[i].rotation.z=
+        Math.sin(t*1.5+i)*.055+(e.cue==='street-bunting'?wave*.23*p:0);
+    }
+  }
+  // Background residents can pass a parcel while the existing greet routine
+  // keeps them facing each other. Props are in 'marker', never pickable.
+  const shown=new Set();
+  for(const p of town.people){
+    if(p.socialKind!=='handoff'||!p.socialWith||p.id>=p.socialWith)continue;
+    const partner=town.people.find(q=>q.id===p.socialWith);
+    if(!partner||partner.socialKind!=='handoff'||partner.socialWith!==p.id)continue;
+    let token=handoffMarkers.get(p.id);
+    if(!token){
+      token=new THREE.Group();token.name='city-neighbor-handoff';
+      addPart(token,cube(.19,.16,.16,0xe2ae72),0,0,0);
+      addPart(token,cube(.20,.022,.17,0xf9e4c2),0,.08,0);
+      marker.add(token);handoffMarkers.set(p.id,token);
+    }
+    shown.add(p.id);
+    token.position.set((p.position.x+partner.position.x)/2,
+      .72+Math.abs(Math.sin(t*4))*.12,
+      (p.position.z+partner.position.z)/2);
+    token.rotation.y=t*1.5;
+  }
+  for(const [id,token] of handoffMarkers)if(!shown.has(id)){
+    disposeProcedural(token);marker.remove(token);handoffMarkers.delete(id);
+  }
+}
+
 function drawOuterGreenbelt(width,depth,cols,rows){
   const amount=Math.min(64,(cols+rows)*6),trunk=owned(new THREE.InstancedMesh(
     new THREE.CylinderGeometry(.09,.13,.7,7),flat(0x977b52),amount));
@@ -280,7 +419,9 @@ function drawOuterGreenbelt(width,depth,cols,rows){
 }
 function generateWorld() {
   for(const group of [scenery,citizens,movingCars,marker])disposeProcedural(group);
-  scenery.clear();citizens.clear();movingCars.clear();marker.clear();citizenMeshes.clear();greetingMarkers.clear();cars.length=0;trafficHeads.length=0;lastTrafficPhase=null;
+  scenery.clear();citizens.clear();movingCars.clear();marker.clear();citizenMeshes.clear();greetingMarkers.clear();
+  livingScenes.length=0;handoffMarkers.clear();swayingTrees.length=0;
+  cars.length=0;trafficHeads.length=0;lastTrafficPhase=null;
   mixers.length=0;occluders.length=0;citizenAssets.clear();loweredBuildings.clear();clearPreview();
   if (!town) return;
   const revision=++worldSerial;
@@ -306,7 +447,7 @@ function generateWorld() {
     const local=(url,x,z,size,footprint=null,blocksView=false)=>placeObject(url,{x:center.x+x,z:center.z+z},size,smallFallback(url),revision,footprint,blocksView);
     if(block.kind==='park') {
       addPart(scenery,cube(2.8,.06,2.8,0x8fbd75),center.x,.08,center.z);
-      local(MODEL.parkTree,-.8,-.7,1.6,.9,true);
+      swayingTrees.push({tree:local(MODEL.parkTree,-.8,-.7,1.6,.9,true),phase:i*.71});
       // Shared public landmark connects the park visually to the main streets.
       addPart(scenery,cylinder(.48,.5,.12,0xe6dfbd,16),center.x+.7,.17,center.z-.55);
       addPart(scenery,cylinder(.4,.4,.038,0x79c3d8,16),center.x+.7,.25,center.z-.55);
@@ -350,6 +491,7 @@ function generateWorld() {
     if(block.col<cols-1&&block.row<rows-1)local(`${STREET}light-curved.glb`,1.95,-1.85,1.25,.3);
   }
   drawConnectedFootways(plan);
+  makeLivingNeighborhood();
   // Signal heads sit beside genuine road intersections, never in the citizen
   // raycast/picking group. Their colors come from the movement rules.
   for(const joint of town.traffic?.junctions||[]){
@@ -604,6 +746,7 @@ function positionEverything(dt) {
     }
     animateActivity(mesh.holder,p);
   }
+  updateLivingNeighborhood();
   if(town.traffic){
     const phase=trafficPhase(town);
     if(phase!==lastTrafficPhase){
