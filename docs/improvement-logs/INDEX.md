@@ -13,3 +13,7 @@
 | `high_corn_maze` | 옥수수밭 탈출 | [high_corn_maze.md](./high_corn_maze.md) | 품질 생성기 PR 검증 · 실제 학생 플레이 및 저사양 모바일 FPS 측정 |
 
 작성법: [README](./README.md) · [템플릿](./TEMPLATE.md)
+
+## 게임 공통 기능
+
+- [20분 이내 복귀 시 학생 태블릿 음성·문구 안내](./PLATFORM_RETURN_NUDGE.md) — 로비/iframe 공통, Node 테스트 6개 통과 · 갤럭시탭 실기기 검증 대기
