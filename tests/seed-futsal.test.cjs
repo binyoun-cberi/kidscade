@@ -324,3 +324,49 @@ test('rival signings are unique, persisted and applied to opponents',()=>{
   assert.match(source,/roster\.push\(recruited\);signings\.push\(recruited\)/);
   assert.match(source,/if\(!original\|\|rivalSignedIds\(\)\[original\.id\]\)return/);
 });
+
+
+test('held manual shot never fires before release, even past the idle AI timeout',()=>{
+  for(let seed=0;seed<12;seed++){
+    const m=buildPhysicalMatch();
+    const attacker=m.teams[0].actors.find(a=>a.slot==='ST');
+    attacker.x=1240;attacker.y=420;
+    m.teams[1].actors.forEach(a=>{a.x=200;a.y=80;});
+    m.ball.owner=attacker;m.ball.x=attacker.x;m.ball.y=attacker.y;m.possession=0;
+    m.setDirectControl(true);m.controlled=attacker;
+    assert.equal(m.beginKick('shoot'),true);
+    for(let i=0;i<115;i++)m.update(.016,1); // 1.84 seconds, beyond 1.15s idle AI
+    assert.equal(m.getControlState().chargeLevel,1,'charge lost on seed '+seed);
+    assert.equal(m.events.filter(e=>e.type==='shot').length,0,'AI kicked early on seed '+seed);
+    assert.equal(m.releaseKick('shoot',true),true);
+    assert.equal(m.events.filter(e=>e.type==='shot').length,1,'release did not shoot once');
+  }
+});
+
+test('manual player switching cancels a held kick without firing it',()=>{
+  const m=buildPhysicalMatch();
+  const attacker=m.teams[0].actors.find(a=>a.slot==='ST');
+  m.ball.owner=attacker;m.ball.x=attacker.x;m.ball.y=attacker.y;
+  m.setDirectControl(true);m.controlled=attacker;
+  assert.equal(m.beginKick('shoot'),true);
+  m.handleAction('switch');
+  assert.equal(m.getControlState().chargeKind,null);
+  assert.equal(m.releaseKick('shoot',true),false);
+  assert.equal(m.events.filter(e=>e.type==='shot').length,0);
+});
+
+test('tablet coach drawer is accessible and closed before play to protect touch pad',()=>{
+  const html=fs.readFileSync(indexPath,'utf8');
+  const game=fs.readFileSync(gamePath,'utf8');
+  const css=fs.readFileSync(stylePath,'utf8');
+  assert.match(html,/id="matchCoachToggle"[^>]+aria-controls="matchCoachPanel"/);
+  assert.match(html,/id="matchCoachPanel" class="match-side"/);
+  assert.match(html,/style\.css\?v=16/);
+  assert.match(html,/game\.js\?v=17/);
+  assert.match(game,/function setCoachPanelOpen\(open\)/);
+  assert.match(game,/setCoachPanelOpen\(false\);if\(match\.setDirectControl\)/);
+  assert.match(game,/step\.key==='tactic'\)setCoachPanelOpen\(true\)/);
+  assert.match(css,/@media\(max-width:980px\)/);
+  assert.match(css,/\.match-layer\.coach-open \.match-side\{display:flex\}/);
+  assert.match(css,/\.match-side\{display:none;position:absolute;top:60px/);
+});
