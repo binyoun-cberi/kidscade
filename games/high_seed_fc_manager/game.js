@@ -773,6 +773,15 @@ function updateControlCoach(){
   box.classList.toggle('watch',!st.direct);box.classList.toggle('direct',st.direct);
   mode.textContent=st.direct?'🎮 직접 조종 · '+(st.controlledName||'선수'):'👀 관전 모드';
   hint.textContent=st.text||'';
+  var meter=$('kickPowerHud'),fill=$('kickPowerFill'),percent=$('kickPowerPercent'),label=$('kickPowerLabel');
+  if(meter&&fill&&percent&&label){
+    var powered=!!(st.direct&&st.chargeKind),level=Math.round((st.chargeLevel||0)*100);
+    meter.classList.toggle('hidden',!powered);
+    if(powered){
+      label.textContent=({shoot:'슈팅',pass:'패스',through:'스루패스',lob:'크로스'}[st.chargeKind]||'킥')+' 파워';
+      fill.style.width=level+'%';percent.textContent=level+'%';
+    }
+  }
   action.classList.remove('tackle-ready','tackle-near');
   if(!st.direct){action.innerHTML='슛/태클<br>D';return;}
   if(st.hasBall){action.innerHTML='슛!<br>D';return;}
@@ -939,7 +948,7 @@ function showMatchResult(m,f,isHome){
   modal.classList.remove('hidden');$('resultAnalysis').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;openReplay(0);};$('resultHome').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');};$('resultTrain').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');trainingModal();};if($('resultHistory'))$('resultHistory').onclick=function(){historyCardModal(star.id);};
 }
 function help(){
-  modalBody.innerHTML='<h2>풋살 히스토리그 하는 법</h2><div class="fact-box"><b>1. 그냥 지켜봐도 돼요</b><br>경기는 관전 모드로 시작합니다. 선수들이 각자 성향대로 알아서 뛰고, 감독은 전술과 교체만 바꿔도 돼요.<br><br><b>2. 내가 뛰고 싶으면 직접 조종 ON</b><br>경기 위의 <b>🎮 직접 조종 켜기</b>를 누르면 한 선수를 잡아요. 방향키 이동, Shift 질주, Q 선수 전환, S 패스, W 스루, A 크로스, D 슛/태클이에요. 슛을 누를 때 좌우 방향을 함께 누르면 조준할 수 있어요. 직접 조종 중에는 어려워지지 않도록 경기 속도가 1×로 고정돼요.<br><br><b>3. 태클은 초록 표시에서</b><br>공이 없을 때 상대 공 보유자에게 가까이 가세요. 노란 표시가 보이면 조금 더 접근하고, <b style="color:#4ade80">초록 표시 + “지금! D 태클”</b>이 뜨면 D를 누르세요. 너무 멀리서 누르면 태클을 낭비하지 않고 “더 가까이”라고 알려 줍니다.<br><br><b>4. 경기장 소리를 들어요</b><br>패스·슛·태클 소리, 반칙 휘슬, 관중 웅성거림과 골 장면의 함성, 동료의 “여기!”·“패스!” 호출이 경기 상황에 맞춰 나와요.<br><br><b>5. 역사 기억</b><br>한 경기에서 10명만 뛰기 때문에 이름과 활약을 반복해서 보고, 경기 후 역사 카드로 실제 내용을 다시 연결합니다.</div><p class="muted">모든 풋살 역할과 능력치는 역사적 인물의 우열을 뜻하지 않는 가상의 게임 설정입니다.</p>';
+  modalBody.innerHTML='<h2>풋살 히스토리그 하는 법</h2><div class="fact-box"><b>1. 그냥 지켜봐도 돼요</b><br>경기는 관전 모드로 시작합니다. 선수들이 각자 성향대로 알아서 뛰고, 감독은 전술과 교체만 바꿔도 돼요.<br><br><b>2. 내가 뛰고 싶으면 직접 조종 ON</b><br>경기 위의 <b>🎮 직접 조종 켜기</b>를 누르면 한 선수를 잡아요. 방향키 이동, Shift 질주, Q 선수 전환, S 패스, W 스루, A 크로스, D 슛/태클이에요. 슛을 누를 때 좌우 방향을 함께 누르면 조준할 수 있어요. 슛·패스 버튼을 누르고 있으면 파워가 차오르고 손을 떼면 공을 차요. 직접 조종 중에는 어려워지지 않도록 경기 속도가 1×로 고정돼요.<br><br><b>3. 태클은 초록 표시에서</b><br>공이 없을 때 상대 공 보유자에게 가까이 가세요. 노란 표시가 보이면 조금 더 접근하고, <b style="color:#4ade80">초록 표시 + “지금! D 태클”</b>이 뜨면 D를 누르세요. 너무 멀리서 누르면 태클을 낭비하지 않고 “더 가까이”라고 알려 줍니다.<br><br><b>4. 경기장 소리를 들어요</b><br>패스·슛·태클 소리, 반칙 휘슬, 관중 웅성거림과 골 장면의 함성, 동료의 “여기!”·“패스!” 호출이 경기 상황에 맞춰 나와요.<br><br><b>5. 역사 기억</b><br>한 경기에서 10명만 뛰기 때문에 이름과 활약을 반복해서 보고, 경기 후 역사 카드로 실제 내용을 다시 연결합니다.</div><p class="muted">모든 풋살 역할과 능력치는 역사적 인물의 우열을 뜻하지 않는 가상의 게임 설정입니다.</p>';
   modal.classList.remove('hidden');
 }
 
