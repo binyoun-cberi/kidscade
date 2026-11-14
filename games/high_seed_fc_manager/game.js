@@ -138,7 +138,7 @@ function autoLineup(roster,formation){
 }
 function newState(clubId){
   var c=clubById(clubId),roster=clone(c.players);
-  return {version:4,clubId:clubId,season:1,round:0,budget:c.budget,formation:'1-2-1',tactics:Object.assign({line:'standard',tempo:'normal',width:'normal'},clone(c.tactics)),roster:roster,lineup:autoLineup(roster,'1-2-1'),schedule:schedule(),table:tableBlank(),matchHistory:[],trainingAvailable:false,worldSigned:[],managerNotes:[],lastResult:null,replays:[],career:{},scouting:{},historyProgress:{discovered:{},connected:{},attempts:0,correct:0},matchTutorialDone:false,positionModelVersion:1,pyramid:null,otherLeague:null};
+  return {version:4,clubId:clubId,season:1,round:0,budget:c.budget,formation:'1-2-1',tactics:Object.assign({line:'standard',tempo:'normal',width:'normal'},clone(c.tactics)),roster:roster,lineup:autoLineup(roster,'1-2-1'),schedule:schedule(),table:tableBlank(),matchHistory:[],trainingAvailable:false,worldSigned:[],rivalSignings:{},managerNews:[],managerNotes:[],lastResult:null,replays:[],career:{},scouting:{},historyProgress:{discovered:{},connected:{},attempts:0,correct:0},matchTutorialDone:false,positionModelVersion:1,pyramid:null,otherLeague:null};
 }
 function normalize(){
   var migratingV4=(state.version||0)<4;
@@ -150,7 +150,7 @@ function normalize(){
   state.historyProgress.attempts=Number(state.historyProgress.attempts||0);state.historyProgress.correct=Number(state.historyProgress.correct||0);
   state.lineup=(state.lineup||[]).filter(function(id){return state.roster.some(function(p){return p.id===id;});});
   state.tactics=Object.assign({attack:'short',press:'shape',mindset:'balanced',line:'standard',tempo:'normal',width:'normal'},state.tactics||clone(clubById(state.clubId).tactics));
-  state.schedule=state.schedule||schedule();state.table=state.table||tableBlank();state.matchHistory=state.matchHistory||[];state.worldSigned=state.worldSigned||[];
+  state.schedule=state.schedule||schedule();state.table=state.table||tableBlank();state.matchHistory=state.matchHistory||[];state.worldSigned=state.worldSigned||[];state.rivalSignings=state.rivalSignings||{};state.managerNews=Array.isArray(state.managerNews)?state.managerNews:[];
   state.managerNotes=state.managerNotes||[];state.trainingAvailable=!!state.trainingAvailable;state.replays=Array.isArray(state.replays)?state.replays:[];state.career=state.career||{};
   if(state.matchTutorialDone===undefined)state.matchTutorialDone=state.matchHistory.length>0;
   if(state.pyramid===undefined)state.pyramid=null;if(state.otherLeague===undefined)state.otherLeague=null;
@@ -204,6 +204,7 @@ function advanceSeason(){
     state.pyramid.division=next1.indexOf(state.clubId)>=0?1:2;
   }
   state.season++;state.round=0;state.trainingAvailable=false;state.budget+=500+reward;
+  var transferCount=runRivalTransfers();if(transferCount)summary+=' · 경쟁 구단 '+transferCount+'팀 새 선수 영입';
   state.roster.forEach(function(p){p.fitness=100;});
   var ids=state.pyramid.divisionIds[state.pyramid.division],otherDiv=state.pyramid.division===1?2:1,otherIds=state.pyramid.divisionIds[otherDiv];
   state.schedule=schedule(ids,2);state.table=tableBlank(ids);
@@ -280,9 +281,14 @@ function home(){
   var preview=opponentSetup(o),tasks=[];
   tasks.push(['🏆 리그 목표',leagueGoalText()]);
   tasks.push(['🧠 상대 예상',preview.formation+' · '+tacticSummary(preview.tactics)+(preview.development?' · 전력 성장 +'+preview.development:'')]);
+  if(preview.signings.length)tasks.push(['🌍 상대 영입 선수',preview.signings.map(function(p){return p.name;}).join(' · ')]);
   if(state.trainingAvailable)tasks.push(['🏋️ 훈련 가능','경기 뒤 훈련을 골라 선수 능력과 체력을 관리해요.']);
   if(tired.length)tasks.push(['🔋 체력 확인',tired[0].name+' 등 선발 선수의 체력이 낮아요.']);
   tasks.push(['💰 팀 예산',fmt(state.budget)+' · 세계 역사 인물을 영입할 수 있어요.']);
+  (state.managerNews||[]).filter(function(n){return n.season===state.season;}).slice(0,2).forEach(function(n){
+    var cc=clubById(n.clubId),pp=D.world.find(function(p){return p.id===n.playerId;});
+    if(cc&&pp)tasks.push(['📢 경쟁 구단 영입',cc.short+'에서 '+pp.name+'을(를) 영입했어요.']);
+  });
   root.innerHTML='<div class="dashboard">'+
     '<section class="panel next-match"><span class="round-pill">'+esc(leagueLabel())+' · 시즌 '+state.season+' · '+(state.round+1)+'라운드</span><div class="versus"><div class="team-block"><span class="big-crest">'+c.emoji+'</span><b>'+esc(c.name)+'</b><small class="muted">'+esc(c.style)+'</small></div><div class="vs">VS</div><div class="team-block"><span class="big-crest">'+o.emoji+'</span><b>'+esc(o.name)+'</b><small class="muted">'+esc(o.style)+'</small></div></div><div class="action-row"><button id="playMatch" class="primary" type="button">경기 시작</button><button id="toTactics" class="secondary" type="button">작전 확인</button>'+(state.replays.length?'<button id="quickAnalysis" class="secondary" type="button">📊 최근 경기</button>':'')+'</div></section>'+
     '<aside class="panel"><h3>'+esc(leagueLabel())+' · 현재 '+r+'위</h3><div class="stand-mini">'+topRows.map(function(x,i){var cc=clubById(x.clubId);return '<div class="stand-row '+(x.clubId===state.clubId?'me':'')+'"><b>'+(i+1)+'</b><span>'+cc.emoji+' '+esc(cc.short)+'</span><span>'+x.p+'경기</span><b>'+x.pts+'</b></div>';}).join('')+'</div></aside>'+
@@ -361,10 +367,12 @@ function tactics(){
 }
 function worldTeam(p){return p.trait||'세계 역사';}
 function market(){
-  var root=$('viewRoot'),available=D.world.filter(function(p){return state.worldSigned.indexOf(p.id)<0;}).map(clone);
-  root.innerHTML='<div class="section-bar"><div><span class="eyebrow">세계 드림 스카우팅</span><h2>역사 인물 영입 시장</h2><div class="muted">현재 예산 <b>'+fmt(state.budget)+'</b> · 먼저 관찰하면 능력 정보가 점점 정확해집니다.</div></div></div><div class="market-grid">'+available.map(function(p){var level=scoutLevelFor(p.id);p.era=worldTeam(p)+' · '+p.era;return pcard(p,true,level);}).join('')+'</div>';
+  var root=$('viewRoot'),claimed=rivalSignedIds();
+  var available=D.world.filter(function(p){return state.worldSigned.indexOf(p.id)<0&&!claimed[p.id];}).map(clone);
+  var signedCount=Object.keys(claimed).length;
+  root.innerHTML='<div class="section-bar"><div><span class="eyebrow">세계 드림 스카우팅</span><h2>역사 인물 영입 시장</h2><div class="muted">현재 예산 <b>'+fmt(state.budget)+'</b> · 먼저 관찰하면 능력 정보가 점점 정확해집니다. · 경쟁 구단 영입 '+signedCount+'명</div></div></div><div class="market-grid">'+available.map(function(p){var level=scoutLevelFor(p.id);p.era=worldTeam(p)+' · '+p.era;return pcard(p,true,level);}).join('')+'</div>';
   root.querySelectorAll('[data-scout]').forEach(function(b){b.onclick=function(){var id=b.dataset.scout,level=scoutLevelFor(id),cost=level===0?40:70;if(level>=2)return;if(state.budget<cost){toast('스카우팅 예산이 부족해요.');return;}state.budget-=cost;state.scouting[id]=level+1;save();updateTop();sound('success');toast(level===0?'대략적인 능력 범위를 확인했습니다.':'정밀 분석이 끝났습니다.');market();};});
-  root.querySelectorAll('[data-buy]').forEach(function(b){b.onclick=function(){var original=D.world.find(function(p){return p.id===b.dataset.buy;});if(!original)return;if(state.budget<original.price){toast('예산이 부족해요.');return;}if(state.roster.length>=25){toast('선수단은 최대 25명까지 운영해요.');return;}var p=clone(original);p.clubId=state.clubId;state.roster.push(p);state.worldSigned.push(p.id);state.budget-=p.price;save();sound('success');toast(worldTeam(p)+'의 '+p.name+' 영입!');market();};});
+  root.querySelectorAll('[data-buy]').forEach(function(b){b.onclick=function(){var original=D.world.find(function(p){return p.id===b.dataset.buy;});if(!original||rivalSignedIds()[original.id])return;if(state.budget<original.price){toast('예산이 부족해요.');return;}if(state.roster.length>=25){toast('선수단은 최대 25명까지 운영해요.');return;}var p=clone(original);p.clubId=state.clubId;state.roster.push(p);state.worldSigned.push(p.id);state.budget-=p.price;save();sound('success');toast(worldTeam(p)+'의 '+p.name+' 영입!');market();};});
   bindFact(root,D.world);
 }
 function allHistoricalPlayers(){var out=[];D.clubs.forEach(function(c){out=out.concat(c.players);});return out.concat(D.world||[]);}
@@ -607,6 +615,31 @@ function resultToTable(table,homeId,awayId,hg,ag){
 }
 function hashText(value){var s=String(value==null?'':value),h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function fixtureSeed(a,b,season,round){return [season==null?state.season:season,round==null?state.round:round,a,b].join('|');}
+function rivalSignedIds(){
+  var claimed={};
+  Object.keys(state.rivalSignings||{}).forEach(function(id){(state.rivalSignings[id]||[]).forEach(function(pid){claimed[pid]=id;});});
+  return claimed;
+}
+function runRivalTransfers(){
+  if(!state||state.season<=1)return 0;
+  state.rivalSignings=state.rivalSignings||{};state.managerNews=state.managerNews||[];
+  var claimed=rivalSignedIds();
+  var available=D.world.filter(function(p){return !claimed[p.id]&&state.worldSigned.indexOf(p.id)<0;});
+  var clubs=D.clubs.filter(function(c){return c.id!==state.clubId&&(state.rivalSignings[c.id]||[]).length<2;});
+  clubs.sort(function(a,b){return hashText(a.id+'|transfer|'+state.season)-hashText(b.id+'|transfer|'+state.season);});
+  var count=0;
+  clubs.slice(0,Math.min(2,available.length)).forEach(function(c){
+    if(!available.length)return;
+    var index=hashText(c.id+'|recruit|'+state.season)%available.length;
+    var p=available.splice(index,1)[0];
+    state.rivalSignings[c.id]=state.rivalSignings[c.id]||[];
+    state.rivalSignings[c.id].push(p.id);
+    state.managerNews.unshift({season:state.season,clubId:c.id,playerId:p.id});
+    count++;
+  });
+  state.managerNews=state.managerNews.slice(0,12);
+  return count;
+}
 function rivalDevelopment(clubId){
   // The other clubs train between seasons too, without changing the existing save format.
   var growth=0;
@@ -617,7 +650,13 @@ function clubMatchSetup(c,seed){
   var cp=c.coachProfile||{preferredFormations:['1-2-1'],adaptability:70,riskTolerance:50,substitutionSpeed:70};
   var forms=(cp.preferredFormations&&cp.preferredFormations.length?cp.preferredFormations:['1-2-1']).filter(function(f){return !!D.formations[f];});
   var formation=forms[hashText(seed+'|'+c.id)%forms.length]||'1-2-1';
-  var roster=clone(c.players),development=rivalDevelopment(c.id);
+  var roster=clone(c.players),development=rivalDevelopment(c.id),signings=[];
+  (state.rivalSignings&&state.rivalSignings[c.id]||[]).forEach(function(pid){
+    var source=D.world.find(function(p){return p.id===pid;});
+    if(source&&roster.length<25&&!roster.some(function(p){return p.id===pid;})){
+      var recruited=clone(source);recruited.clubId=c.id;roster.push(recruited);signings.push(recruited);
+    }
+  });
   if(development)roster.forEach(function(p){
     ['shot','pass','defense','speed','stamina'].forEach(function(k){p.stats[k]=clamp(Number(p.stats[k]||50)+development,1,99);});
     delete p.overall;p.overall=overall(p);
@@ -626,7 +665,7 @@ function clubMatchSetup(c,seed){
   if(state.season>1&&hashText(c.id+'|coach|'+state.season)%3===0){
     tactics.attack=['short','direct','wide'][hashText(c.id+'|new-style|'+state.season)%3];
   }
-  return{club:c,roster:roster,lineup:autoLineup(roster,formation),formation:formation,tactics:tactics,coach:clone(cp),development:development};
+  return{club:c,roster:roster,lineup:autoLineup(roster,formation),formation:formation,tactics:tactics,coach:clone(cp),development:development,signings:signings};
 }
 function tacticSummary(t){return (t.attack==='direct'?'빠른 전진':t.attack==='wide'?'측면 공격':'짧은 연결')+' · '+(t.press==='press'?'강한 압박':'자리 지키기')+' · '+(t.width==='wide'?'넓게':t.width==='narrow'?'좁게':'보통 폭');}
 function randomFromSeed(seed){var x=hashText(seed)||1;return function(){x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;};}
