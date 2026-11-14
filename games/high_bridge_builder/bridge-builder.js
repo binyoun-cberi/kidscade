@@ -25,7 +25,10 @@ var el={
   retry:document.getElementById("retryBtn"),
   cont:document.getElementById("continueBtn"),
   tutorial:document.getElementById("tutorial"),
-  tutorialClose:document.getElementById("tutorialClose")
+  tutorialClose:document.getElementById("tutorialClose"),
+  modeBtn:document.getElementById("modeBtn"),
+  undoBtn:document.getElementById("undoBtn"),
+  goBtn:document.getElementById("goBtn")
 };
 
 var VEHICLES={
@@ -203,7 +206,7 @@ var LEVELS=[
     ]
   },
   {
-    title:"16. 마지막 대교",
+    title:"16. 첫 번째 대교",
     goal:"다섯 장애물을 모두 피해 마지막 화물차를 건너게 하세요",
     tip:"처음부터 끝까지 경로를 보고 큰 지그재그 하나를 그려 보세요.",
     gap:800,vehicle:"truck",leftY:420,rightY:380,waterY:595,par:1.55,
@@ -214,7 +217,31 @@ var LEVELS=[
       {type:"down",at:.70,w:44,bottom:300,label:"천장"},
       {type:"up",at:.90,w:44,top:355,label:"바위"}
     ]
-  }
+  },
+  {title:"17. 도심 진입로",goal:"건물 밑을 지나 바위를 넘어가요",tip:"건물 밑을 지나 바위를 넘어가요",vehicle:"truck",gap:650,leftY:410,rightY:405,waterY:575,par:1.3,obstacles:[{type:"down",at:0.25,w:72,bottom:275,label:"건물"},{type:"up",at:0.7,w:72,top:355,label:"바위"}]},
+  {title:"18. 낮은 굴다리",goal:"낮은 천장 아래를 통과해요",tip:"낮은 천장 아래를 통과해요",vehicle:"sedan",gap:690,leftY:405,rightY:395,waterY:580,par:1.25,obstacles:[{type:"down",at:0.33,w:95,bottom:330,label:"굴다리"},{type:"down",at:0.73,w:70,bottom:290,label:"터널"}]},
+  {title:"19. 공사장 통로",goal:"공사 중인 기둥 세 개를 넘어요",tip:"공사 중인 기둥 세 개를 넘어요",vehicle:"bus",gap:710,leftY:408,rightY:405,waterY:582,par:1.34,obstacles:[{type:"up",at:0.22,w:55,top:362,label:"기둥"},{type:"up",at:0.49,w:60,top:345,label:"기둥"},{type:"up",at:0.79,w:55,top:365,label:"기둥"}]},
+  {title:"20. 왕복 고가도로",goal:"높낮이가 다른 관문을 차례로 통과해요",tip:"높낮이가 다른 관문을 차례로 통과해요",vehicle:"ambulance",gap:720,leftY:405,rightY:400,waterY:580,par:1.41,obstacles:[{type:"down",at:0.28,w:70,bottom:235,label:"위 벽"},{type:"up",at:0.28,w:70,top:405,label:"아래 벽"},{type:"down",at:0.73,w:72,bottom:300,label:"위 벽"},{type:"up",at:0.73,w:72,top:470,label:"아래 벽"}]},
+  {title:"21. 산길의 첫 고개",goal:"두 언덕을 부드럽게 넘어가요",tip:"두 언덕을 부드럽게 넘어가요",vehicle:"sedan",gap:740,leftY:415,rightY:405,waterY:590,par:1.33,obstacles:[{type:"up",at:0.3,w:100,top:345,label:"산봉우리"},{type:"up",at:0.72,w:95,top:355,label:"산봉우리"}]},
+  {title:"22. 산속 터널",goal:"높은 바위와 낮은 천장을 번갈아 피해요",tip:"높은 바위와 낮은 천장을 번갈아 피해요",vehicle:"firetruck",gap:740,leftY:415,rightY:400,waterY:590,par:1.43,obstacles:[{type:"up",at:0.25,w:70,top:355,label:"바위"},{type:"down",at:0.54,w:72,bottom:270,label:"천장"},{type:"up",at:0.82,w:70,top:360,label:"바위"}]},
+  {title:"23. 굽이치는 계곡",goal:"먼저 아래로 내려갔다가 위로 올라와요",tip:"먼저 아래로 내려갔다가 위로 올라와요",vehicle:"truck",gap:770,leftY:410,rightY:385,waterY:592,par:1.43,obstacles:[{type:"down",at:0.22,w:70,bottom:305,label:"천장"},{type:"up",at:0.55,w:70,top:347,label:"절벽"},{type:"down",at:0.84,w:70,bottom:300,label:"천장"}]},
+  {title:"24. 구름 다리",goal:"서로 다른 높이의 관문 세 개를 통과해요",tip:"서로 다른 높이의 관문 세 개를 통과해요",vehicle:"bus",gap:790,leftY:410,rightY:400,waterY:595,par:1.48,obstacles:[{type:"down",at:0.18,w:54,bottom:240,label:"위 벽"},{type:"up",at:0.18,w:54,top:408,label:"아래 벽"},{type:"down",at:0.5,w:56,bottom:295,label:"위 벽"},{type:"up",at:0.5,w:56,top:465,label:"아래 벽"},{type:"down",at:0.83,w:54,bottom:255,label:"위 벽"},{type:"up",at:0.83,w:54,top:425,label:"아래 벽"}]},
+  {title:"25. 해안 동굴",goal:"천장이 세 번 낮아지는 구간을 통과해요",tip:"천장이 세 번 낮아지는 구간을 통과해요",vehicle:"ambulance",gap:760,leftY:405,rightY:410,waterY:585,par:1.36,obstacles:[{type:"down",at:0.24,w:65,bottom:280,label:"동굴"},{type:"down",at:0.52,w:65,bottom:325,label:"동굴"},{type:"down",at:0.8,w:65,bottom:275,label:"동굴"}]},
+  {title:"26. 파도 암초",goal:"크기가 다른 암초 네 개를 피해요",tip:"크기가 다른 암초 네 개를 피해요",vehicle:"sedan",gap:780,leftY:408,rightY:395,waterY:590,par:1.46,obstacles:[{type:"up",at:0.14,w:52,top:360,label:"암초"},{type:"up",at:0.38,w:64,top:337,label:"암초"},{type:"up",at:0.64,w:50,top:355,label:"암초"},{type:"up",at:0.88,w:48,top:365,label:"암초"}]},
+  {title:"27. 좁아진 해협",goal:"위아래 통로를 연속으로 번갈아 통과해요",tip:"위아래 통로를 연속으로 번갈아 통과해요",vehicle:"truck",gap:810,leftY:420,rightY:390,waterY:598,par:1.48,obstacles:[{type:"down",at:0.2,w:55,bottom:310,label:"낮은 천장"},{type:"up",at:0.48,w:60,top:353,label:"암초"},{type:"down",at:0.79,w:58,bottom:300,label:"천장"}]},
+  {title:"28. 항구의 관문",goal:"네 관문을 지나 화물차를 건너게 해요",tip:"네 관문을 지나 화물차를 건너게 해요",vehicle:"truck",gap:820,leftY:410,rightY:400,waterY:598,par:1.55,obstacles:[{type:"down",at:0.15,w:44,bottom:255,label:"위 관문"},{type:"up",at:0.15,w:44,top:425,label:"아래 관문"},{type:"down",at:0.38,w:46,bottom:310,label:"위 관문"},{type:"up",at:0.38,w:46,top:485,label:"아래 관문"},{type:"down",at:0.62,w:46,bottom:240,label:"위 관문"},{type:"up",at:0.62,w:46,top:410,label:"아래 관문"},{type:"down",at:0.86,w:44,bottom:295,label:"위 관문"},{type:"up",at:0.86,w:44,top:470,label:"아래 관문"}]},
+  {title:"29. 사막의 거대한 바위",goal:"두 개의 높은 바위를 우회해요",tip:"두 개의 높은 바위를 우회해요",vehicle:"bus",gap:770,leftY:415,rightY:405,waterY:590,par:1.4,obstacles:[{type:"up",at:0.3,w:110,top:340,label:"바위"},{type:"up",at:0.71,w:110,top:345,label:"바위"}]},
+  {title:"30. 사막 협곡",goal:"천장과 바위를 지나 마지막 관문으로 가요",tip:"천장과 바위를 지나 마지막 관문으로 가요",vehicle:"ambulance",gap:800,leftY:408,rightY:400,waterY:597,par:1.5,obstacles:[{type:"down",at:0.17,w:58,bottom:300,label:"천장"},{type:"up",at:0.43,w:60,top:355,label:"바위"},{type:"down",at:0.75,w:54,bottom:250,label:"위 문"},{type:"up",at:0.75,w:54,top:423,label:"아래 문"}]},
+  {title:"31. 바위 사이 길",goal:"두 관문 사이에 큰 바위가 있어요",tip:"두 관문 사이에 큰 바위가 있어요",vehicle:"firetruck",gap:820,leftY:410,rightY:400,waterY:597,par:1.55,obstacles:[{type:"down",at:0.17,w:52,bottom:255,label:"위 문"},{type:"up",at:0.17,w:52,top:425,label:"아래 문"},{type:"up",at:0.5,w:66,top:342,label:"바위"},{type:"down",at:0.82,w:52,bottom:300,label:"위 문"},{type:"up",at:0.82,w:52,top:470,label:"아래 문"}]},
+  {title:"32. 노을빛 대협곡",goal:"다섯 바위와 천장을 번갈아 통과해요",tip:"다섯 바위와 천장을 번갈아 통과해요",vehicle:"truck",gap:840,leftY:418,rightY:390,waterY:599,par:1.6,obstacles:[{type:"up",at:0.1,w:42,top:360,label:"바위"},{type:"down",at:0.29,w:44,bottom:285,label:"천장"},{type:"up",at:0.48,w:42,top:345,label:"바위"},{type:"down",at:0.67,w:44,bottom:310,label:"천장"},{type:"up",at:0.87,w:42,top:352,label:"바위"}]},
+  {title:"33. 빗속의 고가",goal:"낮은 천장 두 개 사이로 기둥을 넘어요",tip:"낮은 천장 두 개 사이로 기둥을 넘어요",vehicle:"sedan",gap:760,leftY:405,rightY:395,waterY:587,par:1.47,obstacles:[{type:"down",at:0.19,w:70,bottom:295,label:"천장"},{type:"up",at:0.5,w:75,top:340,label:"기둥"},{type:"down",at:0.82,w:70,bottom:300,label:"천장"}]},
+  {title:"34. 안개 속 관문",goal:"높은 관문과 낮은 관문을 지나요",tip:"높은 관문과 낮은 관문을 지나요",vehicle:"bus",gap:800,leftY:400,rightY:410,waterY:592,par:1.43,obstacles:[{type:"down",at:0.27,w:75,bottom:245,label:"관문"},{type:"up",at:0.27,w:75,top:405,label:"관문"},{type:"down",at:0.72,w:75,bottom:320,label:"관문"},{type:"up",at:0.72,w:75,top:485,label:"관문"}]},
+  {title:"35. 번개 협곡",goal:"네 장애물을 빨리 파악하고 길을 그려요",tip:"네 장애물을 빨리 파악하고 길을 그려요",vehicle:"ambulance",gap:820,leftY:405,rightY:395,waterY:595,par:1.54,obstacles:[{type:"up",at:0.14,w:50,top:348,label:"바위"},{type:"down",at:0.38,w:55,bottom:300,label:"천장"},{type:"up",at:0.62,w:55,top:350,label:"바위"},{type:"down",at:0.87,w:50,bottom:285,label:"천장"}]},
+  {title:"36. 비바람 대교",goal:"세 개의 좁은 관문을 지나야 해요",tip:"세 개의 좁은 관문을 지나야 해요",vehicle:"firetruck",gap:840,leftY:410,rightY:395,waterY:599,par:1.57,obstacles:[{type:"down",at:0.18,w:53,bottom:275,label:"천장"},{type:"up",at:0.18,w:53,top:445,label:"바위"},{type:"down",at:0.51,w:55,bottom:225,label:"천장"},{type:"up",at:0.51,w:55,top:395,label:"바위"},{type:"down",at:0.83,w:53,bottom:315,label:"천장"},{type:"up",at:0.83,w:53,top:485,label:"바위"}]},
+  {title:"37. 마지막 연습",goal:"길이 긴 장애물 두 개를 넘어가요",tip:"길이 긴 장애물 두 개를 넘어가요",vehicle:"sedan",gap:820,leftY:415,rightY:400,waterY:594,par:1.42,obstacles:[{type:"up",at:0.29,w:135,top:345,label:"긴 암초"},{type:"up",at:0.71,w:135,top:348,label:"긴 암초"}]},
+  {title:"38. 교차 관문",goal:"높은 관문과 낮은 관문이 번갈아 나타나요",tip:"높은 관문과 낮은 관문이 번갈아 나타나요",vehicle:"bus",gap:840,leftY:410,rightY:405,waterY:597,par:1.6,obstacles:[{type:"down",at:0.15,w:48,bottom:225,label:"관문"},{type:"up",at:0.15,w:48,top:395,label:"관문"},{type:"down",at:0.38,w:48,bottom:300,label:"관문"},{type:"up",at:0.38,w:48,top:470,label:"관문"},{type:"down",at:0.63,w:48,bottom:245,label:"관문"},{type:"up",at:0.63,w:48,top:415,label:"관문"},{type:"down",at:0.87,w:48,bottom:290,label:"관문"},{type:"up",at:0.87,w:48,top:460,label:"관문"}]},
+  {title:"39. 최후의 굽잇길",goal:"위쪽 바위 셋과 아래쪽 천장 둘을 피해요",tip:"위쪽 바위 셋과 아래쪽 천장 둘을 피해요",vehicle:"firetruck",gap:840,leftY:415,rightY:395,waterY:598,par:1.63,obstacles:[{type:"up",at:0.11,w:45,top:355,label:"바위"},{type:"down",at:0.3,w:46,bottom:300,label:"천장"},{type:"up",at:0.49,w:45,top:343,label:"바위"},{type:"down",at:0.68,w:46,bottom:300,label:"천장"},{type:"up",at:0.89,w:44,top:355,label:"바위"}]},
+  {title:"40. 무지개 대교",goal:"다섯 관문을 지나 마지막 화물차를 건너게 해요",tip:"다섯 관문을 지나 마지막 화물차를 건너게 해요",vehicle:"truck",gap:840,leftY:410,rightY:395,waterY:599,par:1.67,obstacles:[{type:"down",at:0.11,w:38,bottom:255,label:"위 문"},{type:"up",at:0.11,w:38,top:425,label:"아래 문"},{type:"down",at:0.3,w:40,bottom:300,label:"위 문"},{type:"up",at:0.3,w:40,top:470,label:"아래 문"},{type:"down",at:0.5,w:40,bottom:235,label:"위 문"},{type:"up",at:0.5,w:40,top:405,label:"아래 문"},{type:"down",at:0.7,w:40,bottom:310,label:"위 문"},{type:"up",at:0.7,w:40,top:480,label:"아래 문"},{type:"down",at:0.9,w:38,bottom:260,label:"위 문"},{type:"up",at:0.9,w:38,top:430,label:"아래 문"}]}
 ];
 
 var S={
@@ -223,6 +250,9 @@ var S={
   points:[],
   roadProfile:null,
   drawing:false,
+  activePointerId:null,
+  pointMode:false,
+  waypoints:[],
   drawLength:0,
   bridgeReady:false,
   vehicle:null,
@@ -263,9 +293,10 @@ function banks(){
 
 function pointFromEvent(e){
   var r=canvas.getBoundingClientRect();
+  // The CSS canvas is letterbox-fitted, never stretched or object-fit cropped.
   return{
-    x:clamp((e.clientX-r.left)*W/r.width,0,W),
-    y:clamp((e.clientY-r.top)*H/r.height,0,H)
+    x:clamp((e.clientX-r.left)*W/Math.max(1,r.width),0,W),
+    y:clamp((e.clientY-r.top)*H/Math.max(1,r.height),0,H)
   };
 }
 
@@ -408,24 +439,50 @@ function resetLevel(){
   S.points=[];
   S.roadProfile=null;
   S.drawing=false;
+  S.activePointerId=null;
+  S.waypoints=[];
   S.drawLength=0;
   S.bridgeReady=false;
   S.pointer=null;
   S.smoke=[];
   S.crashFlash=0;
   el.result.classList.add("hidden");
-  el.stageTitle.textContent=level().title;
+  el.stageTitle.textContent=level().title+" / "+LEVELS.length;
   el.stageGoal.textContent=level().goal;
   parkVehicle();
   showHint(level().tip,false);
+  updateControls();
 }
 
+function updateControls(){
+  el.modeBtn.textContent=S.pointMode?"모드: 점 찍기":"모드: 손가락 그리기";
+  el.modeBtn.setAttribute("aria-pressed",String(S.pointMode));
+  el.undoBtn.classList.toggle("hidden",!S.pointMode);
+  el.goBtn.classList.toggle("hidden",!S.pointMode);
+  el.undoBtn.disabled=!S.waypoints.length;
+}
+function abortStroke(){
+  if(!S.drawing)return;
+  S.drawing=false;
+  S.activePointerId=null;
+  S.points=[];
+  S.roadProfile=null;
+  S.drawLength=0;
+  S.pointer=null;
+  S.bridgeReady=false;
+  showHint("터치가 끊겼어요. 다시 그려 주세요.",false);
+}
 function startStroke(p){
-  if(S.paused||S.mode!=="build")return;
-  ensureAudio();
+  if(S.paused||S.mode!=="build"||S.pointMode)return;
+  var b=banks();
+  if(p.x>b.leftX+125){
+    showToast("왼쪽 출발점 근처부터 그려 주세요");
+    return;
+  }
   clearTimeout(S.autoTimer);
   stopEngine(.03);
-  S.points=[];
+  S.points=[{x:b.leftX,y:b.leftY}];
+  S.waypoints=[];
   S.roadProfile=null;
   S.bridgeReady=false;
   S.drawLength=0;
@@ -435,26 +492,58 @@ function startStroke(p){
   S.smoke=[];
   S.crashFlash=0;
   parkVehicle();
-  appendPoint(p,true);
+  if(p.x>b.leftX+4)appendPoint({x:p.x,y:p.y},true);
 }
-
 function appendPoint(p,force){
-  var pts=S.points;
+  var pts=S.points,b=banks();
   if(pts.length>=MAX_POINTS)return;
+  p={x:clamp(p.x,b.leftX,b.rightX),y:clamp(p.y,35,H-35)};
   var last=pts.length?pts[pts.length-1]:null;
   if(last){
+    // A road must advance toward the goal. Backtracking can create a road
+    // different from what the player drew when re-sampled by X.
+    if(p.x<=last.x+1)return;
     var d=dist(last,p);
-    if(!force&&d<4)return;
+    if(!force&&d<3)return;
     S.drawLength+=d;
     S.pointerAngle=Math.atan2(p.y-last.y,p.x-last.x);
   }
-  pts.push({x:p.x,y:p.y});
-  S.pointer={x:p.x,y:p.y};
+  pts.push(p);
+  S.pointer=p;
 }
-
 function extendStroke(p){
   if(!S.drawing||S.paused)return;
   appendPoint(p,false);
+}
+function rebuildWaypointPreview(){
+  var b=banks();
+  S.points=[{x:b.leftX,y:b.leftY}].concat(S.waypoints,[{x:b.rightX,y:b.rightY}]);
+  S.drawLength=0;
+  for(var i=1;i<S.points.length;i++)S.drawLength+=dist(S.points[i-1],S.points[i]);
+  S.roadProfile=null;
+  S.bridgeReady=false;
+  updateControls();
+}
+function addWaypoint(p){
+  if(!S.pointMode||S.paused||S.mode!=="build")return;
+  var b=banks(),last=S.waypoints[S.waypoints.length-1];
+  p={x:clamp(p.x,b.leftX+22,b.rightX-22),y:clamp(p.y,45,H-45)};
+  if(last&&p.x<last.x+22){
+    showToast("점을 왼쪽에서 오른쪽 순서로 찍어 주세요");
+    return;
+  }
+  if(S.waypoints.length>=14){showToast("점은 최대 14개까지 찍을 수 있어요");return;}
+  S.waypoints.push(p);
+  rebuildWaypointPreview();
+  showHint("점을 더 찍거나 '출발!'을 누르세요",false);
+}
+function runWaypoints(){
+  if(!S.pointMode||S.paused||S.mode!=="build")return;
+  rebuildWaypointPreview();
+  S.roadProfile=buildRoadProfile();
+  if(!S.roadProfile){showToast("길을 다시 확인해 주세요");return;}
+  S.bridgeReady=true;
+  startTest();
 }
 
 function segmentYAtX(a,b,x){
@@ -482,64 +571,47 @@ function smoothProfile(profile){
 }
 
 function buildRoadProfile(){
-  var b=banks();
-  var count=Math.ceil((b.rightX-b.leftX)/SAMPLE_STEP)+1;
-  var profile=new Array(count);
-
+  var b=banks(),pts=S.points,count=Math.ceil((b.rightX-b.leftX)/SAMPLE_STEP)+1;
+  if(pts.length<2||pts[0].x>b.leftX+1||pts[pts.length-1].x<b.rightX-1)return null;
+  var profile=new Array(count),j=0;
   for(var i=0;i<count;i++){
     var x=Math.min(b.rightX,b.leftX+i*SAMPLE_STEP);
-    var best=null;
-    for(var j=1;j<S.points.length;j++){
-      var a=S.points[j-1],c=S.points[j];
-      var minX=Math.min(a.x,c.x)-1,maxX=Math.max(a.x,c.x)+1;
-      if(x<minX||x>maxX)continue;
-      var y=segmentYAtX(a,c,x);
-      if(y!==null&&(best===null||y<best))best=y;
-    }
-    profile[i]=best;
+    while(j<pts.length-2&&pts[j+1].x<x)j++;
+    var a=pts[j],c=pts[j+1],dx=c.x-a.x;
+    if(dx<=0)return null;
+    var t=clamp((x-a.x)/dx,0,1);
+    profile[i]=a.y+(c.y-a.y)*t;
   }
-
-  for(var k=0;k<profile.length;k++){
-    if(profile[k]===null)return null;
-  }
-
-  if(Math.abs(profile[0]-b.leftY)>MAX_JOIN_Y)return null;
-  if(Math.abs(profile[profile.length-1]-b.rightY)>MAX_JOIN_Y)return null;
-
-  var blend=Math.min(10,Math.floor(profile.length/4));
-  for(var n=0;n<=blend;n++){
-    var t=n/Math.max(1,blend);
-    profile[n]=b.leftY*(1-t)+profile[n]*t;
-    var r=profile.length-1-n;
-    profile[r]=b.rightY*(1-t)+profile[r]*t;
-  }
-
+  // Small high-frequency finger tremors are smoothed once. The canvas draws
+  // this exact same profile during car simulation, preventing visual mismatch.
+  profile=smoothProfile(profile);
   profile[0]=b.leftY;
   profile[profile.length-1]=b.rightY;
-  return smoothProfile(profile);
+  return profile;
 }
 
 function finishStroke(){
   if(!S.drawing)return;
   S.drawing=false;
+  S.activePointerId=null;
   S.pointer=null;
-
-  if(S.points.length<2||S.drawLength<40){
+  var b=banks(),last=S.points[S.points.length-1];
+  if(S.points.length<2||!last||last.x<b.rightX-110){
     S.points=[];
     S.roadProfile=null;
     S.bridgeReady=false;
-    showToast("차 앞에서 반대쪽까지 길게 그려 주세요");
+    showToast("오른쪽 끝 근처까지 그려 주세요");
     return;
   }
-
+  // A generous arrival zone and automatic bank connection make tablet play
+  // possible without needing to hit a tiny 12px dot precisely.
+  appendPoint({x:b.rightX,y:b.rightY},true);
   S.roadProfile=buildRoadProfile();
   if(!S.roadProfile){
     S.bridgeReady=false;
-    showToast("선이 양쪽 벽까지 이어져야 해요");
-    showHint(level().tip,false);
+    showToast("길이 끊어졌어요. 다시 그려 주세요");
     return;
   }
-
   S.bridgeReady=true;
   showHint("좋아! 자동차가 출발합니다.",false);
   clearTimeout(S.autoTimer);
@@ -557,13 +629,16 @@ function clearBridge(){
   S.roadProfile=null;
   S.bridgeReady=false;
   S.drawing=false;
+  S.activePointerId=null;
   S.pointer=null;
+  S.waypoints=[];
   S.drawLength=0;
   S.smoke=[];
   S.crashFlash=0;
   el.result.classList.add("hidden");
   parkVehicle();
   showHint(level().tip,false);
+  updateControls();
 }
 
 function roadYAt(x){
@@ -876,31 +951,31 @@ function drawBackground(){
 }
 
 function drawBridge(){
-  if(S.points.length<2)return;
-
+  var pts=S.points;
+  if(pts.length<2)return;
   ctx.lineCap="round";
   ctx.lineJoin="round";
-
+  function trace(offset){
+    ctx.beginPath();
+    if(S.roadProfile){
+      var b=banks();
+      ctx.moveTo(b.leftX,S.roadProfile[0]+offset);
+      for(var i=1;i<S.roadProfile.length;i++)
+        ctx.lineTo(Math.min(b.rightX,b.leftX+i*SAMPLE_STEP),S.roadProfile[i]+offset);
+    }else{
+      ctx.moveTo(pts[0].x,pts[0].y+offset);
+      for(var j=1;j<pts.length;j++)ctx.lineTo(pts[j].x,pts[j].y+offset);
+    }
+  }
   ctx.strokeStyle="rgba(8,20,30,.28)";
-  ctx.lineWidth=22;
-  ctx.beginPath();
-  ctx.moveTo(S.points[0].x,S.points[0].y+6);
-  for(var i=1;i<S.points.length;i++)ctx.lineTo(S.points[i].x,S.points[i].y+6);
-  ctx.stroke();
-
+  ctx.lineWidth=22;trace(6);ctx.stroke();
   ctx.strokeStyle=S.bridgeReady?"#20252b":"#323941";
-  ctx.lineWidth=17;
-  ctx.beginPath();
-  ctx.moveTo(S.points[0].x,S.points[0].y);
-  for(var j=1;j<S.points.length;j++)ctx.lineTo(S.points[j].x,S.points[j].y);
-  ctx.stroke();
-
+  ctx.lineWidth=17;trace(0);ctx.stroke();
   ctx.strokeStyle="rgba(255,255,255,.18)";
-  ctx.lineWidth=3;
-  ctx.beginPath();
-  ctx.moveTo(S.points[0].x,S.points[0].y-3);
-  for(var k=1;k<S.points.length;k++)ctx.lineTo(S.points[k].x,S.points[k].y-3);
-  ctx.stroke();
+  ctx.lineWidth=3;trace(-3);ctx.stroke();
+  if(S.pointMode&&S.mode==="build"){
+    for(var k=0;k<S.waypoints.length;k++)drawEndpoint(S.waypoints[k].x,S.waypoints[k].y,true);
+  }
 }
 
 function drawSmoke(){
@@ -1017,7 +1092,7 @@ function render(){
 function fitCanvas(){
   var wrap=canvas.parentElement;
   var r=wrap.getBoundingClientRect();
-  var scale=Math.min(r.width/W,r.height/H);
+  var scale=Math.max(.001,Math.min(r.width/W,r.height/H));
   canvas.style.width=Math.max(1,Math.floor(W*scale))+"px";
   canvas.style.height=Math.max(1,Math.floor(H*scale))+"px";
 }
@@ -1038,26 +1113,50 @@ function changeLevel(delta){
 
 canvas.addEventListener("pointerdown",function(e){
   if(S.paused||S.mode!=="build")return;
-  e.preventDefault();
+  if(S.drawing)return; // ignore any second finger
+  if(e.cancelable)e.preventDefault();
   ensureAudio();
-  if(canvas.setPointerCapture)canvas.setPointerCapture(e.pointerId);
+  if(S.pointMode){
+    addWaypoint(pointFromEvent(e));
+    return;
+  }
   startStroke(pointFromEvent(e));
+  if(S.drawing){
+    S.activePointerId=e.pointerId;
+    if(canvas.setPointerCapture)canvas.setPointerCapture(e.pointerId);
+  }
 });
-
 canvas.addEventListener("pointermove",function(e){
-  if(!S.drawing||S.paused)return;
-  e.preventDefault();
+  if(!S.drawing||S.paused||e.pointerId!==S.activePointerId)return;
+  if(e.cancelable)e.preventDefault();
   extendStroke(pointFromEvent(e));
 });
-
-["pointerup","pointercancel","lostpointercapture"].forEach(function(type){
+canvas.addEventListener("pointerup",function(e){
+  if(!S.drawing||e.pointerId!==S.activePointerId)return;
+  if(e.cancelable)e.preventDefault();
+  extendStroke(pointFromEvent(e));
+  finishStroke();
+});
+["pointercancel","lostpointercapture"].forEach(function(type){
   canvas.addEventListener(type,function(e){
-    if(!S.drawing)return;
-    if(e.clientX!=null&&e.clientY!=null)appendPoint(pointFromEvent(e),false);
-    e.preventDefault();
-    finishStroke();
+    if(S.drawing&&e.pointerId===S.activePointerId)abortStroke();
   });
 });
+window.addEventListener("blur",abortStroke);
+document.addEventListener("visibilitychange",function(){if(document.hidden)abortStroke()});
+
+el.modeBtn.addEventListener("click",function(){
+  if(S.paused||S.mode==="run")return;
+  S.pointMode=!S.pointMode;
+  clearBridge();
+  showHint(S.pointMode?"점을 왼쪽부터 찍고 '출발!'을 누르세요":"왼쪽부터 오른쪽으로 한번에 그리세요",false);
+});
+el.undoBtn.addEventListener("click",function(){
+  if(!S.pointMode||S.paused||S.mode!=="build")return;
+  S.waypoints.pop();
+  rebuildWaypointPreview();
+});
+el.goBtn.addEventListener("click",function(){ensureAudio();runWaypoints()});
 
 el.reset.addEventListener("click",function(){ensureAudio();clearBridge()});
 el.retry.addEventListener("click",function(){
@@ -1079,7 +1178,7 @@ window.addEventListener("resize",fitCanvas);
 try{
   window.KidscadeGame?.registerPauseHandlers?.({
     pause:function(){
-      if(S.drawing)finishStroke();
+      if(S.drawing)abortStroke();
       clearTimeout(S.autoTimer);
       stopEngine(.04);
       S.paused=true;
