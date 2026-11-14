@@ -17,7 +17,6 @@
   let lastPromptAt = -Infinity;
   let promptCount = 0;
   let notice = null;
-  let noticeTimer = null;
 
   function readHiddenAt() {
     try {
@@ -49,41 +48,49 @@
   }
 
   function dismiss() {
-    if (noticeTimer !== null) {
-      clearTimeout(noticeTimer);
-      noticeTimer = null;
-    }
     notice?.remove();
     notice = null;
   }
 
   function showNotice() {
     dismiss();
+    if (!document.body) return;
     const message = MESSAGES[promptCount % MESSAGES.length];
     promptCount += 1;
-    const box = document.createElement('div');
-    box.id = 'kidscade-return-nudge';
-    box.setAttribute('role', 'status');
-    box.style.cssText = 'position:fixed;z-index:2147483000;bottom:max(16px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;padding:13px 15px;border:2px solid #c4b5fd;border-radius:18px;background:#fff;color:#312e81;font:700 15px/1.5 system-ui,sans-serif;box-shadow:0 12px 38px #0f172a40;display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;text-align:center;';
-    const messageText = document.createElement('span');
-    messageText.textContent = message;
-    const replay = document.createElement('button');
-    replay.type = 'button';
-    replay.textContent = '🔊 다시 듣기';
-    replay.setAttribute('aria-label', '안내 음성 다시 듣기');
-    replay.style.cssText = 'font:inherit;font-size:13px;border:0;border-radius:12px;padding:8px 10px;background:#ede9fe;color:#5b21b6;cursor:pointer;';
-    replay.addEventListener('click', () => speak(message));
-    const close = document.createElement('button');
-    close.type = 'button';
-    close.textContent = '닫기';
-    close.style.cssText = 'font:inherit;font-size:13px;border:0;background:transparent;color:#475569;cursor:pointer;padding:8px;';
-    close.addEventListener('click', dismiss);
-    box.append(messageText, replay, close);
-    if (!document.body) return;
-    document.body.appendChild(box);
-    notice = box;
-    speak(message);
-    noticeTimer = setTimeout(dismiss, 12000);
+
+    // Cover the page until a real tap gives Android browsers a user gesture.
+    // This blocks interaction with the lobby/iframe but does not freeze
+    // an individual game's simulation timer.
+    const overlay = document.createElement('div');
+    overlay.id = 'kidscade-return-nudge';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', '학습 이어하기');
+    overlay.style.cssText = 'position:fixed;z-index:2147483647;inset:0;box-sizing:border-box;padding:16px;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.70);font-family:system-ui,sans-serif;';
+
+    const panel = document.createElement('div');
+    panel.style.cssText = 'box-sizing:border-box;width:min(100%,420px);padding:28px 22px;border:3px solid #c4b5fd;border-radius:24px;background:#fff;color:#312e81;text-align:center;box-shadow:0 18px 60px #02061766;';
+    const heading = document.createElement('h2');
+    heading.textContent = '다시 돌아왔네!';
+    heading.style.cssText = 'margin:0 0 12px;font-size:24px;line-height:1.3;font-weight:900;';
+    const description = document.createElement('p');
+    description.textContent = '학습을 이어가려면 아래 버튼을 눌러줘.';
+    description.style.cssText = 'margin:0 0 20px;font-size:15px;line-height:1.5;color:#475569;';
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.textContent = '▶ 게임 계속하기';
+    play.setAttribute('aria-label', '게임을 계속하고 음성 안내 듣기');
+    play.style.cssText = 'display:block;width:100%;min-height:56px;padding:12px 16px;border:0;border-radius:16px;background:#7c3aed;color:#fff;font:800 18px/1.4 system-ui,sans-serif;cursor:pointer;touch-action:manipulation;';
+    play.addEventListener('click', () => {
+      // Speak synchronously inside the tap/click handler: no autoplay attempt.
+      speak(message);
+      dismiss();
+    });
+    panel.append(heading, description, play);
+    overlay.append(panel);
+    document.body.appendChild(overlay);
+    notice = overlay;
+    play.focus?.();
   }
 
   function onReturn() {
