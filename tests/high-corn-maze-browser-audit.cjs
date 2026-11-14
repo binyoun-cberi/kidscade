@@ -7,8 +7,8 @@ const root=path.resolve(__dirname,'..'),sleep=ms=>new Promise(r=>setTimeout(r,ms
 const hook=`
 if(new URL(location.href).searchParams.has('cornQa')){
  window.__cornQA={
-  get:()=>({seed:state.maze?.seed,won:state.won,phase:state.hunter?.phase,elapsed:state.elapsed,player:{...state.player},guess:state.guess,mapOpen:state.mapOpen,instances:world.children.reduce((n,c)=>n+Number(!!c.isInstancedMesh)+c.children.filter(x=>x.isInstancedMesh).length,0),shortest:M.route(state.maze,0,state.maze.exit).length-1}),
-  first:()=>state.maze.stations[0],second:()=>state.maze.stations[1],exit:()=>state.maze.exit,action:()=>nearAction(),
+  get:()=>({seed:state.maze?.seed,won:state.won,phase:state.hunter?.phase,elapsed:state.elapsed,player:{...state.player},guess:state.guess,mapOpen:state.mapOpen,instances:world.children.reduce((n,c)=>n+Number(!!c.isInstancedMesh)+c.children.filter(x=>x.isInstancedMesh).length,0),cornChunks:world.children.find(c=>c.userData.cornfield)?.children.length||0,cornPatches:world.children.find(c=>c.userData.cornfield)?.children.reduce((n,c)=>n+c.children.filter(x=>x.isInstancedMesh).length,0)||0,shortest:M.route(state.maze,0,state.maze.exit).length-1}),
+  first:()=>state.maze.stations[0],second:()=>state.maze.stations[1],exit:()=>state.maze.exit,action:()=>nearAction(),walkable:(x,z)=>canWalk(x,z,.48),landmark:()=>{const a=state.maze.landmarks[0],p=M.center(state.maze,a.cell);return{x:p.x+LANDMARK_OFFSET,z:p.z+LANDMARK_OFFSET,cell:a.cell}},
   go:(end)=>{const path=M.route(state.maze,M.current(state.maze,state.player.x,state.player.z),end);if(!path.length)throw Error('No route');
    let steps=0;for(const cell of path.slice(1)){const dest=M.center(state.maze,cell);state.yaw=Math.atan2(-(dest.x-state.player.x),-(dest.z-state.player.z));state.keys.add('KeyW');
     for(let n=0;n<90;n++){const distance=Math.hypot(dest.x-state.player.x,dest.z-state.player.z);if(distance<.012)break;const before=distance;step(Math.min(.05,distance/3.65));steps++;if(Math.hypot(dest.x-state.player.x,dest.z-state.player.z)>before-.0001)throw Error('Blocked movement '+cell);}
@@ -57,13 +57,31 @@ async function main(){
  await wait('Boolean(window.CornMaze&&document.querySelector("#startButton"))','boot');
  await wait('Boolean(window.__cornQA)','3D game module ready');
  await ev('document.querySelector(".mode[data-mode=explore]").click();document.querySelector("#startButton").click()');
- await wait('window.__cornQA?.get()?.instances>0','3D corn generated');
+ await wait('window.__cornQA?.get()?.cornChunks>0','3D corn generated');
+ const chunks=await ev('window.__cornQA.get()');
+ assert.ok(chunks.cornChunks>=8&&chunks.cornChunks<=25,'corn sections should be bounded');
+ assert.ok(chunks.cornPatches>=chunks.cornChunks,'actual corn geometries must be instanced');
+ const landmark=await ev('window.__cornQA.landmark()');
+ assert.equal(await ev('window.__cornQA.walkable('+landmark.x+','+landmark.z+')'),false,'landmarks must be solid');
  await shot('desktop');
  const first=await ev('window.__cornQA.go(window.__cornQA.first())');
  assert.equal(await ev('window.__cornQA.action().type'),'map');
  await ev('document.querySelector("#interact").click()');assert.equal(await ev('window.__cornQA.get().mapOpen'),true);
- await ev(`(()=>{const c=document.querySelector('#mapCanvas'),r=c.getBoundingClientRect();c.dispatchEvent(new PointerEvent('pointerdown',{clientX:r.left+r.width*.5,clientY:r.top+r.height*.5,bubbles:true}));})()`);
- assert.ok(await ev('window.__cornQA.get().guess>=0'),'Cannot mark map');
+ await ev('document.querySelector("#mapZoomIn").click()');
+ const zoom=await ev('parseFloat(document.querySelector("#mapZoomValue").textContent)');
+ assert.ok(zoom>100,'map zoom button failed');
+ await ev(`(()=>{const v=document.querySelector('#mapViewport'),r=v.getBoundingClientRect();const x=r.left+r.width*.5,y=r.top+r.height*.5;
+  v.dispatchEvent(new PointerEvent('pointerdown',{pointerId:71,clientX:x,clientY:y,bubbles:true}));v.dispatchEvent(new PointerEvent('pointerup',{pointerId:71,clientX:x,clientY:y,bubbles:true}));})()`);
+ assert.ok(await ev('window.__cornQA.get().guess>=0'),'Cannot mark zoomed map');
+ const guessBefore=await ev('window.__cornQA.get().guess');
+ const pan=await ev(`(()=>{const v=document.querySelector('#mapViewport'),r=v.getBoundingClientRect();const x=r.left+r.width*.5,y=r.top+r.height*.5;
+  const before=document.querySelector('#mapCanvas').style.transform;
+  v.dispatchEvent(new PointerEvent('pointerdown',{pointerId:72,clientX:x,clientY:y,bubbles:true}));
+  v.dispatchEvent(new PointerEvent('pointermove',{pointerId:72,clientX:x+45,clientY:y+10,bubbles:true}));
+  v.dispatchEvent(new PointerEvent('pointerup',{pointerId:72,clientX:x+45,clientY:y+10,bubbles:true}));
+  return{before,after:document.querySelector('#mapCanvas').style.transform}})()`);
+ assert.notEqual(pan.before,pan.after,'drag must move zoomed map');
+ assert.equal(await ev('window.__cornQA.get().guess'),guessBefore,'drag must not create an accidental location guess');
  await shot('map');
  await ev('document.querySelector("#closeMap").click()');
  const second=await ev('window.__cornQA.go(window.__cornQA.second())');
@@ -80,6 +98,15 @@ async function main(){
  const mobile=await ev(`(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,controls:getComputedStyle(document.querySelector('#touchControls')).display}))()`);
  assert.ok(mobile.scroll<=mobile.width+2,'mobile horizontal overflow');
  assert.equal(mobile.controls,'block');await shot('mobile');
+ await send('Emulation.setDeviceMetricsOverride',{width:932,height:430,deviceScaleFactor:1,mobile:true});
+ await ev('document.querySelector("#touchInteract").click()');
+ await wait('document.querySelector("#mapOverlay")&&!document.querySelector("#mapOverlay").classList.contains("hidden")','landscape map');
+ const landscape=await ev(`(()=>({map:document.querySelector('#mapViewport').getBoundingClientRect().width,zoom:document.querySelector('#mapZoomIn').getBoundingClientRect().width,
+  width:innerWidth,dialog:document.querySelector('#mapOverlay').getBoundingClientRect().width}))()`);
+ assert.ok(landscape.map>=260,'Landscape maze map should be at least 260px, got '+landscape.map);
+ assert.ok(landscape.zoom>=38,'Map zoom target too small');
+ await shot('landscape-map');
+ await ev('document.querySelector("#closeMap").click()');
  await ev('document.querySelector(".mode[data-mode=normal]").click();document.querySelector("#startButton").click()');
  assert.equal(await ev('window.__cornQA.advance(74)'),'chase');
  assert.equal(await ev('window.__cornQA.get().phase'),'chase');
