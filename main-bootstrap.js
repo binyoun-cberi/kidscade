@@ -151,7 +151,7 @@
       'auto-update.js',
       'kidscade-storage.js',
       'audio-manager.js',
-      'return-nudge.js',
+      'app/platform/return-nudge.js',
       'profile-history.js',
       'stats-rankings.js',
       'server-stats.js',
