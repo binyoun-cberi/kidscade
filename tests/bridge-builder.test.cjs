@@ -86,6 +86,7 @@ test('only redraw control lives inside the visible play area',()=>{
 test('tablet canvas fits without stretching and loads the updated v14 runtime',()=>{
   assert.match(runtime,/var wide=r.width\/Math.max\(1,r.height\)>1.95/);
   assert.doesNotMatch(css,/width:100%!important/);
+  assert.doesNotMatch(css,/max-height:100%/);
   assert.match(html,/bridge-builder\.js\?v=14/);
   assert.match(html,/bridge-builder\.css\?v=14/);
 });
