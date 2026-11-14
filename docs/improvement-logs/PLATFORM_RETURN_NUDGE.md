@@ -84,3 +84,11 @@
 - 다른 배포 방식: Vercel 연결된 프로젝트 목록 조회를 시도했으나 권한 없는 팀 스코프로 **403 Forbidden**을 반환해 대체 preview 배포 불가. 이 저장소는 Cloudflare Workers 기반이므로 별도 Vercel 신규 프로젝트/비용을 만들지 않았음.
 - PR `https://github.com/binyoun-cberi/kidscade/pull/763`는 별도 브랜치에서 열려 있음. main 직접 푸시/병합/배포/원격 DB 변경 없음. 학생 기록, 키, 유료 AI API는 건드리지 않음.
 - 다음 단계: 새 실제 Chrome 전용 감사 작업과 전체 PR CI 결과 확인 후 명시적인 PR 병합 및 원격 D1 실행 승인에 따라 운영 배포, 버전 매니페스트/복귀 모달 live smoke를 실행. 갤럭시탭 Chrome/삼성 인터넷은 실물 기기에서 수동 청취까지 검증 필요.
+
+
+## 실브라우저 전용 감사 통과 확인 (2026-11-14)
+
+- 최신 검수 PR workflow `Kidscade architecture checks` run `43575874849`, job `node-tests`: `Build Cloudflare static artifact` **success**, `Run all regression tests and audits` **success**, `Real Chrome tablet return reminder and TTS-failure audit` **success**. 추가로 `Openmon expedition real-browser mobile and desktop audit` success를 확인함. 실행 중인 다른 게임의 감사 결과와 전체 workflow 종료는 확인 시점에 남아 있었음.
+- 위 **real Chrome 감사**는 `tests/return-nudge-browser-audit.cjs`의 390×844 Chrome 에뮬레이션, 모달 실제 DOM와 CDP 입력, 임의로 제공한 음성 목록 및 가상 시간 기반 60초 대기를 검증한다. 실제 스피커 음향, 삼성 인터넷, 실물 갤럭시탭을 검증한 것은 아님.
+- 컨테이너에서의 브라우저 탐색 `ERR_BLOCKED_BY_ADMINISTRATOR`는 GitHub Actions에서 실제 Chrome 성공으로 보완되었으나 실기기 테스트는 계속 미완료.
+- **배포·병합 상태는 변함없음**: 운영 배포는 워크플로의 원격 D1 마이그레이션 및 main 병합 별도 승인 필요로 미실행.
