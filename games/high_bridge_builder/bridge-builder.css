@@ -32,7 +32,7 @@ button{font:inherit;color:inherit}
   display:flex;align-items:center;justify-content:center;overflow:hidden;background:#19afe2
 }
 #game{
-  display:block;max-width:100%;max-height:100%;touch-action:none;cursor:crosshair;background:#1db8ea
+  display:block;flex:none;max-width:none;max-height:none;touch-action:none;cursor:crosshair;background:#1db8ea
 }
 
 .hint{
@@ -49,6 +49,21 @@ button{font:inherit;color:inherit}
 }
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
+.assist-controls{
+  position:absolute;left:12px;bottom:12px;display:flex;align-items:center;
+  flex-wrap:wrap;gap:8px;max-width:72%;z-index:4
+}
+.assist-controls button{
+  min-height:46px;padding:0 14px;border:1px solid rgba(255,255,255,.36);
+  border-radius:14px;background:rgba(11,32,59,.94);color:#fff;
+  font-weight:900;font-size:13px;cursor:pointer;touch-action:manipulation;
+  box-shadow:0 3px 0 rgba(0,0,0,.26)
+}
+.assist-controls button:disabled{opacity:.45;cursor:default}
+.assist-controls #goBtn{background:#13794d;border-color:#8bf5bd}
+.assist-controls button:focus-visible,.icon-btn:focus-visible,.reset-floating:focus-visible{
+  outline:3px solid #fff;outline-offset:2px
+}
 .reset-floating{
   position:absolute;right:12px;top:12px;z-index:4;
   min-height:42px;padding:0 14px;border-radius:13px;
@@ -95,11 +110,13 @@ button{font:inherit;color:inherit}
   .stage{gap:5px}.stage b{font-size:11px}.stage small{display:none}
   .icon-btn{width:35px;height:35px}
   .layout{padding:4px}
-  .board{height:auto}
-  .canvas-wrap{width:100%;aspect-ratio:12/7;height:auto}
-  .canvas-wrap #game{width:100%!important;height:100%!important;max-width:none;max-height:none;object-fit:contain}
+  .board{height:100%;min-height:0}
+  .canvas-wrap{width:100%;height:100%;aspect-ratio:auto}
+  .canvas-wrap #game{max-width:none;max-height:none;object-fit:fill}
   .hint{top:8px;max-width:62%;font-size:9px;padding:7px 9px}
-  .reset-floating{right:8px;top:8px;min-height:38px;padding:0 10px;font-size:10px}
+  .reset-floating{right:8px;top:8px;min-height:44px;padding:0 10px;font-size:11px}
+  .assist-controls{left:8px;bottom:8px;max-width:85%;gap:5px}
+  .assist-controls button{min-height:44px;padding:0 9px;font-size:11px}
 }
 @media(max-width:460px){
   .brand b{display:none}

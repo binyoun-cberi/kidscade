@@ -234,6 +234,7 @@ const TEST_FILES = [
   "tests/high-twelve-island.test.cjs",
   "tests/traditional-play-yard.test.cjs",
   "tests/bridge-builder.test.cjs",
+  "tests/bridge-builder-interaction.test.cjs",
   "tests/cube-geometry-studio.test.cjs",
   "tests/cube-geometry-visual-quiz.test.cjs",
   "tests/cube-architect-v31.test.cjs",
