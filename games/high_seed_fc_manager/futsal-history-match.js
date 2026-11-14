@@ -137,7 +137,7 @@ function create(opts){
   allActors.forEach(function(a){stats[a.id]={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0,passesAttempted:0,passesCompleted:0,progressivePasses:0,keyPasses:0,assists:0,tackles:0,crosses:0};heat[a.id]=Array(60).fill(0);});
 
   var m={
-    isPhysicalFutsal:true,directControl:false,minute:0,score:[0,0],teams:teams,userSide:userSide,finished:false,events:[],effects:[],passVisuals:[],
+    isPhysicalFutsal:true,directControl:false,charge:null,minute:0,score:[0,0],teams:teams,userSide:userSide,finished:false,events:[],effects:[],passVisuals:[],
     possession:0,ball:{x:FIELD_W/2,y:FIELD_H/2,z:0,vx:0,vy:0,vz:0,owner:null,trail:[]},
     userSubs:0,controlled:null,lastTouchId:null,replay:{step:.75,next:0,frames:[],heat:heat,stats:stats,tacticChanges:[]},
     seed:opts.seed||null
@@ -180,7 +180,10 @@ function create(opts){
     m.controlled=nearest(list,target)||list[0]||teams[userSide].actors[0];return m.controlled;
   }
   function cycleControl(){
-    var list=outfield(userSide);if(!list.length)return;var i=list.indexOf(m.controlled);m.controlled=list[(i+1+list.length)%list.length];
+    var target=m.ball.owner&&m.ball.owner.side!==userSide?m.ball.owner:m.ball;
+    var list=outfield(userSide).sort(function(a,b){return dist(a,target)-dist(b,target);});
+    if(!list.length)return;
+    var i=list.indexOf(m.controlled);m.controlled=list[(i+1+list.length)%list.length];
   }
   function givePossession(a){
     if(!a)return;m.ball.owner=a;m.ball.x=a.x;m.ball.y=a.y;m.ball.z=0;m.ball.vx=a.vx;m.ball.vy=a.vy;m.ball.vz=0;m.possession=a.side;touchActor(a);a.protect=.3;
@@ -217,7 +220,7 @@ function create(opts){
     list.forEach(function(a){
       var dx=a.x-p.x,dy=a.y-p.y,d=hypot(dx,dy),n=norm(dx,dy),align=n.x*aim.x+n.y*aim.y,progress=dx*dir,open=clamp(nearestOpponentDistance(a)/210,0,1);
       var throughX=kind==='through'?clamp(a.x+dir*(100+a.tend.forward),10,FIELD_W-10):a.x;
-      var risk=passLaneRisk(p,{x:throughX,y:a.y});
+      var risk=passLaneRisk(p,{x:throughX,y:clamp(a.y+a.vy*.25,25,FIELD_H-25)});
       var score=align*90+progress*.15+open*45-d*.035+a.tend.forward*.16-risk*1.65;
       if(kind==='through')score+=progress*.22+a.tend.forward*.25;
       if(kind==='cross')score+=(a.slot==='ST'?70:0)+(Math.abs(a.y-FIELD_H/2)<220?15:0);
@@ -235,24 +238,28 @@ function create(opts){
       m.passVisuals.push({x:ev.x,y:ev.y,toX:ev.toX,toY:ev.toY,side:p.side,completed:true,progressive:kind==='through',life:.6});
     }else pendingPass=null;
   }
-  function doPass(p,kind){
+  function doPass(p,kind,power){
     if(!p||m.ball.owner!==p)return false;var rec=passTarget(p,kind),dir=teamDir(p.side),target;
-    if(rec){target={x:rec.x+(kind==='through'?dir*(100+rec.tend.forward):0),y:rec.y};}
-    else target={x:p.x+dir*420,y:p.y};
+    var strength=clamp(power==null?.42:power,.05,1);
+    if(rec){
+      var lead=.18+strength*.35,extra=kind==='through'?dir*(80+rec.tend.forward+strength*90):0;
+      target={x:rec.x+rec.vx*lead+extra,y:rec.y+rec.vy*lead};
+    }else target={x:p.x+dir*420,y:p.y};
     target.x=clamp(target.x,10,FIELD_W-10);target.y=clamp(target.y,20,FIELD_H-20);
-    var speed=kind==='through'?720:kind==='cross'?635:570,vz=kind==='cross'?310:kind==='through'?35:10;
+    var speed=(kind==='through'?645:kind==='cross'?580:495)+strength*195,vz=kind==='cross'?250+strength*105:kind==='through'?35:10;
     kickBall(p,target,speed,vz,kind,rec);
     if(p.side===userSide&&rec&&rec.slot!=='GK')chooseControl(rec);
     return true;
   }
-  function shoot(p){
+  function shoot(p,power){
     if(!p||m.ball.owner!==p)return false;
-    var goalX=oppGoalX(p.side),spread=clamp(250-stat(p.p,'shot')*1.2,120,205),err=(random()*2-1)*spread;
+    var strength=clamp(power==null?.48:power,.05,1);
+    var goalX=oppGoalX(p.side),spread=clamp(250-stat(p.p,'shot')*1.2,120,205)*(.82+strength*.26),err=(random()*2-1)*spread;
     // Holding left/right while shooting deliberately places the shot toward that corner.
     var aimY=m.directControl&&p===m.controlled?((keys.ArrowRight||touch.right?1:0)-(keys.ArrowLeft||touch.left?1:0))*100:0;
     var targetY=clamp(FIELD_H/2+aimY+err,15,FIELD_H-15),distance=Math.abs(goalX-p.x);
     var xg=clamp(.34-distance/FIELD_W*.28+(stat(p.p,'shot')-70)/310,.04,.38),st=stats[p.id];st.shots++;st.xg+=xg;if(lastCompletedPass&&lastCompletedPass.receiver===p&&lastCompletedPass.age<3&&!lastCompletedPass.event.keyPass){lastCompletedPass.event.keyPass=true;stats[lastCompletedPass.passer.id].keyPasses++;}
-    kickBall(p,{x:goalX+teamDir(p.side)*35,y:targetY},720+stat(p.p,'shot')*2.0,45+random()*90,'shot',null);
+    kickBall(p,{x:goalX+teamDir(p.side)*35,y:targetY},675+stat(p.p,'shot')*1.5+strength*250,30+random()*60+strength*40,'shot',null);
     emit('shot',display(p)+'의 슛!',p.side,p);return true;
   }
   function tackleGuide(p){
@@ -440,6 +447,10 @@ function create(opts){
     if(restart>0){restart-=dt;if(restart<=0)kickoff(1-m.possession);return;}
     ballFree=Math.max(0,ballFree-dt);tackleHintCooldown=Math.max(0,tackleHintCooldown-dt);if(pendingPass){pendingPass.life-=dt;if(pendingPass.life<=0)pendingPass=null;}if(lastCompletedPass)lastCompletedPass.age+=dt;
     allActors.forEach(function(a){a.tackleCooldown=Math.max(0,a.tackleCooldown-dt);a.tackleTimer=Math.max(0,a.tackleTimer-dt);a.kickTimer=Math.max(0,a.kickTimer-dt);a.recover=Math.max(0,a.recover-dt);a.protect=Math.max(0,a.protect-dt);});
+    if(m.charge){
+      if(!m.directControl||m.ball.owner!==m.controlled)m.charge=null;
+      else m.charge.elapsed=Math.min(.82,m.charge.elapsed+dt);
+    }
     if(m.directControl)userPlayer(m.controlled,dt);allActors.forEach(function(a){aiPlayer(a,dt);});maybeTeamCall(dt);separate();
     if(m.ball.owner)updateOwnedBall(dt);else updateLooseBall(dt);
     allActors.forEach(function(a){
@@ -452,12 +463,12 @@ function create(opts){
     m.ball.trail.push({x:m.ball.x,y:m.ball.y});if(m.ball.trail.length>12)m.ball.trail.shift();
   }
 
-  function userAction(kind){
+  function userAction(kind,power){
     if(!m.directControl||m.finished||restart>0)return;controlIdle=0;var a=m.controlled;
     if(kind==='switch'){cycleControl();notifyUserAction('switch',{controlledId:m.controlled&&m.controlled.id||null});return;}
     if(!a)return;
     if(kind==='shoot'){
-      if(m.ball.owner===a){if(shoot(a))notifyUserAction('shoot',{actorId:a.id});}
+      if(m.ball.owner===a){if(shoot(a,power))notifyUserAction('shoot',{actorId:a.id,power:power});}
       else{
         var guide=tackleGuide(a),success=tackle(a);
         if(guide.state==='sweet'||guide.state==='ready')notifyUserAction('tackle',{actorId:a.id,timing:guide.state,success:!!success});
@@ -466,13 +477,27 @@ function create(opts){
     }
     if(m.ball.owner!==a)return;
     var done=false;
-    if(kind==='pass')done=doPass(a,'pass');else if(kind==='through')done=doPass(a,'through');else if(kind==='lob')done=doPass(a,'cross');
+    if(kind==='pass')done=doPass(a,'pass',power);else if(kind==='through')done=doPass(a,'through',power);else if(kind==='lob')done=doPass(a,'cross',power);
     if(done)notifyUserAction(kind,{actorId:a.id});
   }
   m.handleAction=userAction;
+  m.beginKick=function(kind){
+    if(!m.directControl||m.finished||restart>0)return false;
+    if(kind==='switch'){userAction(kind);return true;}
+    if(!m.controlled)return false;
+    if(m.ball.owner!==m.controlled){if(kind==='shoot')userAction(kind);return false;}
+    if(!m.charge)m.charge={kind:kind,elapsed:0};
+    return true;
+  };
+  m.releaseKick=function(kind,fire){
+    if(!m.charge||m.charge.kind!==kind)return false;
+    var power=clamp(m.charge.elapsed/.8,.12,1);
+    m.charge=null;if(fire!==false)userAction(kind,power);
+    return true;
+  };
   m.setHold=function(name,on){if(!m.directControl&&on)return;touch[name]=!!on;};
   m.setDirectControl=function(on){
-    m.directControl=!!on;controlIdle=0;
+    m.directControl=!!on;controlIdle=0;m.charge=null;
     Object.keys(keys).forEach(function(k){keys[k]=false;});
     Object.keys(touch).forEach(function(k){touch[k]=false;});
     if(m.directControl)chooseControl(m.ball.owner&&m.ball.owner.side===userSide?m.ball.owner:null);
@@ -488,7 +513,7 @@ function create(opts){
       :guide.state==='approach'?'조금만 더 가까이! 상대에게 붙으면 표시가 초록색이 돼요.'
       :guide.state==='protected'?'상대가 막 공을 받았어요. 가까이 붙고 한 박자 기다려요.'
       :'수비 중 · 상대 공 보유자에게 가까이 이동하세요.';
-    return{direct:m.directControl,controlledId:a&&a.id||null,controlledName:a&&a.p&&a.p.name||'',hasBall:hasBall,tackleState:guide.state,tackleDistance:Number.isFinite(guide.distance)?Math.round(guide.distance):null,targetName:guide.target&&guide.target.p&&guide.target.p.name||'',text:text};
+    return{direct:m.directControl,controlledId:a&&a.id||null,controlledName:a&&a.p&&a.p.name||'',hasBall:hasBall,chargeLevel:m.charge?clamp(m.charge.elapsed/.8,0,1):0,chargeKind:m.charge&&m.charge.kind||null,tackleState:guide.state,tackleDistance:Number.isFinite(guide.distance)?Math.round(guide.distance):null,targetName:guide.target&&guide.target.p&&guide.target.p.name||'',text:text};
   };
   m.update=function(dt,speed){
     if(m.finished)return;var simDt=dt*(speed||1),steps=Math.max(1,Math.ceil(simDt/(1/90))),h=simDt/steps;
@@ -593,14 +618,29 @@ function create(opts){
 
 function held(name,on){if(active&&active.directControl){touch[name]=!!on;if(active.setHold)active.setHold(name,on);}else touch[name]=false;}
 function action(name){if(active&&active.directControl&&active.handleAction)active.handleAction(name);}
+function beginAction(name){if(active&&active.directControl&&active.beginKick)active.beginKick(name);}
+function endAction(name,fire){if(active&&active.releaseKick)active.releaseKick(name,fire);}
 if(root.addEventListener){
-  root.addEventListener('keydown',function(e){if(!active||active.finished||!active.directControl)return;keys[e.code]=true;if(e.repeat)return;var map={KeyQ:'switch',KeyS:'pass',KeyW:'through',KeyA:'lob',KeyD:'shoot'};if(map[e.code]){e.preventDefault();action(map[e.code]);}if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'].indexOf(e.code)>=0)e.preventDefault();});
-  root.addEventListener('keyup',function(e){keys[e.code]=false;});
+  root.addEventListener('keydown',function(e){
+    if(!active||active.finished||!active.directControl)return;
+    keys[e.code]=true;if(e.repeat)return;
+    var map={KeyQ:'switch',KeyS:'pass',KeyW:'through',KeyA:'lob',KeyD:'shoot'};
+    if(map[e.code]){e.preventDefault();if(e.code==='KeyQ')action('switch');else beginAction(map[e.code]);}
+    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'].indexOf(e.code)>=0)e.preventDefault();
+  });
+  root.addEventListener('keyup',function(e){keys[e.code]=false;var map={KeyS:'pass',KeyW:'through',KeyA:'lob',KeyD:'shoot'};if(map[e.code]){e.preventDefault();endAction(map[e.code],true);}});
+  root.addEventListener('blur',function(){Object.keys(keys).forEach(function(k){keys[k]=false;});if(active&&active.charge)active.releaseKick(active.charge.kind,false);});
 }
 function bindTouch(){
   if(typeof document==='undefined')return;
   document.querySelectorAll('[data-fh-hold]').forEach(function(b){var k=b.getAttribute('data-fh-hold');['pointerdown','touchstart'].forEach(function(ev){b.addEventListener(ev,function(e){e.preventDefault();held(k,true);},{passive:false});});['pointerup','pointercancel','pointerleave','touchend'].forEach(function(ev){b.addEventListener(ev,function(e){e.preventDefault();held(k,false);},{passive:false});});});
-  document.querySelectorAll('[data-fh-action]').forEach(function(b){b.addEventListener('pointerdown',function(e){e.preventDefault();action(b.getAttribute('data-fh-action'));});});
+  document.querySelectorAll('[data-fh-action]').forEach(function(b){
+    var name=b.getAttribute('data-fh-action');
+    b.addEventListener('pointerdown',function(e){e.preventDefault();if(b.setPointerCapture)try{b.setPointerCapture(e.pointerId);}catch(err){}if(name==='switch')action(name);else beginAction(name);});
+    b.addEventListener('pointerup',function(e){e.preventDefault();endAction(name,true);});
+    b.addEventListener('pointercancel',function(e){e.preventDefault();endAction(name,false);});
+    b.addEventListener('lostpointercapture',function(){endAction(name,false);});
+  });
 }
 if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindTouch);else bindTouch();}
 
