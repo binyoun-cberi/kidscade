@@ -16,4 +16,4 @@
 
 ## 게임 공통 기능
 
-- [20분 이내 복귀 시 학생 태블릿 음성·문구 안내](./PLATFORM_RETURN_NUDGE.md) — 로비/iframe 공통, Node 테스트 6개 통과 · 갤럭시탭 실기기 검증 대기
+- [20분 이내 복귀 시 ▶ 계속하기를 눌러 음성 안내](./PLATFORM_RETURN_NUDGE.md) — 로비/iframe 공통, Node 테스트 8개 통과 · 갤럭시탭 실기기 검증 대기
