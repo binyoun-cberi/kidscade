@@ -361,14 +361,14 @@ test('tablet coach drawer is accessible and closed before play to protect touch 
   const css=fs.readFileSync(stylePath,'utf8');
   assert.match(html,/id="matchCoachToggle"[^>]+aria-controls="matchCoachPanel"/);
   assert.match(html,/id="matchCoachPanel" class="match-side"/);
-  assert.match(html,/style\.css\?v=16/);
+  assert.match(html,/style\.css\?v=17/);
   assert.match(html,/game\.js\?v=17/);
   assert.match(game,/function setCoachPanelOpen\(open\)/);
   assert.match(game,/setCoachPanelOpen\(false\);if\(match\.setDirectControl\)/);
   assert.match(game,/step\.key==='tactic'\)setCoachPanelOpen\(true\)/);
   assert.match(css,/@media\(max-width:980px\)/);
   assert.match(css,/\.match-layer\.coach-open \.match-side\{display:flex\}/);
-  assert.match(css,/\.match-side\{display:none;position:absolute;top:72px);
+  assert.match(css,/\.match-side\{display:none;position:absolute;top:72px/);
 });
 
 
