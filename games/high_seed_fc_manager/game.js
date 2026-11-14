@@ -699,7 +699,7 @@ var MATCH_TUTORIAL_STEPS=[
   {key:'switch',title:'5. 조작 선수를 바꿀 수 있어요',text:'수비할 때 원하는 선수를 잡고 싶다면 Q를 누르세요. 태블릿에서는 “전환” 버튼입니다.',goal:'Q 또는 전환 버튼으로 선수를 한 번 바꿔 보세요.',target:'[data-fh-action="switch"]'},
   {key:'tackle',title:'6. 태클은 초록색일 때!',text:'상대 공 보유자에게 가까이 가면 노란 표시가 뜨고, 더 가까워지면 초록색으로 바뀝니다. 초록색에서 D를 누르는 것이 핵심이에요.',goal:'초록색 “지금! D 태클” 표시에서 태클을 시도해 보세요.',target:'#shootTackleBtn'},
   {key:'shoot',title:'7. 공격에서는 D가 슛이에요',text:'공을 가진 채 D나 슛 버튼을 눌러 파워를 채우고 떼면 슛을 해요. 좌우 버튼을 누르면 방향도 바꿀 수 있어요.',goal:'공을 잡으면 D 또는 슛 버튼으로 한 번 슛해 보세요.',target:'#shootTackleBtn'},
-  {key:'tactic',title:'8. 감독처럼 전술도 바꿔 봐요',text:'오른쪽 감독 지시에서 공격 방식·압박·라인·템포 등을 경기 도중 바로 바꿀 수 있어요.',goal:'감독 지시에서 아무 전술 버튼이나 하나 눌러 보세요.',target:'#liveTacticText'},
+  {key:'tactic',title:'8. 감독처럼 전술도 바꿔 봐요',text:'감독 지시에서 공격 방식·압박·라인·템포를 바꿀 수 있어요. 태블릿에서는 경기장 위의 전술·교체 버튼으로 감독 패널을 열어요.',goal:'감독 지시에서 아무 전술 버튼이나 하나 눌러 보세요.',target:'#liveTacticText'},
   {key:'direct_off',title:'9. 힘들면 언제든 다시 관전',text:'직접 조종이 버거우면 👀 관전으로 전환을 누르면 됩니다. 선수들이 다시 알아서 경기하고 감독 역할만 해도 돼요.',goal:'👀 관전으로 전환을 눌러 튜토리얼을 마쳐 보세요.',target:'#directControlBtn'}
 ];
 function clearTutorialTarget(){
@@ -713,6 +713,7 @@ function renderMatchTutorial(){
   clearTutorialTarget();
   if(!matchTutorial||!matchTutorial.active){box.classList.add('hidden');return;}
   var step=tutorialStep();if(!step){finishFirstMatchTutorial(false);return;}
+  if(step.key==='tactic')setCoachPanelOpen(true);
   box.classList.remove('hidden','intro','waiting','complete');box.classList.add(step.manual?'intro':'waiting');
   $('matchTutorialStep').textContent='첫 경기 튜토리얼 · '+(matchTutorial.index+1)+' / '+MATCH_TUTORIAL_STEPS.length;
   $('matchTutorialTitle').textContent=step.title;$('matchTutorialText').textContent=step.text;$('matchTutorialGoal').textContent='목표 · '+step.goal;$('matchTutorialGoal').classList.remove('done');
@@ -750,12 +751,19 @@ function skipFirstMatchTutorial(){
   if(!matchTutorial||!matchTutorial.active)return;
   state.matchTutorialDone=true;matchTutorial.active=false;matchTutorial.paused=false;clearTutorialTarget();$('matchTutorial').classList.add('hidden');save();toast('튜토리얼을 건너뛰었습니다.');
 }
+function setCoachPanelOpen(open){
+  var layer=$('matchLayer'),btn=$('matchCoachToggle');
+  if(!layer||!btn)return;
+  layer.classList.toggle('coach-open',!!open);
+  btn.setAttribute('aria-expanded',open?'true':'false');
+  btn.textContent=open?'전술 닫기':'전술·교체';
+}
 function startMatch(){
   var f=myFixture();if(!f)return;if(state.lineup.length!==5){state.lineup=autoLineup(state.roster,state.formation);save();}var unavailable=state.lineup.map(playerById).filter(function(p){return p&&p.injury&&p.injury.games>0;});if(unavailable.length){state.lineup=autoLineup(state.roster,state.formation);save();toast('부상 선수를 제외하고 선발을 다시 구성했습니다.');}
   var own=clubById(state.clubId),o=opponent(f),opp=opponentSetup(o),isHome=f.home===state.clubId,seed=fixtureSeed(f.home,f.away),homeClub=isHome?own:o,awayClub=isHome?o:own;
   var opts=isHome?{homeClub:own,homeRoster:state.roster,homeLineup:state.lineup,homeFormation:state.formation,homeTactics:clone(state.tactics),homeCoach:clone(own.coachProfile||{}),awayClub:o,awayRoster:opp.roster,awayLineup:opp.lineup,awayFormation:opp.formation,awayTactics:opp.tactics,awayCoach:opp.coach}:{homeClub:o,homeRoster:opp.roster,homeLineup:opp.lineup,homeFormation:opp.formation,homeTactics:opp.tactics,homeCoach:opp.coach,awayClub:own,awayRoster:state.roster,awayLineup:state.lineup,awayFormation:state.formation,awayTactics:clone(state.tactics),awayCoach:clone(own.coachProfile||{})};
   var firstMatchTutorial=!state.matchTutorialDone&&state.matchHistory.length===0;
-  opts.formations=D.formations;opts.seed=seed;opts.userSide=isHome?0:1;opts.onEvent=matchEvent;opts.onUserAction=matchTutorialAction;opts.onFinish=function(m){setTimeout(function(){showMatchResult(m,f,isHome);},400);};match=(H&&H.create)?H.create(opts):S.create(opts);match.userSide=isHome?0:1;match.fixture=f;if(!match.isPhysicalFutsal&&broadcastRenderer)broadcastRenderer.reset(match);matchSpeed=1;resultShown=false;$('homeName').textContent=homeClub.name;$('awayName').textContent=awayClub.name;$('matchScore').textContent='0 : 0';$('matchClock').textContent="0'";$('eventLog').innerHTML='';$('matchLayer').classList.remove('hidden');if(match.setDirectControl)match.setDirectControl(false);setSpeed(1);updateDirectControlUI();updateLiveTactic();if(firstMatchTutorial)beginFirstMatchTutorial();else{$('matchTutorial').classList.add('hidden');matchTutorial=null;}startStadiumAmbience();whistleSfx(false);cancelAnimationFrame(raf);lastFrame=performance.now();raf=requestAnimationFrame(matchLoop);sound('start');
+  opts.formations=D.formations;opts.seed=seed;opts.userSide=isHome?0:1;opts.onEvent=matchEvent;opts.onUserAction=matchTutorialAction;opts.onFinish=function(m){setTimeout(function(){showMatchResult(m,f,isHome);},400);};match=(H&&H.create)?H.create(opts):S.create(opts);match.userSide=isHome?0:1;match.fixture=f;if(!match.isPhysicalFutsal&&broadcastRenderer)broadcastRenderer.reset(match);matchSpeed=1;resultShown=false;$('homeName').textContent=homeClub.name;$('awayName').textContent=awayClub.name;$('matchScore').textContent='0 : 0';$('matchClock').textContent="0'";$('eventLog').innerHTML='';$('matchLayer').classList.remove('hidden');setCoachPanelOpen(false);if(match.setDirectControl)match.setDirectControl(false);setSpeed(1);updateDirectControlUI();updateLiveTactic();if(firstMatchTutorial)beginFirstMatchTutorial();else{$('matchTutorial').classList.add('hidden');matchTutorial=null;}startStadiumAmbience();whistleSfx(false);cancelAnimationFrame(raf);lastFrame=performance.now();raf=requestAnimationFrame(matchLoop);sound('start');
 }
 function matchEvent(e){
   var quiet=e.type==='call'||e.type==='tackle_hint'||e.type==='tackle_miss'||e.type==='control';
@@ -1007,6 +1015,7 @@ $('modalClose').onclick=closeModalSmart;
 modal.addEventListener('pointerdown',function(e){if(e.target===modal)closeModalSmart();});
 document.querySelectorAll('.speed[data-speed]').forEach(function(b){b.onclick=function(){setSpeed(Number(b.dataset.speed));};});
 $('directControlBtn').onclick=toggleDirectControl;
+$('matchCoachToggle').onclick=function(){setCoachPanelOpen(!$('matchLayer').classList.contains('coach-open'));};
 $('controlTutorialBtn').onclick=showControlTutorial;
 $('matchTutorialNext').onclick=function(){var step=tutorialStep();if(step&&step.manual)advanceMatchTutorial();};
 $('matchTutorialSkipStep').onclick=function(){advanceMatchTutorial();};
