@@ -279,7 +279,7 @@ function home(){
   var tired=state.lineup.map(playerById).filter(function(p){return p&&(p.fitness||100)<70;});
   var preview=opponentSetup(o),tasks=[];
   tasks.push(['🏆 리그 목표',leagueGoalText()]);
-  tasks.push(['🧠 상대 예상',preview.formation+' · '+tacticSummary(preview.tactics)]);
+  tasks.push(['🧠 상대 예상',preview.formation+' · '+tacticSummary(preview.tactics)+(preview.development?' · 전력 성장 +'+preview.development:'')]);
   if(state.trainingAvailable)tasks.push(['🏋️ 훈련 가능','경기 뒤 훈련을 골라 선수 능력과 체력을 관리해요.']);
   if(tired.length)tasks.push(['🔋 체력 확인',tired[0].name+' 등 선발 선수의 체력이 낮아요.']);
   tasks.push(['💰 팀 예산',fmt(state.budget)+' · 세계 역사 인물을 영입할 수 있어요.']);
@@ -375,9 +375,15 @@ function historyCardModal(id){
   all.sort(function(a,b){return hashText(p.id+'|'+a.id+'|'+state.season)-hashText(p.id+'|'+b.id+'|'+state.season);});
   var choices=[p].concat(all.slice(0,2));choices.sort(function(a,b){return hashText(p.id+'|choice|'+a.id+'|'+hp.attempts)-hashText(p.id+'|choice|'+b.id+'|'+hp.attempts);});
   var clue=String(p.fact||p.memory||'').split(p.name).join('이 인물');
-  modalBody.innerHTML='<span class="eyebrow">경기에서 발견한 역사 카드</span><h2>'+esc(p.name)+'</h2><div class="history-card-focus"><span class="history-tag">'+esc(p.era)+'</span><b>'+esc(p.trait)+'</b><p>'+esc(p.fact)+'</p><div class="memory">'+esc(p.memory)+'</div></div><div class="history-question"><b>이 설명의 인물은 누구일까요?</b><p>'+esc(clue)+'</p><div class="history-answer-grid">'+choices.map(function(x){return '<button type="button" data-history-answer="'+esc(x.id)+'">'+esc(x.name)+'</button>';}).join('')+'</div><div id="historyAnswerFeedback"></div></div>';
+  modalBody.innerHTML='<span class="eyebrow">경기에서 발견한 역사 카드</span><h2>이 인물은 누구일까요?</h2><div class="history-card-focus"><span class="history-tag">'+esc(p.era)+'</span><b>'+esc(p.trait)+'</b><p>'+esc(clue)+'</p></div><div class="history-question"><b>설명을 읽고 인물을 골라 보세요.</b><div class="history-answer-grid">'+choices.map(function(x){return '<button type="button" data-history-answer="'+esc(x.id)+'">'+esc(x.name)+'</button>';}).join('')+'</div><div id="historyAnswerFeedback"></div></div>';
   modal.classList.remove('hidden');
-  modalBody.querySelectorAll('[data-history-answer]').forEach(function(b){b.onclick=function(){if(b.disabled)return;hp.attempts++;var correct=b.dataset.historyAnswer===p.id;modalBody.querySelectorAll('[data-history-answer]').forEach(function(x){x.disabled=true;if(x.dataset.historyAnswer===p.id)x.classList.add('correct');else if(x===b&&!correct)x.classList.add('wrong');});if(correct){hp.correct++;hp.connected[p.id]=true;$('historyAnswerFeedback').innerHTML='<div class="history-feedback success">연결 성공! 이 카드는 역사 수첩에 표시됩니다.</div>';sound('success');}else{$('historyAnswerFeedback').innerHTML='<div class="history-feedback">정답은 <b>'+esc(p.name)+'</b>입니다. 설명과 기억 문구를 한 번 더 확인해 보세요.</div>';}save();};});
+  modalBody.querySelectorAll('[data-history-answer]').forEach(function(b){b.onclick=function(){if(b.disabled)return;hp.attempts++;var correct=b.dataset.historyAnswer===p.id;modalBody.querySelectorAll('[data-history-answer]').forEach(function(x){x.disabled=true;if(x.dataset.historyAnswer===p.id)x.classList.add('correct');else if(x===b&&!correct)x.classList.add('wrong');});if(correct){
+    hp.correct++;var firstConnection=!hp.connected[p.id];hp.connected[p.id]=true;
+    if(firstConnection){state.budget+=25;updateTop();}
+    $('historyAnswerFeedback').innerHTML='<div class="history-feedback success">정답은 <b>'+esc(p.name)+'</b>! '+(firstConnection?'첫 연결 보상 25 코인. ':'')+'<span>'+esc(p.memory)+'</span></div>';sound('success');
+  }else{
+    $('historyAnswerFeedback').innerHTML='<div class="history-feedback">정답은 <b>'+esc(p.name)+'</b>입니다. '+esc(p.memory)+'</div>';
+  }save();};});
 }
 function tacticImpactHtml(r){
   var changes=(r.tacticChanges||[]).filter(function(x){return x.side===r.userSide&&x.minute>0;});
@@ -601,7 +607,27 @@ function resultToTable(table,homeId,awayId,hg,ag){
 }
 function hashText(value){var s=String(value==null?'':value),h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function fixtureSeed(a,b,season,round){return [season==null?state.season:season,round==null?state.round:round,a,b].join('|');}
-function clubMatchSetup(c,seed){var cp=c.coachProfile||{preferredFormations:['1-2-1'],adaptability:70,riskTolerance:50,substitutionSpeed:70};var forms=(cp.preferredFormations&&cp.preferredFormations.length?cp.preferredFormations:['1-2-1']).filter(function(f){return !!D.formations[f];});var formation=forms[hashText(seed+'|'+c.id)%forms.length]||'1-2-1';var roster=clone(c.players),tactics=Object.assign({attack:'short',press:'shape',mindset:'balanced',line:'standard',tempo:'normal',width:'normal'},clone(c.tactics||{}));return {club:c,roster:roster,lineup:autoLineup(roster,formation),formation:formation,tactics:tactics,coach:clone(cp)};}
+function rivalDevelopment(clubId){
+  // The other clubs train between seasons too, without changing the existing save format.
+  var growth=0;
+  for(var season=2;season<=Math.min(20,state.season);season++)growth+=hashText(clubId+'|academy|'+season)%3;
+  return Math.min(12,growth);
+}
+function clubMatchSetup(c,seed){
+  var cp=c.coachProfile||{preferredFormations:['1-2-1'],adaptability:70,riskTolerance:50,substitutionSpeed:70};
+  var forms=(cp.preferredFormations&&cp.preferredFormations.length?cp.preferredFormations:['1-2-1']).filter(function(f){return !!D.formations[f];});
+  var formation=forms[hashText(seed+'|'+c.id)%forms.length]||'1-2-1';
+  var roster=clone(c.players),development=rivalDevelopment(c.id);
+  if(development)roster.forEach(function(p){
+    ['shot','pass','defense','speed','stamina'].forEach(function(k){p.stats[k]=clamp(Number(p.stats[k]||50)+development,1,99);});
+    delete p.overall;p.overall=overall(p);
+  });
+  var tactics=Object.assign({attack:'short',press:'shape',mindset:'balanced',line:'standard',tempo:'normal',width:'normal'},clone(c.tactics||{}));
+  if(state.season>1&&hashText(c.id+'|coach|'+state.season)%3===0){
+    tactics.attack=['short','direct','wide'][hashText(c.id+'|new-style|'+state.season)%3];
+  }
+  return{club:c,roster:roster,lineup:autoLineup(roster,formation),formation:formation,tactics:tactics,coach:clone(cp),development:development};
+}
 function tacticSummary(t){return (t.attack==='direct'?'빠른 전진':t.attack==='wide'?'측면 공격':'짧은 연결')+' · '+(t.press==='press'?'강한 압박':'자리 지키기')+' · '+(t.width==='wide'?'넓게':t.width==='narrow'?'좁게':'보통 폭');}
 function randomFromSeed(seed){var x=hashText(seed)||1;return function(){x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;};}
 function settlePlayerCondition(myGoals,oppGoals,replayData){var played={};if(replayData)replayData.players.filter(function(p){return p.side===replayData.userSide;}).forEach(function(p){played[p.id]=1;});var mood=myGoals>oppGoals?3:myGoals<oppGoals?-2:1;state.roster.forEach(function(p){if(p.injury&&p.injury.games>0){p.injury.games--;if(p.injury.games<=0)p.injury=null;}p.sharpness=clamp((p.sharpness==null?70:p.sharpness)+(played[p.id]?5:-2),20,100);p.morale=clamp((p.morale==null?70:p.morale)+mood+(played[p.id]?1:0),20,100);});if(replayData){var rnd=randomFromSeed((replayData.seed||'match')+'|injury'),candidates=state.lineup.map(playerById).filter(function(p){return p&&!(p.injury&&p.injury.games>0);});for(var i=0;i<candidates.length;i++){var p=candidates[i],fit=p.fitness||100,chance=.006+(fit<70?.018:0)+(fit<55?.03:0);if(rnd()<chance){var games=1+(rnd()<.28?1:0);p.injury={label:games>1?'근육 통증':'가벼운 불편',games:games};p.morale=clamp((p.morale||70)-2,20,100);break;}}}}
@@ -718,7 +744,7 @@ function setSpeed(s){
   });
 }
 function showControlTutorial(){
-  modalBody.innerHTML='<h2>🎮 직접 조종은 3가지만 기억해요</h2><div class="fact-box"><b>① 이동</b><br>방향키 또는 왼쪽 방향 버튼으로 움직여요. Shift/질주는 꼭 필요할 때만 써요.<br><br><b>② 공을 가졌을 때</b><br><b>S 패스</b>는 빈 동료를 자동으로 찾아 줘요. W는 앞으로 찔러 주는 스루패스, A는 크로스, <b>D는 슛</b>이에요.<br><br><b>③ 공이 없을 때 태클</b><br>상대 공 보유자에게 가까이 가세요. 상대 둘레 표시가 <b style="color:#4ade80">초록색</b>이 되고 내 선수 위에 <b>“지금! D 태클”</b>이 뜰 때 D를 누르면 성공률이 아주 높아요. 노란색이면 조금 더 가까이 가면 돼요.<br><br><b>반칙은?</b><br>좋은 거리에서도 태클이 빗나가면 가끔 반칙이 될 수 있고, 그때는 심판 휘슬이 들려요.</div><p class="muted">직접 조종이 어렵다면 언제든 👀 관전으로 바꾸면 나머지는 AI가 계속 경기합니다.</p>';
+  modalBody.innerHTML='<h2>🎮 직접 조종은 3가지만 기억해요</h2><div class="fact-box"><b>① 이동</b><br>방향키 또는 왼쪽 방향 버튼으로 움직여요. Shift/질주는 꼭 필요할 때만 써요.<br><br><b>② 공을 가졌을 때</b><br><b>S 패스</b>는 빈 동료를 자동으로 찾아 줘요. W는 앞으로 찔러 주는 스루패스, A는 크로스, <b>D는 슛</b>이에요. 좌우 방향을 누른 채 슛하면 방향을 조절할 수 있어요.<br><br><b>③ 공이 없을 때 태클</b><br>상대 공 보유자에게 가까이 가세요. 상대 둘레 표시가 <b style="color:#4ade80">초록색</b>이 되고 내 선수 위에 <b>“지금! D 태클”</b>이 뜰 때 D를 누르면 성공률이 아주 높아요. 노란색이면 조금 더 가까이 가면 돼요.<br><br><b>반칙은?</b><br>좋은 거리에서도 태클이 빗나가면 가끔 반칙이 될 수 있고, 그때는 심판 휘슬이 들려요.</div><p class="muted">직접 조종이 어렵다면 언제든 👀 관전으로 바꾸면 나머지는 AI가 계속 경기합니다.</p>';
   modal.classList.remove('hidden');
 }
 function updateDirectControlUI(){
@@ -913,7 +939,7 @@ function showMatchResult(m,f,isHome){
   modal.classList.remove('hidden');$('resultAnalysis').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;openReplay(0);};$('resultHome').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');};$('resultTrain').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');trainingModal();};if($('resultHistory'))$('resultHistory').onclick=function(){historyCardModal(star.id);};
 }
 function help(){
-  modalBody.innerHTML='<h2>풋살 히스토리그 하는 법</h2><div class="fact-box"><b>1. 그냥 지켜봐도 돼요</b><br>경기는 관전 모드로 시작합니다. 선수들이 각자 성향대로 알아서 뛰고, 감독은 전술과 교체만 바꿔도 돼요.<br><br><b>2. 내가 뛰고 싶으면 직접 조종 ON</b><br>경기 위의 <b>🎮 직접 조종 켜기</b>를 누르면 한 선수를 잡아요. 방향키 이동, Shift 질주, Q 선수 전환, S 패스, W 스루, A 크로스, D 슛/태클이에요. 직접 조종 중에는 어려워지지 않도록 경기 속도가 1×로 고정돼요.<br><br><b>3. 태클은 초록 표시에서</b><br>공이 없을 때 상대 공 보유자에게 가까이 가세요. 노란 표시가 보이면 조금 더 접근하고, <b style="color:#4ade80">초록 표시 + “지금! D 태클”</b>이 뜨면 D를 누르세요. 너무 멀리서 누르면 태클을 낭비하지 않고 “더 가까이”라고 알려 줍니다.<br><br><b>4. 경기장 소리를 들어요</b><br>패스·슛·태클 소리, 반칙 휘슬, 관중 웅성거림과 골 장면의 함성, 동료의 “여기!”·“패스!” 호출이 경기 상황에 맞춰 나와요.<br><br><b>5. 역사 기억</b><br>한 경기에서 10명만 뛰기 때문에 이름과 활약을 반복해서 보고, 경기 후 역사 카드로 실제 내용을 다시 연결합니다.</div><p class="muted">모든 풋살 역할과 능력치는 역사적 인물의 우열을 뜻하지 않는 가상의 게임 설정입니다.</p>';
+  modalBody.innerHTML='<h2>풋살 히스토리그 하는 법</h2><div class="fact-box"><b>1. 그냥 지켜봐도 돼요</b><br>경기는 관전 모드로 시작합니다. 선수들이 각자 성향대로 알아서 뛰고, 감독은 전술과 교체만 바꿔도 돼요.<br><br><b>2. 내가 뛰고 싶으면 직접 조종 ON</b><br>경기 위의 <b>🎮 직접 조종 켜기</b>를 누르면 한 선수를 잡아요. 방향키 이동, Shift 질주, Q 선수 전환, S 패스, W 스루, A 크로스, D 슛/태클이에요. 슛을 누를 때 좌우 방향을 함께 누르면 조준할 수 있어요. 직접 조종 중에는 어려워지지 않도록 경기 속도가 1×로 고정돼요.<br><br><b>3. 태클은 초록 표시에서</b><br>공이 없을 때 상대 공 보유자에게 가까이 가세요. 노란 표시가 보이면 조금 더 접근하고, <b style="color:#4ade80">초록 표시 + “지금! D 태클”</b>이 뜨면 D를 누르세요. 너무 멀리서 누르면 태클을 낭비하지 않고 “더 가까이”라고 알려 줍니다.<br><br><b>4. 경기장 소리를 들어요</b><br>패스·슛·태클 소리, 반칙 휘슬, 관중 웅성거림과 골 장면의 함성, 동료의 “여기!”·“패스!” 호출이 경기 상황에 맞춰 나와요.<br><br><b>5. 역사 기억</b><br>한 경기에서 10명만 뛰기 때문에 이름과 활약을 반복해서 보고, 경기 후 역사 카드로 실제 내용을 다시 연결합니다.</div><p class="muted">모든 풋살 역할과 능력치는 역사적 인물의 우열을 뜻하지 않는 가상의 게임 설정입니다.</p>';
   modal.classList.remove('hidden');
 }
 
