@@ -11,6 +11,7 @@
 <body>
 <canvas id="world" aria-label="1인칭 옥수수밭 탈출 3D 게임"></canvas>
 <div id="hud">
+ <div id="dangerGlow" aria-hidden="true"></div>
  <div class="top"><div class="stat"><strong>옥수수밭 탈출</strong><small id="time">00:00</small></div><div class="compass"><span id="heading">북 N</span></div><div class="stat right"><strong id="chaseStatus">길을 찾아보세요</strong><small id="caughtCount">붙잡힘 0회</small></div></div>
  <div id="crosshair" aria-hidden="true">·</div>
  <div id="notice" role="status" aria-live="polite">지도판을 찾아 현재 위치를 추리하세요.</div>
@@ -19,15 +20,31 @@
 </div>
 <div id="touchControls">
  <div id="joystick" aria-label="이동 조이스틱"><div id="thumb"></div></div>
- <div class="touchActions"><button id="run" type="button">빠르게</button><button id="touchInteract" type="button">지도/탈출</button></div>
+ <div class="touchActions"><button id="run" type="button">빠르게</button><button id="touchInteract" type="button" hidden>지도 보기</button></div>
 </div>
 <div id="mapOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="mapTitle">
  <div class="mapPanel">
   <div class="mapHeader"><div><small>옥수수밭 안내도</small><h2 id="mapTitle">나는 지금 어디에 있을까?</h2></div><button id="closeMap" type="button">지도 닫기</button></div>
-  <p>나의 위치는 자동으로 표시되지 않아요. 북쪽과 갈림길, 지형지물을 살펴보고 <b>예상 위치를 지도에 찍어 보세요.</b></p>
-  <div class="mapSurface"><canvas id="mapCanvas" width="660" height="660" aria-label="미로 지도: 클릭하여 내 예상 위치 표시"></canvas></div>
-  <div class="mapLegend">● 붉은 점: 내 예상 위치　◆ 지형지물　□ 지도판　★ 출구</div>
-  <p class="mapWarning">지도 보는 동안에도 괴물은 움직입니다!</p>
+  <div class="mapLayout">
+   <div class="mapSurface">
+    <div id="mapViewport" tabindex="0" role="group" aria-label="미로 지도. 손가락으로 이동하거나 확대 버튼을 사용하고, 탭하여 예상 위치 표시">
+     <canvas id="mapCanvas" width="660" height="660" aria-label="미로 전체 지도와 예상 위치"></canvas>
+    </div>
+    <div class="mapTools" aria-label="지도 확대 및 축소">
+     <button id="mapZoomOut" type="button" aria-label="지도 축소">−</button>
+     <button id="mapReset" type="button">전체 보기</button>
+     <button id="mapZoomIn" type="button" aria-label="지도 확대">＋</button>
+     <span id="mapZoomValue" aria-live="polite">100%</span>
+    </div>
+   </div>
+   <div class="mapSidebar">
+    <p>현재 위치는 표시되지 않아요. <b>북쪽·길의 모양·주변 지형지물</b>을 비교하고 예상 위치를 지도에 찍어 보세요.</p>
+    <p class="mapInstructions">두 손가락으로 확대하거나 지도를 드래그해 이동할 수 있어요. 확대할 때는 한 번 탭해 위치를 표시해요.</p>
+    <div class="mapLegend">● 붉은 점: 내 예상 위치<br>◆ 지형지물　□ 지도판　★ 출구</div>
+    <p id="mapGuessReadout" class="mapGuessReadout" role="status">지도의 한 칸을 눌러 위치를 추측하세요.</p>
+    <p class="mapWarning">추격 모드에서는 지도를 보는 중에도 괴물이 움직입니다.</p>
+   </div>
+  </div>
  </div>
 </div>
 <div id="startOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="startTitle">
