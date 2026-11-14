@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 const M=window.CornMaze,$=id=>document.getElementById(id);
-const ui={canvas:$('world'),time:$('time'),heading:$('heading'),status:$('chaseStatus'),caught:$('caughtCount'),notice:$('notice'),interact:$('interact'),touchInteract:$('touchInteract'),map:$('mapOverlay'),mapCanvas:$('mapCanvas'),intro:$('startOverlay'),end:$('endOverlay'),summary:$('endSummary'),seed:$('seed'),stick:$('joystick'),thumb:$('thumb'),run:$('run')};
+const ui={hud:$('hud'),mapViewport:$('mapViewport'),mapZoomIn:$('mapZoomIn'),mapZoomOut:$('mapZoomOut'),mapReset:$('mapReset'),mapZoomValue:$('mapZoomValue'),mapGuessReadout:$('mapGuessReadout'),canvas:$('world'),time:$('time'),heading:$('heading'),status:$('chaseStatus'),caught:$('caughtCount'),notice:$('notice'),interact:$('interact'),touchInteract:$('touchInteract'),map:$('mapOverlay'),mapCanvas:$('mapCanvas'),intro:$('startOverlay'),end:$('endOverlay'),summary:$('endSummary'),seed:$('seed'),stick:$('joystick'),thumb:$('thumb'),run:$('run')};
 const renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.45));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,matchMedia('(pointer:coarse)').matches?1.2:1.45));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.13;
@@ -16,6 +16,8 @@ const world=new THREE.Group();scene.add(world);
 const hunterGroup=new THREE.Group();scene.add(hunterGroup);hunterGroup.visible=false;
 const state={running:false,won:false,maze:null,hunter:null,mode:'normal',player:{x:0,z:0},yaw:0,pitch:0,elapsed:0,keys:new Set(),joy:{x:0,y:0},runningTouch:false,stationsVisited:new Set(),checkpoint:0,mapOpen:false,guess:-1,interactType:null,interactCell:-1,noticeUntil:0,noticeText:'',generation:0,monsterMixer:null};
 const NAMES=['북','동','남','서'];
+const LANDMARK_OFFSET=1.15;
+const mapView={zoom:1,x:0,y:0,pointers:new Map(),pinchDistance:0,pinchZoom:1,gesture:false};
 function randomFor(seed){let x=seed>>>0;return()=>{x=(Math.imul(x,1664525)+1013904223)>>>0;return x/4294967296;};}
 const cornFallback=()=>{
  const stalk=new THREE.Group(),mat=new THREE.MeshLambertMaterial({color:0x5b7e33,side:THREE.DoubleSide});
@@ -35,7 +37,7 @@ function standAt(cell,label,color=0x876d46){
  world.add(g);return g;
 }
 function buildLandmark(info){
- const p=M.center(state.maze,info.cell),g=new THREE.Group();g.position.set(p.x+1.25,0,p.z+1.05);
+ const p=M.center(state.maze,info.cell),g=new THREE.Group();g.position.set(p.x+LANDMARK_OFFSET,0,p.z+LANDMARK_OFFSET);g.scale.setScalar(info.type===2?.72:.83);
  const wood=new THREE.MeshLambertMaterial({color:0x8f6a3d}),stone=new THREE.MeshLambertMaterial({color:0xabb0a0}),roof=new THREE.MeshLambertMaterial({color:0x76513b}),blue=new THREE.MeshLambertMaterial({color:0x6f8b8a});
  if(info.type===0){g.add(mesh(wood,new THREE.CylinderGeometry(.55,.9,5.2,6),0,2.6,0));const blades=new THREE.Group();blades.position.set(0,4.8,.84);for(let i=0;i<4;i++){const b=mesh(new THREE.MeshLambertMaterial({color:0xe8d2a1}),new THREE.BoxGeometry(.38,2.0,.13),0,1,0);b.rotation.z=i*Math.PI/2;blades.add(b);}g.add(blades);}
  if(info.type===1){g.add(mesh(stone,new THREE.CylinderGeometry(.9,.9,.8,12),0,.5,0));g.add(mesh(blue,new THREE.CylinderGeometry(.67,.67,.1,12),0,.95,0));g.add(mesh(wood,new THREE.BoxGeometry(.13,2.2,.13),-1.05,1.3,0));g.add(mesh(wood,new THREE.BoxGeometry(.13,2.2,.13),1.05,1.3,0));g.add(mesh(roof,new THREE.BoxGeometry(2.5,.18,1.7),0,2.5,0));}
@@ -43,6 +45,20 @@ function buildLandmark(info){
  if(info.type===3){g.add(mesh(stone,new THREE.CylinderGeometry(.17,.24,3.8,8),0,1.9,0));g.add(mesh(blue,new THREE.CylinderGeometry(1.1,1.1,1.6,10),0,4.0,0));}
  g.add(banner(info.name,1.5,.52));g.children[g.children.length-1].position.set(0,3.1,1.0);
  world.add(g);
+}
+function canWalk(x,z,radius=.48){
+ if(!M.canStand(state.maze,x,z,radius))return false;
+ // The buildings and map posts must not be walk-through decorations.
+ for(const info of state.maze.landmarks){
+  const p=M.center(state.maze,info.cell),dx=x-p.x-LANDMARK_OFFSET,dz=z-p.z-LANDMARK_OFFSET;
+  const obstacle=[.78,.92,1.02,.40][info.type]+radius;
+  if(dx*dx+dz*dz<obstacle*obstacle)return false;
+ }
+ for(const cell of state.maze.stations){
+  const p=M.center(state.maze,cell),dx=x-p.x-1.35,dz=z-p.z-1.35;
+  if(dx*dx+dz*dz<(radius+.24)**2)return false;
+ }
+ return true;
 }
 function addGround(){
  const m=state.maze,side=m.size*m.cell;
@@ -121,7 +137,7 @@ function notify(message,seconds=3){state.noticeText=message;state.noticeUntil=st
 function begin(){
  const raw=Number(ui.seed.value),seed=Number.isFinite(raw)&&raw>0?Math.min(999999999,Math.floor(raw)):20261110;
  state.mode=document.querySelector('.mode.selected')?.dataset.mode||'normal';
- state.generation++;state.maze=M.generate(seed);state.hunter=M.createHunter(state.maze,state.mode);
+ state.generation++;resetMapView();state.maze=M.generate(seed);state.hunter=M.createHunter(state.maze,state.mode);
  state.player=M.center(state.maze,0);state.stationsVisited.clear();state.checkpoint=0;state.elapsed=0;state.guess=-1;state.won=false;state.mapOpen=false;state.keys.clear();state.running=true;state.monsterMixer=null;
  const next=M.adjacent(state.maze,0)[0],q=M.center(state.maze,next);state.yaw=Math.atan2(-(q.x-state.player.x),-(q.z-state.player.z));state.pitch=0;
  construct();ui.intro.classList.add('hidden');ui.end.classList.add('hidden');ui.map.classList.add('hidden');
@@ -141,7 +157,7 @@ function interact(){
  if(!state.running||state.mapOpen)return;
  const action=nearAction();if(!action)return;
  if(action.type==='exit')return win();
- state.checkpoint=action.cell;state.stationsVisited.add(action.cell);state.mapOpen=true;ui.map.classList.remove('hidden');document.exitPointerLock?.();drawMap();ui.closeMap?.focus?.();
+ state.checkpoint=action.cell;state.stationsVisited.add(action.cell);state.mapOpen=true;ui.map.classList.remove('hidden');document.exitPointerLock?.();drawMap();$('closeMap').focus();
 }
 function closeMap(){state.mapOpen=false;ui.map.classList.add('hidden');notify('갈림길과 주변 건물을 기억하며 이동하세요.',3);}
 function win(){state.running=false;state.won=true;hunterGroup.visible=false;document.exitPointerLock?.();const minutes=Math.floor(state.elapsed/60),seconds=Math.floor(state.elapsed%60);ui.summary.textContent='탈출 시간 '+minutes+'분 '+seconds+'초 · 지도판 '+state.stationsVisited.size+'곳 · 붙잡힘 '+state.hunter.caught+'회 · 미로 번호 '+state.maze.seed;ui.end.classList.remove('hidden');try{window.KidscadeGame?.result?.({scope:'run',status:'completed',outcome:'clear',cleared:true,score:Math.max(1,Math.round(1000-state.elapsed-state.hunter.caught*70)),seconds:Math.round(state.elapsed),seed:state.maze.seed});}catch(_){}}
@@ -168,8 +184,8 @@ function step(dt){
   let forward=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-state.joy.y;
   const len=Math.hypot(side,forward);if(len>1){side/=len;forward/=len;}
   const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight')||state.runningTouch?4.55:3.65),vx=(-Math.sin(state.yaw)*forward+Math.cos(state.yaw)*side)*speed*dt,vz=(-Math.cos(state.yaw)*forward-Math.sin(state.yaw)*side)*speed*dt;
-  if(M.canStand(state.maze,state.player.x+vx,state.player.z,.48))state.player.x+=vx;
-  if(M.canStand(state.maze,state.player.x,state.player.z+vz,.48))state.player.z+=vz;
+  if(canWalk(state.player.x+vx,state.player.z,.48))state.player.x+=vx;
+  if(canWalk(state.player.x,state.player.z+vz,.48))state.player.z+=vz;
  }
  const h=M.stepHunter(state.maze,state.hunter,dt,state.player);
  if(h.caught){state.player=M.center(state.maze,state.checkpoint);state.guess=-1;state.mapOpen=false;ui.map.classList.add('hidden');notify('괴물에게 들켰어요! 마지막으로 발견한 지도판으로 돌아왔습니다.',5);}
@@ -180,10 +196,13 @@ function step(dt){
  const status=state.hunter.phase;ui.status.textContent=status==='chase'?'괴물이 따라오고 있어요!':status==='warning'?'옥수수 사이에서 소리가 들립니다…':status==='disabled'?'안전 탐험':'출구를 찾아보세요';
  ui.caught.textContent='붙잡힘 '+state.hunter.caught+'회';
  ui.notice.classList.toggle('alert',status==='chase'||status==='warning');
+ ui.hud.classList.toggle('warning',status==='warning');ui.hud.classList.toggle('chasing',status==='chase');
  if(state.elapsed>state.noticeUntil){ui.notice.textContent=status==='chase'?'괴물은 나보다 조금 느려요. 모퉁이를 활용하세요.':status==='warning'?'주변을 둘러보세요!':'지도판에서 나의 위치를 추측하고 출구를 찾아보세요.';}
  ui.time.textContent=String(Math.floor(state.elapsed/60)).padStart(2,'0')+':'+String(Math.floor(state.elapsed%60)).padStart(2,'0');
  compass();
- const a=state.mapOpen?null:nearAction();ui.interact.hidden=!a;ui.interact.textContent=a?.label||'';state.interactType=a?.type||null;
+ const a=state.mapOpen?null:nearAction();ui.interact.hidden=!a;ui.interact.textContent=a?.label||'';
+ ui.touchInteract.hidden=!a;ui.touchInteract.textContent=a?.type==='exit'?'탈출하기':'지도 보기';state.interactType=a?.type||null;
+ for(const corn of world.children)if(corn.userData.cornfield)for(const chunk of corn.children){const {x,z,radius}=chunk.userData;chunk.visible=Math.hypot(state.player.x-x,state.player.z-z)<scene.fog.far+radius;}
  camera.position.set(state.player.x,1.67,state.player.z);camera.rotation.set(state.pitch,state.yaw,0,'YXZ');
 }
 function resize(){const w=ui.canvas.clientWidth||innerWidth,h=ui.canvas.clientHeight||innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
