@@ -142,6 +142,8 @@ jobs:
           retention-days: 7
       - name: Run all regression tests and audits
         run: npm run test:ci
+      - name: Real Chrome tablet return reminder and TTS-failure audit
+        run: node tests/return-nudge-browser-audit.cjs
       - name: Openmon expedition real-browser mobile and desktop audit
         run: node tests/openmon-expedition-browser-audit.cjs
         env:

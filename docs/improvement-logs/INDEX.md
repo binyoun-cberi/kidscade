@@ -15,3 +15,7 @@
 | `high_bridge_builder` | 다리야 버텨줘! | [high_bridge_builder.md](./high_bridge_builder.md) | PR CI 확인 및 iPad/Android 태블릿 실제 터치·화면 검증 |
 
 작성법: [README](./README.md) · [템플릿](./TEMPLATE.md)
+
+## 게임 공통 기능
+
+- [20분 이내 복귀 시 ▶ 계속하기, 구글 한국어 음성 우선·음성 실패 시 60초 대기](./PLATFORM_RETURN_NUDGE.md) — 로비/iframe 공통, V8 가상 환경 19개 검증 통과 · 갤럭시탭 실기기 검증 대기
