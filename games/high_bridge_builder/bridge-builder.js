@@ -207,7 +207,7 @@ var LEVELS=[
   },
   {
     title:"16. 첫 번째 대교",
-    goal:"다섯 장애물을 모두 피해 마지막 화물차를 건너게 하세요",
+    goal:"다섯 장애물을 피해 화물차를 건너게 하세요",
     tip:"처음부터 끝까지 경로를 보고 큰 지그재그 하나를 그려 보세요.",
     gap:800,vehicle:"truck",leftY:420,rightY:380,waterY:595,par:1.55,
     obstacles:[
@@ -293,7 +293,7 @@ function banks(){
 
 function pointFromEvent(e){
   var r=canvas.getBoundingClientRect();
-  // The CSS canvas is letterbox-fitted, never stretched or object-fit cropped.
+  // The canvas keeps its true aspect ratio; on wide screens its top/bottom may be clipped by the play frame.
   return{
     x:clamp((e.clientX-r.left)*W/Math.max(1,r.width),0,W),
     y:clamp((e.clientY-r.top)*H/Math.max(1,r.height),0,H)
@@ -1092,7 +1092,10 @@ function render(){
 function fitCanvas(){
   var wrap=canvas.parentElement;
   var r=wrap.getBoundingClientRect();
-  var scale=Math.max(.001,Math.min(r.width/W,r.height/H));
+  // Wide landscape tablets get a bigger road. Only sky and deep water at
+  // the top/bottom are clipped; the playable bridge stays in view.
+  var wide=r.width/Math.max(1,r.height)>1.95;
+  var scale=Math.max(.001,Math.min(r.width/W,r.height/(wide?520:H)));
   canvas.style.width=Math.max(1,Math.floor(W*scale))+"px";
   canvas.style.height=Math.max(1,Math.floor(H*scale))+"px";
 }
