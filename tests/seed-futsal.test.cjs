@@ -168,8 +168,8 @@ test('physical match uses seeded decisions and completes reproducibly',()=>{
   assert.equal(a.minute,90);
   assert.deepEqual(Array.from(a.score),Array.from(b.score));
   assert.deepEqual(
-    a.events.map(e=>[e.minute,e.type,e.actorId||null]),
-    b.events.map(e=>[e.minute,e.type,e.actorId||null])
+    Array.from(a.events,e=>[e.minute,e.type,e.actorId||null]),
+    Array.from(b.events,e=>[e.minute,e.type,e.actorId||null])
   );
   const ra=a.exportReplay(),rb=b.exportReplay();
   assert.deepEqual(JSON.parse(JSON.stringify(ra.frames)),JSON.parse(JSON.stringify(rb.frames)));
