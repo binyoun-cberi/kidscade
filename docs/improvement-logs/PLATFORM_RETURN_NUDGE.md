@@ -9,7 +9,7 @@
 
 1. 분석: 일반 웹 페이지는 다른 탭/앱의 주소나 이름을 확인할 수 없음. `visibilitychange`와 페이지 복원을 통해 복귀 시점만 알 수 있으며 백그라운드 음성 재생은 신뢰할 수 없음.
 2. 계획/비평: 타 사이트를 보았다고 단정하거나 감시 로그를 서버로 보내지 않음. 3초 미만의 짧은 이탈은 무시하고 20분 초과도 안내하지 않음. 45초 이내 중복 안내 방지. 음성 차단에 대비해 학생이 누를 수 있는 '다시 듣기' 버튼 제공.
-3. 구현: `return-nudge.js` 공통 브라우저 런타임, `main-bootstrap.js` 로비 주입, `tests/return-nudge.test.cjs` 검증, `scripts/run-ci-tests.cjs` 회귀 목록 등록. 같은 탭에서 이전 페이지로 돌아올 때 `sessionStorage`는 해당 탭 안에서만 사용하며 안내 내용을 외부로 전송하지 않음.
+3. 구현: `app/platform/return-nudge.js` 공통 브라우저 런타임, `main-bootstrap.js` 로비 주입, `tests/return-nudge.test.cjs` 검증, `scripts/run-ci-tests.cjs` 회귀 목록 등록. 같은 탭에서 이전 페이지로 돌아올 때 `sessionStorage`는 해당 탭 안에서만 사용하며 안내 내용을 외부로 전송하지 않음.
 
 ## 검증 실적
 
@@ -35,13 +35,13 @@
 - 사용자 피드백: '다시 듣기' 버튼은 부자연스러우므로, 복귀할 때 학생이 '▶ 게임 계속하기'를 눌러야 하며 바로 그 터치에 음성을 연결해 재생 제한을 완화하고 싶음.
 - 분석: Chrome autoplay 정책상 클릭/터치는 오디오 사용을 허용하는 상호작용이다. 그러나 영구 권한을 자동 부여하는 것은 아님. 삼성 인터넷 실기기 검증 필요.
 - 비평: 자동 음성 시도는 실패할 수 있고, 기존 12초 후 사라지는 토스트는 필수 재진입 UX와 충돌. 게임 내부 시뮬레이션 타이머까지 중단한다고 약속할 수 없음.
-- 1회 수정: `return-nudge.js` 토스트와 '다시 듣기/닫기' 버튼, 자동 음성/자동 닫기 제거. 화면 전체를 덮는 대화상자와 '▶ 게임 계속하기' 버튼 하나로 변경. 버튼 클릭 핸들러 **내부에서 동기적으로** 한국어 TTS를 호출하고 대화상자를 해제. 음성 지원이 없어도 진행 가능.
+- 1회 수정: `app/platform/return-nudge.js` 토스트와 '다시 듣기/닫기' 버튼, 자동 음성/자동 닫기 제거. 화면 전체를 덮는 대화상자와 '▶ 게임 계속하기' 버튼 하나로 변경. 버튼 클릭 핸들러 **내부에서 동기적으로** 한국어 TTS를 호출하고 대화상자를 해제. 음성 지원이 없어도 진행 가능.
 - 검증: `node --check /mnt/data/kc-return-nudge/return-nudge.js`, `node --check /mnt/data/kc-return-nudge/tests/return-nudge.test.cjs` **성공**.
 - 검증: `node --test /mnt/data/kc-return-nudge/tests/return-nudge.test.cjs` **8개 통과/0개 실패**. 복귀 시 자동 음성 재생 금지, 클릭 시 재생과 가림막 해제, 시간 범위, 쿨다운, 중복 이벤트, 히스토리 복원, 음성 API 없음, 게임 iframe 제외.
-- 파일 동일성: `git hash-object` 결과 `return-nudge.js` = `f367e4b6948c680f5b1fd839db437d8f1da4c912`, `tests/return-nudge.test.cjs` = `d956432142d4746676538d9f40af26c0f9a52888`; GitHub 브랜치 blob SHA와 일치.
+- 파일 동일성: `git hash-object` 결과 `app/platform/return-nudge.js` = `f367e4b6948c680f5b1fd839db437d8f1da4c912`, `tests/return-nudge.test.cjs` = `d956432142d4746676538d9f40af26c0f9a52888`; GitHub 브랜치 blob SHA와 일치.
 - 미검증: 갤럭시탭 Chrome/삼성 인터넷에서 실제 음성 출력·전체화면 z-index·장시간 복귀, 전체 저장소 `npm run build`, `npm run test:ci`, `npm run health:strict`.
 - 한계: 가림막은 클릭·터치 입력을 막지만 개별 게임의 내부 시계나 애니메이션을 일괄 일시정지하지 않음. 음성 출력은 기기 음량/브라우저 정책을 따르며 영구적인 권한을 보장하지 않음.
-- 코드 변경: `return-nudge.js`, `tests/return-nudge.test.cjs`; 기존 `main-bootstrap.js` 연결 및 기존 CI 목록 유지.
+- 코드 변경: `app/platform/return-nudge.js`, `tests/return-nudge.test.cjs`; 기존 `main-bootstrap.js` 연결 및 기존 CI 목록 유지.
 - PR: https://github.com/binyoun-cberi/kidscade/pull/763 (기존 PR 브랜치에 추가 커밋, 병합 미실시).
 - 배포 / 원격 DB / 학생 기록 / 비밀정보 / 유료 API: 수정·접근하지 않음.
 - 다음 시작점: Chrome과 삼성 인터넷 실기기에서 터치에 따른 음성 출력·모달 위계·타이머가 있는 게임의 복귀 UX 점검. 필요 시 게임별 일시정지 지원 범위를 정의.
@@ -61,3 +61,13 @@
 - 남은 위험: 음성에 성공했다는 이벤트만으로 실제 소리가 난다고 확정할 수 없음; 브라우저 별 여성 음성 목록이 다름; 게임 타이머는 SDK의 pause 핸들러가 있는 게임만 지원함; fullscreen UI 및 모바일 터치는 물리 기기 검증 필요.
 - 진행 및 정책: https://github.com/binyoun-cberi/kidscade/pull/763 에 반영. **main 병합 안 함**, 실제 Cloudflare 배포·원격 D1·유료 API·키·학생 기록 변경 없음.
 - 다음 시작점: 갤럭시탭 Chrome/삼성 인터넷에서 \`getVoices()\` 목록과 실제 들리는 목소리, 미디어 볼륨 0 상황, 60초 대기 종료, fullscreen 모달, 게임 카운트다운 동작 확인.
+
+
+## CI architecture-ratchet failure and correction (2026-11-14)
+
+- Actual CI: GitHub Actions workflow \`Kidscade architecture checks\`, run \`43573810966\`, job \`node-tests\`. \`Check main runtime JavaScript syntax\` and tracked-secret audit passed. \`npm run architecture:ratchet\` **failed** because \`rootRuntimeJs: 70 / max 69\`. Therefore build and full regression were **skipped** in that run; this is not a test-suite logic failure.
+- Root cause: new \`return-nudge.js\` was placed at repository root, exceeding the repository's ratchet limit by one. Moving the file is preferable to weakening its threshold.
+- Correction: moved unchanged runtime to \`app/platform/return-nudge.js\` via GitHub branch and removed root-level file; adjusted \`main-bootstrap.js\` runtime reference and \`tests/return-nudge.test.cjs\` relative import path. \`config/architecture-ratchet.json\` thresholds not modified.
+- Targeted verification: re-fetched updated platform source and test file from PR, ran 19 cases in the V8 Node-test shim again, **19 passed, 0 failed**.
+- Remaining validation: the new PR workflow run on head commit \`5a0427907fe769dc54bc08f525d2b30eb2ec0ca9\` was in progress when checked. Do not mark fixed CI as successful until its actual conclusion is confirmed.
+- Browser playthrough / physical Android Samsung Internet / audio heard / media volume detection: **not verified**.
