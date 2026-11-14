@@ -42,7 +42,7 @@
  .mapPanel{width:min(920px,calc(100vw - 12px));max-height:calc(100dvh - 10px);padding:9px 13px;overflow:auto}
  .mapHeader h2{font-size:clamp(16px,2.2vw,23px)}
  .mapLayout{grid-template-columns:minmax(0,1.3fr) minmax(180px,.8fr);gap:10px;margin-top:5px}
- #mapViewport{width:min(100%,calc(100dvh - 130px),460px)}
+ #mapViewport{width:min(100%,calc(100dvh - 165px),460px)}
  .mapTools{gap:5px}
  .mapTools button{min-height:34px;padding:3px 10px}
  .mapSidebar p{font-size:11px;margin:4px 0;line-height:1.45}
