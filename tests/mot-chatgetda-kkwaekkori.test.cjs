@@ -183,7 +183,7 @@ test('3D picking, honest prop fallbacks and rotated-camera ground dragging are p
   assert.match(code,/challengeLevel\+1/);
   assert.match(code,/finishChallenge\(/);
   assert.match(html,/20초 연속 찾기 도전/);
-  assert.match(code,/sim\.mjs\?v=13/);
+  assert.match(code,/sim\.mjs\?v=14/);
   assert.match(code,/pinchCenter/);
   assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
 });
@@ -698,8 +698,8 @@ test('tablet render path respects saved clues and reduces large-world framebuffe
   for(const token of ['tabletGraphicsBudget()','applyGraphicsBudget()',
     'previewFrameAt','1000/24','group.userData.vehicle','shape.x>shape.z*1.08'])
     assert.ok(code.includes(token),'tablet/vehicle renderer hook: '+token);
-  assert.match(code,/sim\.mjs\?v=13/);
-  assert.match(html,/game\.js\?v=13/);
+  assert.match(code,/sim\.mjs\?v=14/);
+  assert.match(html,/game\.js\?v=14/);
 });
 
 test('living districts schedule distinct 3D stories without consuming puzzle randomness',async()=>{
