@@ -257,7 +257,7 @@ function render(view){
 }
 function enter(resume){normalize();showScreen('gameScreen');updateTop();render('home');sdkStart({mode:'history-football-manager',season:state.season,resume:!!resume});}
 function clubTierName(tier){
-  return ['','입문','쉬움','보통','어려움','매우 어려움'][tier]||'보통';
+  return ['','성장형','도전팀','중위권','강팀','우승 후보'][tier]||'중위권';
 }
 function clubPower(roster,lineup,formation,tactics){
   var selected=S.assignSlots(roster,lineup,formation,D.formations);
@@ -289,7 +289,7 @@ function showClubs(){
   var prior=document.querySelector('.club-balance-note');if(prior)prior.remove();
   var note=document.createElement('p');
   note.className='club-balance-note muted';
-  note.textContent='축구 능력과 구단 전력은 게임을 위해 설정한 가상의 수치입니다. 역사 인물이나 시대의 우열을 뜻하지 않아요.';
+  note.textContent='전력이 높은 팀을 맡으면 승리하기 수월하고, 낮은 팀을 맡으면 도전이 커져요. 모든 축구 능력과 구단 등급은 게임용 가상 설정이며 역사 인물·시대의 우열이 아닙니다.';
   grid.after(note);
 }
 function nextHistoryPlayer(){
