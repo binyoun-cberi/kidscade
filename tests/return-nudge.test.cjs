@@ -356,3 +356,16 @@ test('a failed native dialog degrades to a visible div and stays tappable', () =
   h.button().handlers.click();
   assert.equal(h.overlay(),undefined);
 });
+
+test('Cloudflare main push deploy does not auto-run remote D1 migrations', () => {
+  const yaml=fs.readFileSync(path.join(__dirname,'..','.github','workflows','deploy-cloudflare.yml'),'utf8');
+  assert.match(yaml,/workflow_dispatch:\s*\n\s*inputs:\s*\n\s*apply_d1_migrations:/);
+  assert.match(yaml,/default: false/);
+  for(const command of ['npx wrangler d1 list','npx wrangler d1 migrations apply kidscade-stats --remote']){
+    const index=yaml.indexOf('run: '+command);
+    assert.ok(index>0);
+    const preceding=yaml.slice(Math.max(0,index-230),index);
+    assert.match(preceding,/if: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.apply_d1_migrations == true \}\}/);
+  }
+  assert.match(yaml,/run: npx wrangler deploy/);
+});
