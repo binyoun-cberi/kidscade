@@ -405,3 +405,90 @@ test('offscreen manager scoring tracks the physical five-a-side league scale',()
   assert.ok(ratio>.63&&ratio<1.5,
     'offscreen scoring diverged: '+managerGoals+' vs '+physicalGoals+' ('+ratio.toFixed(2)+')');
 });
+
+
+test('eight clubs have distinct fictional tiers, real skills, strengths and weak spots',()=>{
+  const context={window:{}};
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(dataPath,'utf8'),context);
+  const clubs=context.window.SeedFCData.clubs;
+  assert.equal(clubs.length,8);
+  const tier=Object.fromEntries(clubs.map(c=>[c.id,c.tier]));
+  assert.deepEqual(Object.keys(tier).sort(),['baekje','goguryeo','goryeo','hunmin','independence','silhak','silla','turtle'].sort());
+  assert.equal(tier.turtle,5);assert.equal(tier.goguryeo,4);
+  assert.equal(tier.baekje,2);assert.equal(tier.hunmin,1);assert.equal(tier.silhak,1);
+  for(const club of clubs){
+    assert.ok(club.tier>=1&&club.tier<=5);
+    assert.ok(club.identity&&club.strength&&club.weakness);
+    assert.equal(club.players.length,18);
+    assert.ok(club.players.every(p=>p.balanceDelta&&p.overall>=20&&p.overall<=99));
+  }
+  function avg(id,key){
+    const c=clubs.find(x=>x.id===id);
+    return c.players.reduce((v,p)=>v+(key==='overall'?p.overall:p.stats[key]),0)/c.players.length;
+  }
+  assert.ok(avg('turtle','overall')>avg('hunmin','overall')+15);
+  assert.ok(avg('turtle','defense')>avg('silhak','defense')+25);
+  assert.ok(avg('goguryeo','speed')>avg('baekje','speed')+10);
+  assert.ok(avg('baekje','pass')>avg('hunmin','pass'));
+});
+
+test('relative opponent difficulty uses current lineup and responds to training',()=>{
+  const context={window:{}};
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(dataPath,'utf8'),context);
+  vm.runInContext(fs.readFileSync(path.join(gameDir,'sim.js'),'utf8'),context);
+  const D=context.window.SeedFCData,S=context.window.SeedFCSim;
+  const source=fs.readFileSync(gamePath,'utf8');
+  const segment=source.slice(source.indexOf('function clubTierName('),source.indexOf('function showClubs('));
+  assert.ok(segment.startsWith('function clubTierName('));
+  const strong=D.clubs.find(c=>c.id==='turtle'),weak=D.clubs.find(c=>c.id==='hunmin');
+  let state={roster:weak.players,formation:'1-2-1',lineup:weak.players.slice(0,5).map(p=>p.id),tactics:weak.tactics};
+  const make=new Function('D','S','state',segment+';return {clubPower,opponentChallenge};');
+  const methods=make(D,S,state);
+  const preview={roster:strong.players,lineup:strong.players.slice(0,5).map(p=>p.id),formation:'1-2-1',tactics:strong.tactics};
+  const before=methods.opponentChallenge(preview);
+  assert.ok(before.gap>=9&&before.label==='매우 어려움','weaker club needs a hard matchup');
+  state.roster=state.roster.map(p=>{
+    const copy=JSON.parse(JSON.stringify(p));
+    for(const k of Object.keys(copy.stats))copy.stats[k]=Math.min(99,copy.stats[k]+24);
+    return copy;
+  });
+  const after=methods.opponentChallenge(preview);
+  assert.ok(after.gap<before.gap&&after.own>before.own,'lineup progression should change challenge');
+});
+
+test('old v4 careers receive club balance once without erasing prior training',()=>{
+  const context={window:{}};
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(dataPath,'utf8'),context);
+  const D=context.window.SeedFCData,club=D.clubs.find(c=>c.id==='baekje');
+  const priorRoster=JSON.parse(JSON.stringify(club.players));
+  priorRoster.forEach(p=>{
+    for(const k of Object.keys(p.balanceDelta))p.stats[k]-=p.balanceDelta[k];
+  });
+  priorRoster[0].stats.pass+=3; // a past, saved training upgrade
+  const state={version:4,clubId:club.id,roster:priorRoster,lineup:priorRoster.slice(0,5).map(x=>x.id),
+    formation:'1-2-1',tactics:club.tactics,scouting:{},historyProgress:{discovered:{},connected:{},attempts:0,correct:0},
+    schedule:[[]],table:{},matchHistory:[],worldSigned:[],rivalSignings:{},managerNews:[],managerNotes:[],
+    trainingAvailable:false,replays:[],career:{},pyramid:null,otherLeague:null,positionModelVersion:2,matchTutorialDone:true};
+  const script=fs.readFileSync(gamePath,'utf8');
+  const start=script.indexOf('function normalize(){'),end=script.indexOf('\nfunction rows(',start);
+  assert.ok(start>=0&&end>start);
+  let saves=0;
+  const normalize=new Function('state','D','clubById','clone','autoLineup','overall','clamp','save',
+    script.slice(start,end)+';return normalize;')(
+      state,D,id=>D.clubs.find(c=>c.id===id),x=>JSON.parse(JSON.stringify(x)),()=>[],
+      p=>Math.round(Object.values(p.stats).reduce((sum,n)=>sum+n,0)/5),
+      (n,a,b)=>Math.max(a,Math.min(b,n)),()=>{saves++;}
+    );
+  normalize();
+  assert.equal(state.clubBalanceVersion,1);
+  assert.equal(saves,1);
+  const adjusted=club.players[0];
+  assert.equal(state.roster[0].stats.pass,adjusted.stats.pass+3);
+  const before=state.roster[0].stats.pass;
+  normalize();
+  assert.equal(saves,1);
+  assert.equal(state.roster[0].stats.pass,before);
+});
