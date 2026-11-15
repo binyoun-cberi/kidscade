@@ -8,6 +8,10 @@ on:
       - '.github/workflows/bridge-builder-browser-audit.yml'
   workflow_dispatch:
 
+concurrency:
+  group: bridge-builder-browser-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -20,6 +24,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install Korean game UI fonts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends fonts-noto-cjk
+          fc-cache -f
       - name: Check Chromium is available
         run: command -v google-chrome || command -v chromium || command -v chromium-browser
       - name: Play Bridge Builder in real Chrome with mouse and tablet touch
