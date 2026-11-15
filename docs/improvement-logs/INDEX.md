@@ -13,7 +13,7 @@
 | `squid_survival` | 꼴뚜기 게임 | [squid_survival.md](./squid_survival.md) | PR CI 확인, 6관문 모바일 플레이 검증 |
 | `high_corn_maze` | 옥수수밭 탈출 | [high_corn_maze.md](./high_corn_maze.md) | 품질 생성기 PR 검증 · 실제 학생 플레이 및 저사양 모바일 FPS 측정 |
 
-| `high_bridge_builder` | 다리야 버텨줘! | [high_bridge_builder.md](./high_bridge_builder.md) | Chromium 실제 플레이 QA 결과 확인 후 실기기 터치·화면 검증 |
+| `high_bridge_builder` | 다리야 버텨줘! | [high_bridge_builder.md](./high_bridge_builder.md) | Chromium 실제 플레이 8개 대표 레벨 통과·점 찍기 버그 수정; 갤럭시탭/iPad 실기기 검증 |
 
 | `probability_dice_survival` | 운명의 주사위 | [probability_dice_survival.md](./probability_dice_survival.md) | CI 브라우저 검사 및 Chromium 프로필 정리 재검증 |
 
