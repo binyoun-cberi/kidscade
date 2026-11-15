@@ -30,6 +30,10 @@ function harness({
       setAttribute(name, value) { this.attrs[name] = value; },
       addEventListener(name, callback) { this.handlers[name] = callback; },
       append(...children) { this.children.push(...children); },
+      insertBefore(node, next) {
+        const index=this.children.indexOf(next);
+        if(index<0)this.children.push(node);else this.children.splice(index,0,node);
+      },
       remove() { this.removed = true; },
       focus() { this.focused = true; }
     };
@@ -119,7 +123,10 @@ function harness({
     pageshow(){events.get('window:pageshow')?.();},
     overlay:active,
     panel(){return active()?.children?.[0];},
-    button(){return this.panel()?.children?.[2];}
+    button(){return this.panel()?.children?.find(node=>node.tag==='button');},
+    heading(){return this.panel()?.children?.find(node=>node.tag==='h2');},
+    meter(){return this.panel()?.children?.flatMap(node=>node.children||[]).find(node=>node.attrs?.role==='progressbar');},
+    progressValue(){const meter=this.meter();return meter?.attrs?.['aria-valuenow'];}
   };
 }
 
@@ -185,7 +192,9 @@ test('no speech API enters exactly 60-second recovery without trapping permanent
   const h=harness({speech:false});
   h.hide();h.advance(4000);h.show();
   h.button().handlers.click();
-  assert.match(h.panel().children[0].textContent,/음성을 재생하지 못했어요/);
+  assert.equal(h.heading().textContent,'다시 돌아와줘서 고마워!');
+  assert.equal(h.progressValue(),'0');
+  assert.equal(h.meter().children[0].style.width,'0%');
   assert.equal(h.button().disabled,true);
   assert.match(h.button().textContent,/60초/);
   h.advance(59999);
@@ -193,6 +202,41 @@ test('no speech API enters exactly 60-second recovery without trapping permanent
   h.advance(1);
   assert.equal(h.overlay(),undefined);
   assert.equal(h.timers.size,0);
+});
+
+test('Kidscade loading displays brand, exact thanks heading, percent text and bar from 0 to 100', () => {
+  const h=harness({speech:false});
+  h.hide();h.advance(4000);h.show();h.button().handlers.click();
+  const panel=h.panel();
+  assert.equal(h.heading().textContent,'다시 돌아와줘서 고마워!');
+  assert.ok(panel.children[0].textContent.includes('KIDSCADE'));
+  assert.equal(h.progressValue(),'0');
+  assert.equal(h.meter().children[0].style.width,'0%');
+  const progressSection=panel.children.find(n=>n.children.some(c=>c.tag==='div' && c.attrs.role==='progressbar'));
+  const percent=progressSection.children[0].children[1];
+  assert.equal(percent.textContent,'0%');
+  h.advance(15000);
+  assert.equal(h.progressValue(),'25');
+  assert.equal(h.meter().children[0].style.width,'25%');
+  assert.equal(percent.textContent,'25%');
+  h.advance(15000);
+  assert.equal(h.progressValue(),'50');
+  assert.equal(percent.textContent,'50%');
+  h.advance(29000);
+  assert.equal(h.progressValue(),'98');
+  h.advance(1000);
+  assert.equal(h.overlay(),undefined);
+  assert.equal(h.timers.size,0);
+});
+
+test('countdown stays bounded after voice error, shows percent instead of fabricated network loading', () => {
+  const h=harness({speechBehavior:'error'});
+  h.hide();h.advance(4000);h.show();h.button().handlers.click();
+  assert.equal(h.heading().textContent,'다시 돌아와줘서 고마워!');
+  assert.match(h.panel().children.find(n=>n.tag==='p').textContent,/음성 안내를 시작하지 못했어요/);
+  assert.equal(h.progressValue(),'0');
+  h.advance(60000);
+  assert.equal(h.overlay(),undefined);
 });
 
 test('speech engine error triggers the same bounded recovery', () => {
@@ -209,7 +253,7 @@ test('speech engine with no events or speaking state triggers watchdog, then 60-
   h.advance(6999);
   assert.equal(h.panel().children[0].textContent,'다시 돌아왔네!');
   h.advance(1);
-  assert.match(h.panel().children[0].textContent,/음성을/);
+  assert.equal(h.heading().textContent,'다시 돌아와줘서 고마워!');
   h.advance(60000);
   assert.equal(h.overlay(),undefined);
 });
