@@ -138,7 +138,7 @@ function autoLineup(roster,formation){
 }
 function newState(clubId){
   var c=clubById(clubId),roster=clone(c.players);
-  return {version:4,clubId:clubId,season:1,round:0,budget:c.budget,formation:'1-2-1',tactics:Object.assign({line:'standard',tempo:'normal',width:'normal'},clone(c.tactics)),roster:roster,lineup:autoLineup(roster,'1-2-1'),schedule:schedule(),table:tableBlank(),matchHistory:[],trainingAvailable:false,worldSigned:[],rivalSignings:{},managerNews:[],managerNotes:[],lastResult:null,replays:[],career:{},scouting:{},historyProgress:{discovered:{},connected:{},attempts:0,correct:0},matchTutorialDone:false,positionModelVersion:1,pyramid:null,otherLeague:null};
+  return {version:4,clubId:clubId,season:1,round:0,budget:c.budget,formation:'1-2-1',tactics:Object.assign({line:'standard',tempo:'normal',width:'normal'},clone(c.tactics)),roster:roster,lineup:autoLineup(roster,'1-2-1'),schedule:schedule(),table:tableBlank(),matchHistory:[],trainingAvailable:false,worldSigned:[],rivalSignings:{},managerNews:[],managerNotes:[],lastResult:null,replays:[],career:{},scouting:{},historyProgress:{discovered:{},connected:{},attempts:0,correct:0},matchTutorialDone:false,positionModelVersion:1,clubBalanceVersion:1,pyramid:null,otherLeague:null};
 }
 function normalize(){
   var migratingV4=(state.version||0)<4;
@@ -160,6 +160,22 @@ function normalize(){
     var src=sourcePlayers.find(function(x){return x.id===p.id;});
     if(src){['footballRole','footballStyle','footballNote','preferredPositions','history','football'].forEach(function(k){if(p[k]==null&&src[k]!=null)p[k]=clone(src[k]);});}
   });
+  // Existing saves keep every training improvement. Apply only the new
+  // club-base difference once; never modify separately recruited world players.
+  if(state.clubBalanceVersion!==1){
+    var sourceClub=clubById(state.clubId);
+    state.roster.forEach(function(p){
+      var base=sourceClub&&sourceClub.players.find(function(x){return x.id===p.id;});
+      if(!base||!base.balanceDelta||!p.stats)return;
+      ['shot','pass','defense','speed','stamina'].forEach(function(k){
+        if(Number.isFinite(Number(p.stats[k])))
+          p.stats[k]=clamp(Math.round(Number(p.stats[k])+Number(base.balanceDelta[k]||0)),20,99);
+      });
+      p.overall=overall(p);
+    });
+    state.clubBalanceVersion=1;
+    save();
+  }
   state.positionModelVersion=2;state.version=4;
   if(migratingV4||state.lineup.length!==5)state.lineup=autoLineup(state.roster,state.formation);
 }
@@ -240,15 +256,41 @@ function render(view){
   else table();
 }
 function enter(resume){normalize();showScreen('gameScreen');updateTop();render('home');sdkStart({mode:'history-football-manager',season:state.season,resume:!!resume});}
+function clubTierName(tier){
+  return ['','입문','쉬움','보통','어려움','매우 어려움'][tier]||'보통';
+}
+function clubPower(roster,lineup,formation,tactics){
+  var selected=S.assignSlots(roster,lineup,formation,D.formations);
+  if(!selected.length)return 0;
+  var r=S.teamRating(selected,tactics);
+  return Math.round(r.attack*.42+r.mid*.26+r.defense*.32);
+}
+function opponentChallenge(preview){
+  var own=clubPower(state.roster,state.lineup,state.formation,state.tactics);
+  var rival=clubPower(preview.roster,preview.lineup,preview.formation,preview.tactics);
+  var gap=rival-own;
+  return {own:own,rival:rival,gap:gap,
+    label:gap>=9?'매우 어려움':gap>=4?'어려움':gap<=-9?'쉬움':gap<=-4?'유리함':'접전 예상'};
+}
 function showClubs(){
   showScreen('clubSelect');var grid=$('clubGrid');grid.innerHTML='';
   D.clubs.forEach(function(c){
     var names=c.players.slice(0,5).map(function(p){return p.name;}).join(' · ');
     var b=document.createElement('button');b.type='button';b.className='club-card';
-    b.innerHTML='<span class="crest">'+c.emoji+'</span><span class="style-pill">'+esc(c.style)+'</span><h3>'+esc(c.name)+'</h3><p>'+esc(c.description)+'</p><p><b>'+esc(names)+'</b> 등 역사 인물 18명</p><span class="pick">이 팀 맡기</span>';
+    b.innerHTML='<span class="crest">'+c.emoji+'</span><span class="style-pill">'+esc(c.style)+'</span>'+
+      '<span class="club-tier tier-'+c.tier+'">전력 '+c.tier+'/5 · '+clubTierName(c.tier)+'</span>'+
+      '<h3>'+esc(c.name)+'</h3><p>'+esc(c.identity||c.description)+'</p>'+
+      '<div class="club-identity"><small><b>강점</b> '+esc(c.strength||c.style)+'</small>'+
+      '<small><b>약점</b> '+esc(c.weakness||'상황에 따라 달라요')+'</small></div>'+
+      '<p><b>'+esc(names)+'</b> 등 역사 인물 18명</p><span class="pick">이 팀 맡기</span>';
     b.onclick=function(){state=newState(c.id);save();enter(false);toast(c.name+' 감독으로 부임했어요!');};
     grid.appendChild(b);
   });
+  var prior=document.querySelector('.club-balance-note');if(prior)prior.remove();
+  var note=document.createElement('p');
+  note.className='club-balance-note muted';
+  note.textContent='축구 능력과 구단 전력은 게임을 위해 설정한 가상의 수치입니다. 역사 인물이나 시대의 우열을 뜻하지 않아요.';
+  grid.after(note);
 }
 function nextHistoryPlayer(){
   var a=state.lineup.map(playerById).filter(function(p){return p&&p.historical;});
@@ -278,8 +320,11 @@ function home(){
   }
   var f=myFixture(),o=opponent(f),spot=nextHistoryPlayer(),topRows=rs.slice(0,5);
   var tired=state.lineup.map(playerById).filter(function(p){return p&&(p.fitness||100)<70;});
-  var preview=opponentSetup(o),tasks=[];
+  var preview=opponentSetup(o),challenge=opponentChallenge(preview),tasks=[];
   tasks.push(['🏆 리그 목표',leagueGoalText()]);
+  tasks.push(['🎯 상대 난이도',challenge.label+' · 우리 전력 '+challenge.own+' / 상대 전력 '+challenge.rival+
+    ' · 기본 등급 '+o.tier+'/5 ('+clubTierName(o.tier)+')']);
+  tasks.push(['🧩 상대 공략','강점: '+o.strength+' / 약점: '+o.weakness]);
   tasks.push(['🧠 상대 예상',preview.formation+' · '+tacticSummary(preview.tactics)+(preview.development?' · 전력 성장 +'+preview.development:'')]);
   if(preview.signings.length)tasks.push(['🌍 상대 영입 선수',preview.signings.map(function(p){return p.name;}).join(' · ')]);
   if(state.trainingAvailable)tasks.push(['🏋️ 훈련 가능','경기 뒤 훈련을 골라 선수 능력과 체력을 관리해요.']);
@@ -290,7 +335,7 @@ function home(){
     if(cc&&pp)tasks.push(['📢 경쟁 구단 영입',cc.short+'에서 '+pp.name+'을(를) 영입했어요.']);
   });
   root.innerHTML='<div class="dashboard">'+
-    '<section class="panel next-match"><span class="round-pill">'+esc(leagueLabel())+' · 시즌 '+state.season+' · '+(state.round+1)+'라운드</span><div class="versus"><div class="team-block"><span class="big-crest">'+c.emoji+'</span><b>'+esc(c.name)+'</b><small class="muted">'+esc(c.style)+'</small></div><div class="vs">VS</div><div class="team-block"><span class="big-crest">'+o.emoji+'</span><b>'+esc(o.name)+'</b><small class="muted">'+esc(o.style)+'</small></div></div><div class="action-row"><button id="playMatch" class="primary" type="button">경기 시작</button><button id="toTactics" class="secondary" type="button">작전 확인</button>'+(state.replays.length?'<button id="quickAnalysis" class="secondary" type="button">📊 최근 경기</button>':'')+'</div></section>'+
+    '<section class="panel next-match"><span class="round-pill">'+esc(leagueLabel())+' · 시즌 '+state.season+' · '+(state.round+1)+'라운드</span><div class="versus"><div class="team-block"><span class="big-crest">'+c.emoji+'</span><b>'+esc(c.name)+'</b><small class="muted">'+esc(c.style)+'</small></div><div class="vs">VS</div><div class="team-block"><span class="big-crest">'+o.emoji+'</span><b>'+esc(o.name)+'</b><small class="muted">'+esc(o.style)+'</small><span class="match-difficulty">'+esc(challenge.label)+' · 상대 전력 '+challenge.rival+'</span></div></div><div class="action-row"><button id="playMatch" class="primary" type="button">경기 시작</button><button id="toTactics" class="secondary" type="button">작전 확인</button>'+(state.replays.length?'<button id="quickAnalysis" class="secondary" type="button">📊 최근 경기</button>':'')+'</div></section>'+
     '<aside class="panel"><h3>'+esc(leagueLabel())+' · 현재 '+r+'위</h3><div class="stand-mini">'+topRows.map(function(x,i){var cc=clubById(x.clubId);return '<div class="stand-row '+(x.clubId===state.clubId?'me':'')+'"><b>'+(i+1)+'</b><span>'+cc.emoji+' '+esc(cc.short)+'</span><span>'+x.p+'경기</span><b>'+x.pts+'</b></div>';}).join('')+'</div></aside>'+
     '<section class="panel"><h3>이번 주 할 일</h3><div class="task-list">'+tasks.map(function(t,i){return '<div class="task" data-task="'+i+'"><strong>'+t[0]+'</strong><small>'+esc(t[1])+'</small></div>';}).join('')+'</div></section>'+
     '<aside class="panel"><h3>오늘의 역사 선수</h3><div class="player-top"><div><span class="history-tag">'+esc(spot.era)+'</span><h3>'+esc(spot.name)+'</h3></div><span class="pos">'+esc(D.positionKo[spot.pos])+'</span></div><p class="muted">'+esc(spot.fact)+'</p><div class="memory">'+esc(spot.memory)+'</div></aside>'+
