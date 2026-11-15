@@ -142,6 +142,18 @@ jobs:
           retention-days: 7
       - name: Run all regression tests and audits
         run: npm run test:ci
+      - name: Futsal History League Chrome tablet controls audit
+        run: node tests/futsal-history-browser-audit.cjs
+        env:
+          KIDSCADE_FUTSAL_AUDIT_OUT: ${{ runner.temp }}/futsal-history-browser-audit
+      - name: Upload futsal gameplay and tablet screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: futsal-history-browser-audit
+          path: ${{ runner.temp }}/futsal-history-browser-audit/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Openmon expedition real-browser mobile and desktop audit
         run: node tests/openmon-expedition-browser-audit.cjs
         env:
