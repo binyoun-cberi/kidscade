@@ -179,6 +179,7 @@ async function pointRoute(stage,name){
  }
  const state=await evaluate('window.__bridgeAudit.state()');
  assert.equal(state.waypoints,route.length,'lost real touch waypoint at stage '+stage);
+ await screenshot((name||'stage-'+stage)+'-drawn-route');
  await tap('goBtn');
  await until('window.__bridgeAudit.state().mode==="end"','stage '+stage+' finish',160);
  const result=await evaluate('window.__bridgeAudit.state()');
