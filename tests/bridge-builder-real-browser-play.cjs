@@ -205,9 +205,9 @@ async function main(){
  await reportScene('desktop-initial');
  await screenshot('desktop-initial');
  const b=await evaluate('window.__bridgeAudit.bank()');
- const start=[b.leftX+12,b.leftY],finish=[b.rightX-55,b.rightY];
+ const startPoint=[b.leftX+12,b.leftY],finishPoint=[b.rightX-55,b.rightY];
  await stroke(Array.from({length:21},(_,i)=>{
-   const t=i/20;return [start[0]+(finish[0]-start[0])*t,start[1]+(finish[1]-start[1])*t]
+   const t=i/20;return [startPoint[0]+(finishPoint[0]-startPoint[0])*t,startPoint[1]+(finishPoint[1]-startPoint[1])*t]
  }),false);
  await until('window.__bridgeAudit.state().mode==="end"','desktop first crossing',140);
  assert.match(await evaluate('document.getElementById("resultTitle").textContent'),/건넜다/);
@@ -219,7 +219,8 @@ async function main(){
  await stroke(Array.from({length:22},(_,i)=>{
   const t=i/21;return [bank2.leftX+12+(bank2.rightX-bank2.leftX-75)*t,bank2.leftY+(bank2.rightY-bank2.leftY)*t]
  }),false);
- await until('window.__bridgeAudit.state().mode==="build"','rock collision',130);
+ await until('window.__bridgeAudit.state().mode==="run"','collision car started',30);
+ await until('window.__bridgeAudit.state().mode==="build" && document.getElementById("toast").textContent.includes("장애물")','rock collision',130);
  assert.ok((await evaluate('document.getElementById("toast").textContent')).includes('장애물'),'failed crossing must explain collision');
  await screenshot('desktop-stage-2-collision');
  await clickMouse('resetBtn');
