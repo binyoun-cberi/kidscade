@@ -92,3 +92,16 @@
 - 위 **real Chrome 감사**는 `tests/return-nudge-browser-audit.cjs`의 390×844 Chrome 에뮬레이션, 모달 실제 DOM와 CDP 입력, 임의로 제공한 음성 목록 및 가상 시간 기반 60초 대기를 검증한다. 실제 스피커 음향, 삼성 인터넷, 실물 갤럭시탭을 검증한 것은 아님.
 - 컨테이너에서의 브라우저 탐색 `ERR_BLOCKED_BY_ADMINISTRATOR`는 GitHub Actions에서 실제 Chrome 성공으로 보완되었으나 실기기 테스트는 계속 미완료.
 - **배포·병합 상태는 변함없음**: 운영 배포는 워크플로의 원격 D1 마이그레이션 및 main 병합 별도 승인 필요로 미실행.
+
+
+## 2026-11-15 후속 요청: 환영 로딩 화면 + 퍼센트 바, PR 병합 요청
+
+- **요청**: 음성 오류의 60초 대기 화면에 «다시 돌아와줘서 고마워!»를 크게 키즈케이드 스타일로 표시. 0~100% 진행률 바 및 숫자를 함께 표시. 검수 후 PR 병합 승인.
+- 분석: 이전 대기 화면은 «음성을 재생하지 못했어요»만 강조하고, 초 단위 카운트다운만 있어 학생에게 환영받는 느낌을 주지 못함. 실제 데이터 로딩은 없으므로 퍼센트는 **60초 대기 시간 경과율**이어야 함.
+- 변경: \`app/platform/return-nudge.js\`에서 대기 상태에서 라벤더/민트/피치 그러데이션, KIDSCADE 워드마크, 큰 환영 문구, 설명 문구, 색 그라데이션 막대, 퍼센트 숫자, 남은 초를 표시. 진행률을 \`elapsed / 60000\`에서 계산하며 \`role=progressbar\`, \`aria-valuenow\`도 갱신. 음성이 정상 시작하면 이 대기 화면 없이 즉시 복귀하는 기존 동작 유지.
+- 검증 보강: \`tests/return-nudge.test.cjs\`의 로컬 DOM 대체 환경에 \`insertBefore\`와 진행률 접근 추가. 0/25/50/98% 및 60초 종료 테스트 추가. \`tests/return-nudge-browser-audit.cjs\`의 실제 Chrome 감사에 390×844 화면의 환영 문구/바/0%, 가상 30초 후 50%, 60초 자동 복귀 검사 추가.
+- **CI 배포 보안 경계**: 이 저장소의 \`main\` 푸시 Cloudflare 배포 워크플로는 원격 D1 마이그레이션을 자동 실행하므로, 이번 병합 요청이 원격 DB 변경 승인으로 확대되지 않도록 \`.github/workflows/deploy-cloudflare.yml\`에서 D1 조회/마이그레이션을 \`workflow_dispatch\` + \`apply_d1_migrations=true\` 명시 선택 조건으로 제한. 일반 main 코드/정적 파일 배포는 기존 GitHub Actions→Wrangler 경로를 유지. 조건을 확인하는 테스트도 추가.
+- **실제 실행한 검증**: GitHub 연결을 통해 PR 브랜치의 파일을 다시 읽어 V8 함수 실행+Node API 대체 하네스에서 **22/22 통과**, JS 소스/테스트의 문법 파서 검사 통과(브라우저 감사의 shebang은 V8 함수 파서 테스트 시 제거). **이 결과만으로 실제 Node CLI나 실기기 검증 통과로 주장하지 않음**.
+- **다음 검사**: PR 최신 HEAD의 GitHub Actions Node regression 및 실제 Chromium 390×844 감사 결과 확인. 마지막 코드 변경 전의 2933-test 성공 기록을 새 버전의 성공으로 대체하지 말 것.
+- **실물 Android 검증 한계**: Samsung Internet/Chrome 기기의 실제 TTS 음향 및 시스템 무음은 원격 테스트로 확인 불가. 대기 화면은 스피커 무음을 감지한 결과가 아닌 **음성 합성 엔진 오류**로만 진입.
+- **상태**: PR https://github.com/binyoun-cberi/kidscade/pull/763 병합 요청 확인. main 병합/운영 배포 결과는 실제 도구 결과로 별도 기록. 원격 D1 마이그레이션 실행 및 유료 서비스/키·개인정보 접근은 하지 않음.
