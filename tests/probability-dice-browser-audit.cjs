@@ -188,7 +188,33 @@ const errors=[];
 })().catch(e=>{console.error('[dice-browser] FAIL',e.stack||e);process.exitCode=1;})
 .finally(async()=>{
  try{socket?.close();}catch(_){}
- if(child&&!child.killed)child.kill('SIGTERM');
+ // Chrome writes profile files while shutting down. Wait for the child stdio to
+ // close before deleting its profile; a fixed sleep races with that shutdown.
+ if(child&&child.exitCode===null&&child.signalCode===null){
+  await new Promise(resolve=>{
+   let settled=false;
+   let forceTimer,deadlineTimer;
+   const done=()=>{
+    if(settled)return;
+    settled=true;
+    clearTimeout(forceTimer);clearTimeout(deadlineTimer);
+    child.removeListener('close',done);
+    resolve();
+   };
+   child.once('close',done);
+   try{child.kill('SIGTERM');}catch(_){}
+   forceTimer=setTimeout(()=>{
+    if(child.exitCode===null&&child.signalCode===null)try{child.kill('SIGKILL');}catch(_){}
+   },2000);
+   deadlineTimer=setTimeout(done,4000);
+  });
+ }
  await new Promise(resolve=>server.close(resolve));
- if(dir){await sleep(220);try{fs.rmSync(dir,{recursive:true,force:true,maxRetries:6,retryDelay:160});}catch(e){console.warn('[dice-browser] nonfatal Chrome profile cleanup:',e.code);}}
+ if(dir){
+  try{
+   // Async recursive removal retries ENOTEMPTY/EBUSY while lingering Chrome
+   // subprocesses release files. Cleanup must not negate passed gameplay checks.
+   await fs.promises.rm(dir,{recursive:true,force:true,maxRetries:15,retryDelay:200});
+  }catch(e){console.warn('[dice-browser] nonfatal Chrome profile cleanup:',e.code);}
+ }
 });

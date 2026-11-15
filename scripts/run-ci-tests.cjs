@@ -303,10 +303,24 @@ function run(label, command, args) {
   return status === 0;
 }
 
+// The seeded city tests simulate thousands of ticks across up to 84 agents.
+// Running that CPU-heavy file beside three browser/physics test workers can
+// exhaust the 120s worker deadline without a failed gameplay assertion.
+// Preserve every assertion, but give it an isolated worker and explicit budget.
+const HEAVY_CITY_TEST = 'tests/mot-chatgetda-kkwaekkori.test.cjs';
+if (!TEST_FILES.includes(HEAVY_CITY_TEST)) throw new Error('Missing required city simulation regression test');
+const PARALLEL_TEST_FILES = TEST_FILES.filter(file => file !== HEAVY_CITY_TEST);
+
 run(
   'Kidscade regression tests',
   process.execPath,
-  ['--test', '--test-timeout=120000', '--test-concurrency=4', ...TEST_FILES]
+  ['--test', '--test-timeout=120000', '--test-concurrency=4', ...PARALLEL_TEST_FILES]
+);
+
+run(
+  'Kkwaekkori full seeded-city simulations (isolated)',
+  process.execPath,
+  ['--test', '--test-timeout=240000', '--test-concurrency=1', HEAVY_CITY_TEST]
 );
 
 run(

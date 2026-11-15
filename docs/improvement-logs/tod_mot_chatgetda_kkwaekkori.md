@@ -202,3 +202,15 @@
 - **배포는 하지 않음:** 현재 main의 `.github/workflows/deploy-cloudflare.yml`은 `main` 게임 변경 푸시 시 원격 D1 마이그레이션 `wrangler d1 migrations apply --remote`과 `wrangler deploy`를 호출. 사용자는 **병합만 승인**했으므로 merge commit title에 `[skip ci]`를 포함해 자동 운영 배포를 실행하지 않도록 함. 병합 직후 GitHub Actions에서 해당 커밋의 배포 실행도 조회되지 않았음. 원격 DB/Cloudflare/유료 API/비밀·학생정보 접근 없음.
 - **남은 문제와 다음 시작점:** 작은 마을은 플랫폼 점유로 버스 자체가 최대 약 110초 기다리는 사례가 관찰된 바 있음. 일반 보행 교착과는 별개의 교통 UX 문제이며 후속 개선 대상. 실제 학생용 태블릿 FPS와 터치 및 사람이 스크린샷을 직접 보며 수행하는 시각 검수는 별도 미실시. 다음에는 소도시 플랫폼 회전율과 중복 버스 탑승, 실기기 성능·실제 장면 가독성을 분석. 별도 배포는 별도 명시 승인 필요.
 - 기록 보완: `docs/kkwaekkori-merge-757-20261111` 문서만 변경, 코드·배포 경로 추가 수정 없음. 완료 이후 이 문서 PR 상태는 GitHub에서 별도 확인.
+
+### 2026-11-14 — CI 병렬 부하로 인한 도시 시뮬레이션 제한시간 초과
+
+- 사용자 요청: 꼴뚜기 게임 PR #750 후속 CI 오류를 고치라는 요청의 연속 작업.
+- 기준 근거: CI 실행 `43572034543`(후속 PR #764 최초 커밋)에서 일반 회귀 테스트의 개별 assertion 실패 0건, `tests/mot-chatgetda-kkwaekkori.test.cjs` 전체 파일이 `testTimeoutFailure`(`120000ms`)로 종료되어 `Kidscade regression tests`가 실패. 별도 `kkwaekkori-browser-audit` 워크플로는 성공.
+- 비평: 테스트 범위나 시드·시간을 줄이면 교차로/승하차/보행자 충돌 검사가 약해진다. 따라서 수많은 도시 시뮬레이션을 병렬의 4개 테스트 워커와 경쟁시키지 않고 **검사 내용은 그대로 유지**해 단독 프로세스로 실행하도록 선택.
+- 작업 브랜치: `chat/fix-ci-dice-browser-profile-20261114`
+- 관련 PR: https://github.com/binyoun-cberi/kidscade/pull/764
+- 수정 파일: `scripts/run-ci-tests.cjs` — 해당 테스트만 병렬 목록에서 분리하고 `--test-concurrency=1`, `--test-timeout=240000` 단독 실행. 동일 파일이 누락되지 않도록 포함 여부 방어 검사 추가.
+- 검증 상태: **부분 검증**. 실패한 실제 GitHub Actions 로그 조회 완료. 새로운 분리 실행의 실제 CI 결과 확인 전. 게임 소스 및 테스트 assertion 자체는 변경하지 않음.
+- 다음 시작점: PR #764의 재실행 결과에서 **Kkwaekkori full seeded-city simulations (isolated)** 그룹과 기존 회귀·스토리지 그룹을 각각 확인. 다시 시간 초과면 실제 병목 시뮬레이션을 프로파일링하고 범위를 줄이지 않는 최적화 진행.
+- GitHub/배포: 이번 요청에서 main 병합/배포·원격 D1·유료 API·비밀정보 접근 없음.
