@@ -3,10 +3,10 @@
 - 게임 ID: `high_bridge_builder`
 - 주요 코드 위치: `games/high_bridge_builder/index.html`, `bridge-builder.js`, `bridge-builder.css`
 - 확인 기준: 2026-11-14 `main`에서 분석 후 별도 브랜치 수정
-- 최신 상태: **부분 검증**
-- 마지막 갱신일: 2026-11-14
+- 최신 상태: **부분 검증** (새 실제 브라우저 플레이 검증 추가 진행 중)
+- 마지막 갱신일: 2026-11-15
 - 확정 요구: 구조공학/하중 시뮬레이션 추가하지 않기. 기존 자동차 그리기 게임을 유지하면서 학생 발견 오류, 태블릿 조작, 스테이지 다양성 개선
-- 다음 시작점: 실제 iPad Safari/Android 패드에서 터치 후 스크롤/화면 비율/다중 터치/회전 플레이를 검증하고 학생이 실패한 정확한 장면을 재현한다
+- 다음 시작점: 새 Chrome 실제 플레이 검증 결과와 스크린샷을 판독하고, 실패한 레벨의 터치 조작을 수정한다. iPad Safari/Android 실기기 검증은 별도로 진행한다
 
 ## 현재 남은 문제
 
@@ -39,3 +39,16 @@
 - 개인정보/Secrets/API 비용: 접근·변경 없음
 - GitHub: PR #762 열림 (병합·배포 전), `main` 직접 푸시/병합/배포/원격 D1 실행 없음
 - 다음 계획: PR CI를 확인한 뒤 태블릿 실기기와 학생 피드백으로 실패·지연·화면 겹침 재현하여 추가 수정
+
+### 2026-11-15 — 실제 Chromium 플레이 검수
+
+- 사용자 요청: "플레이 검수해"
+- 기준: `main` 커밋 `4d2c6d76d47d3f60be2c468a5b60b435e8a99f08`, PR #762는 이미 병합되었고 변경된 게임 ID는 `high_bridge_builder`.
+- 이전 CI 근거: PR #762의 architecture `node-tests` 및 kkwaekkori 검사는 GitHub Actions에서 완료/성공을 확인함. 이 검사는 `high_bridge_builder` 실제 Chrome 브라우저 플레이를 포함하지 않았음.
+- 계획: 새로운 로컬 정적 서버에서 **기존 파일 그대로** Chromium으로 열고 실제 DevTools 마우스/터치 이벤트로 플레이. 진입·성공·충돌·재도전·점 찍기·태블릿 1024×768 및 932×430·세로 화면·1, 2, 3, 8, 16, 24, 32, 40단계를 점검. 스크린샷/JSON 아티팩트는 CI에서 수집하고 로그인 및 개인정보 사용 금지.
+- 작업 브랜치: `test/bridge-builder-real-browser-play-20261115`
+- PR: 작성 중 (실제 생성 후 반영)
+- 작성 파일: `tests/bridge-builder-real-browser-play.cjs`, `.github/workflows/bridge-builder-browser-audit.yml`. 게임 코드 변경 없음.
+- 현재 검사: 테스트 파일의 JavaScript 구문을 GitHub 도구 내 V8 `new Function`으로 확인함(통과). Chromium 실행 결과 및 이미지 판정은 **아직 미실행**.
+- 주의: CI의 Chromium 터치 에뮬레이션은 iPad Safari/갤럭시탭 실제 손가락 입력을 대신하지 않음.
+- `main` 병합: 이 작업 PR은 미병합. 실제 배포: 수행하지 않음.
