@@ -408,6 +408,7 @@
       started:Boolean(startedAt),
       startedAt,
       paused,
+      pauseable:Boolean(pauseHandlers?.pause && pauseHandlers?.resume),
       ended,
       muted,
       embedded:embedded(),

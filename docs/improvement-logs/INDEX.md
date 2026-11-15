@@ -18,3 +18,7 @@
 | `probability_dice_survival` | 운명의 주사위 | [probability_dice_survival.md](./probability_dice_survival.md) | CI 브라우저 검사 및 Chromium 프로필 정리 재검증 |
 
 작성법: [README](./README.md) · [템플릿](./TEMPLATE.md)
+
+## 게임 공통 기능
+
+- [20분 이내 복귀 시 ▶ 계속하기, 구글 한국어 음성 우선·환영 화면 및 60초 퍼센트 바](./PLATFORM_RETURN_NUDGE.md) — 로비/iframe 공통, 진행률 0~100% 및 브라우저 감사 추가 · 갤럭시탭 실기기 검증 대기
