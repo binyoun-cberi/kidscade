@@ -1,0 +1,36 @@
+name: Bridge Builder real-browser playthrough
+
+on:
+  pull_request:
+    paths:
+      - 'games/high_bridge_builder/**'
+      - 'tests/bridge-builder-real-browser-play.cjs'
+      - '.github/workflows/bridge-builder-browser-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-playthrough:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Chromium is available
+        run: command -v google-chrome || command -v chromium || command -v chromium-browser
+      - name: Play Bridge Builder in real Chrome with mouse and tablet touch
+        run: node tests/bridge-builder-real-browser-play.cjs
+        env:
+          KIDSCADE_BRIDGE_AUDIT_OUT: ${{ runner.temp }}/bridge-real-play
+      - name: Upload screenshots and audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bridge-builder-real-play
+          path: ${{ runner.temp }}/bridge-real-play/
+          if-no-files-found: ignore
+          retention-days: 7
