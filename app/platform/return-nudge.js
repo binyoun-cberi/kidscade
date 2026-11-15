@@ -114,19 +114,62 @@
     if (speechTimer !== null) clearTimeout(speechTimer);
     speechTimer = null;
     notice.stage = 'wait';
-    notice.heading.textContent = '음성을 재생하지 못했어요';
-    notice.description.textContent = '태블릿의 미디어 음량과 음성 설정을 확인해 주세요. 잠시 뒤 학습으로 돌아가요.';
+    notice.node.style.background = 'radial-gradient(circle at 12% 18%,#c7f9ed 0%,transparent 36%),radial-gradient(circle at 90% 8%,#ffe1ab 0%,transparent 34%),linear-gradient(135deg,#a78bfa 0%,#93c5fd 52%,#fbcfe8 100%)';
+    notice.panel.style.cssText = 'box-sizing:border-box;width:min(100%,530px);padding:clamp(26px,6vw,45px) clamp(22px,5vw,38px);border:3px solid #fff;border-radius:30px;background:linear-gradient(160deg,#fff 0%,#f5f3ff 100%);color:#312e81;text-align:center;box-shadow:0 24px 65px #4c1d9550;font-family:system-ui,sans-serif;';
+    notice.heading.textContent = '다시 돌아와줘서 고마워!';
+    notice.heading.style.cssText = 'margin:12px 0 16px;font-size:clamp(30px,7vw,52px);line-height:1.16;word-break:keep-all;font-weight:1000;letter-spacing:-.055em;color:#6d28d9;text-shadow:0 3px 0 #ede9fe;';
+    notice.description.textContent = '음성 안내를 시작하지 못했어요. 잠시 뒤 자동으로 게임을 이어갈게요!';
+    notice.description.style.cssText = 'margin:0 0 26px;font-size:clamp(14px,3.8vw,17px);line-height:1.6;color:#475569;word-break:keep-all;';
+    notice.button.disabled = true;
+    notice.button.hidden = true;
+    notice.button.setAttribute('aria-disabled','true');
+
+    const brand = document.createElement('div');
+    brand.textContent = '✦ KIDSCADE ✦';
+    brand.style.cssText = 'font-size:clamp(16px,4vw,21px);font-weight:1000;letter-spacing:.16em;color:#0f766e;';
+    const progress = document.createElement('div');
+    progress.style.cssText = 'margin:14px auto 0;max-width:430px;text-align:left;';
+    const labels = document.createElement('div');
+    labels.style.cssText = 'display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px;color:#5b21b6;font-weight:800;font-size:15px;';
+    const label = document.createElement('span');
+    label.textContent = '돌아갈 준비 중';
+    const value = document.createElement('span');
+    value.textContent = '0%';
+    value.style.cssText = 'font-size:clamp(28px,6vw,38px);font-weight:1000;font-variant-numeric:tabular-nums;';
+    labels.append(label,value);
+    const track = document.createElement('div');
+    track.style.cssText = 'height:24px;padding:4px;border:2px solid #c4b5fd;border-radius:999px;background:#ede9fe;box-sizing:border-box;overflow:hidden;';
+    track.setAttribute('role','progressbar');
+    track.setAttribute('aria-label','학습으로 돌아가기까지의 대기 진행률');
+    track.setAttribute('aria-valuemin','0');
+    track.setAttribute('aria-valuemax','100');
+    track.setAttribute('aria-valuenow','0');
+    const fill = document.createElement('div');
+    fill.style.cssText = 'width:0%;height:100%;border-radius:999px;background:linear-gradient(90deg,#34d399 0%,#60a5fa 55%,#8b5cf6 100%);transition:width .5s ease;';
+    track.append(fill);
+    const countdown = document.createElement('p');
+    countdown.textContent = '60초 후 자동으로 이어져요';
+    countdown.style.cssText = 'margin:14px 0 0;font-size:14px;line-height:1.5;color:#64748b;font-variant-numeric:tabular-nums;';
+    progress.append(labels,track,countdown);
+    notice.panel.insertBefore(brand,notice.heading);
+    notice.panel.append(progress);
+    notice.progress = { track, fill, value, countdown };
+
     waitingUntil = Date.now() + VOICE_ERROR_WAIT_MS;
     const update = () => {
       if (!notice || notice.stage !== 'wait') return;
-      const remaining = Math.max(0, Math.ceil((waitingUntil - Date.now()) / 1000));
+      const remaining = Math.max(0,Math.ceil((waitingUntil - Date.now()) / 1000));
+      const elapsed = Math.max(0,Math.min(VOICE_ERROR_WAIT_MS, VOICE_ERROR_WAIT_MS - (waitingUntil - Date.now())));
+      const percent = Math.min(100,Math.floor(elapsed * 100 / VOICE_ERROR_WAIT_MS));
+      notice.progress.value.textContent = percent + '%';
+      notice.progress.fill.style.width = percent + '%';
+      notice.progress.track.setAttribute('aria-valuenow',String(percent));
+      notice.progress.countdown.textContent = remaining + '초 후 자동으로 이어져요';
       notice.button.textContent = '음성 준비 중 · ' + remaining + '초';
       if (!remaining) completeReturn();
     };
-    notice.button.disabled = true;
-    notice.button.setAttribute('aria-disabled', 'true');
     update();
-    if (notice && notice.stage === 'wait') countdownTimer = setInterval(update, 1000);
+    if (notice && notice.stage === 'wait') countdownTimer = setInterval(update,1000);
   }
 
   function speakFromTap(message) {
@@ -205,7 +248,7 @@
     panel.append(heading, description, button);
     overlay.append(panel);
     document.body.appendChild(overlay);
-    notice = { node: overlay, heading, description, button, stage: 'ready' };
+    notice = { node: overlay, panel, heading, description, button, stage: 'ready' };
 
     // A fullscreen game iframe can cover parent HTML. Exit fullscreen before
     // showing the native top-layer dialog to keep the continue action reachable.
