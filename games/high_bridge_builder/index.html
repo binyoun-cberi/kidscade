@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>다리야 버텨줘!</title>
-<link rel="stylesheet" href="bridge-builder.css?v=13">
+<link rel="stylesheet" href="bridge-builder.css?v=14">
 </head>
 <body>
 <div id="app">
@@ -28,6 +28,11 @@
         <div id="hint" class="hint">차 앞에서 반대쪽 벽까지 선을 그리면 자동으로 출발해요.</div>
         <div id="toast" class="toast" aria-live="polite"></div>
         <button id="resetBtn" class="reset-floating" type="button">↻ 다시 그리기</button>
+        <div class="assist-controls" aria-label="다리 그리기 조작">
+          <button id="modeBtn" type="button" aria-pressed="false">모드: 손가락 그리기</button>
+          <button id="undoBtn" class="hidden" type="button">↶ 점 취소</button>
+          <button id="goBtn" class="hidden" type="button">출발!</button>
+        </div>
 
         <div id="resultCard" class="result-card hidden">
           <div id="resultIcon" class="result-icon">🏁</div>
@@ -53,14 +58,15 @@
       <b>①</b> 왼쪽에 기다리는 자동차 앞에서 시작해요.<br>
       <b>②</b> 반대쪽 벽까지 손을 떼지 않고 길을 그어요.<br>
       <b>③</b> 손을 떼면 자동차가 <strong>자동으로 출발</strong>해요.<br>
-      <b>④</b> 2단계부터는 바위·천장·관문을 <strong>위아래로 피해</strong> 길을 그려야 해요.<br>\n      <b>⑤</b> 모두 <strong>16단계</strong>예요. 뒤로 갈수록 더 긴 다리와 여러 관문이 나와요.<br><br>
-      자동차가 달릴 때는 엔진 소리도 나요. 다시 하고 싶으면 오른쪽 위의 <b>다시 그리기</b>를 누르면 돼요.
+      <b>④</b> 2단계부터는 바위·천장·관문을 <strong>위아래로 피해</strong> 길을 그려야 해요.<br>
+      <b>⑤</b> 모두 <strong>40단계</strong>예요. 뒤로 갈수록 다양한 길과 관문이 나와요.<br><br>
+      손가락으로 그리기 어렵다면 왼쪽 아래 <b>모드: 점 찍기</b>를 선택하세요. 원하는 길에 점을 왼쪽부터 차례로 찍고 <b>출발!</b>을 누르면 돼요. <b>점 취소</b>로 마지막 점만 지울 수 있어요. 다시 하고 싶으면 오른쪽 위 <b>다시 그리기</b>를 누르세요.
     </p>
     <button id="tutorialClose" class="primary wide" type="button">알겠어요!</button>
   </div>
 </div>
 
 <script src="../../kidscade-game-sdk.js" data-game-id="high_bridge_builder" data-title="다리야 버텨줘!" data-shell="true" data-mute="false" data-orientation="landscape"></script>
-<script src="bridge-builder.js?v=13"></script>
+<script src="bridge-builder.js?v=14"></script>
 </body>
 </html>
