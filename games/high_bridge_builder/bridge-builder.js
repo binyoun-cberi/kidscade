@@ -528,7 +528,9 @@ function addWaypoint(p){
   if(!S.pointMode||S.paused||S.mode!=="build")return;
   var b=banks(),last=S.waypoints[S.waypoints.length-1];
   p={x:clamp(p.x,b.leftX+22,b.rightX-22),y:clamp(p.y,45,H-45)};
-  if(last&&p.x<last.x+22){
+  // Keep a strictly increasing X order, but don't reject close points:
+  // narrow obstacle gaps often need several waypoints just a few pixels apart.
+  if(last&&p.x<=last.x+1){
     showToast("점을 왼쪽에서 오른쪽 순서로 찍어 주세요");
     return;
   }
