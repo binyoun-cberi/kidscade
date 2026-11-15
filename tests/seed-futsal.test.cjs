@@ -492,3 +492,30 @@ test('old v4 careers receive club balance once without erasing prior training',(
   assert.equal(saves,1);
   assert.equal(state.roster[0].stats.pass,before);
 });
+
+
+test('stronger clubs win more often in real 5v5 and offscreen league engines',()=>{
+  const context={window:{},Image:class{set src(value){}},performance:{now:()=>0}};
+  vm.createContext(context);
+  for(const file of ['data.js','sim.js','futsal-history-match.js'])
+    vm.runInContext(fs.readFileSync(path.join(gameDir,file),'utf8'),context,{filename:file});
+  const D=context.window.SeedFCData,H=context.window.SeedFutsalHistory,S=context.window.SeedFCSim;
+  const strong=D.clubs.find(c=>c.id==='turtle'),weak=D.clubs.find(c=>c.id==='hunmin');
+  let physicalDiff=0,managerDiff=0;
+  for(let i=0;i<16;i++){
+    const home=i%2?weak:strong,away=i%2?strong:weak;
+    const opts={homeClub:home,awayClub:away,
+      homeRoster:JSON.parse(JSON.stringify(home.players)),awayRoster:JSON.parse(JSON.stringify(away.players)),
+      homeLineup:home.players.slice(0,5).map(p=>p.id),awayLineup:away.players.slice(0,5).map(p=>p.id),
+      homeFormation:'1-2-1',awayFormation:'1-2-1',homeTactics:home.tactics,awayTactics:away.tactics,
+      formations:D.formations,seed:'turtle__hunmin-'+i};
+    const live=H.create(opts),offline=S.create(opts);
+    live.runToEnd();offline.runToEnd();
+    assert.ok(live.finished&&offline.finished);
+    const strongSide=i%2?1:0,weakSide=1-strongSide;
+    physicalDiff+=live.score[strongSide]-live.score[weakSide];
+    managerDiff+=offline.score[strongSide]-offline.score[weakSide];
+  }
+  assert.ok(physicalDiff>=6,'physical strength gap not visible: '+physicalDiff);
+  assert.ok(managerDiff>=20,'manager strength gap not visible: '+managerDiff);
+});
