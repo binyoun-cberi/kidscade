@@ -73,13 +73,24 @@ async function audit(){
  await evaluate("window.__speechMode='error';window.__t+=50000;window.__switch(false);window.__t+=5000;window.__switch(true)");
  await waitFor("!!document.querySelector('#kidscade-return-nudge button')",'second warning');
  await tap();
- await waitFor("document.getElementById('kidscade-return-nudge')?.textContent.includes('음성을 재생하지 못했어요')",'failure warning');
- assert.equal(await evaluate("document.querySelector('#kidscade-return-nudge button')?.disabled"),true);
- await evaluate('window.__t+=60000');
+ await waitFor("document.getElementById('kidscade-return-nudge')?.textContent.includes('다시 돌아와줘서 고마워!')",'Kidscade thank-you loading screen');
+ const initial=await evaluate("(()=>{const d=document.getElementById('kidscade-return-nudge'),bar=d.querySelector('[role=progressbar]');return {headline:d.querySelector('h2')?.textContent,brand:d.textContent.includes('KIDSCADE'),percent:d.textContent.includes('0%'),progress:bar?.getAttribute('aria-valuenow'),barWidth:bar?.firstElementChild?.style.width,disabled:d.querySelector('button')?.disabled}})()");
+ assert.equal(initial.headline,'다시 돌아와줘서 고마워!');
+ assert.equal(initial.brand,true);
+ assert.equal(initial.percent,true);
+ assert.equal(initial.progress,'0');
+ assert.equal(initial.barWidth,'0%');
+ assert.equal(initial.disabled,true);
+ await evaluate('window.__t+=30000');
+ await waitFor("document.querySelector('#kidscade-return-nudge [role=progressbar]')?.getAttribute('aria-valuenow')==='50'",'progress reaches 50%');
+ const halfway=await evaluate("(()=>{const d=document.getElementById('kidscade-return-nudge'),bar=d.querySelector('[role=progressbar]');return{value:bar?.getAttribute('aria-valuenow'),width:bar?.firstElementChild?.style.width,text:d.textContent.includes('50%')}})()");
+ assert.equal(halfway.width,'50%');
+ assert.equal(halfway.text,true);
+ await evaluate('window.__t+=30000');
  await waitFor("!document.getElementById('kidscade-return-nudge')",'60s wait ends');
  await evaluate('window.__t+=50000;window.__switch(false);window.__t+=1200001;window.__switch(true)');
  assert.equal(await evaluate("!!document.getElementById('kidscade-return-nudge')"),false);
  assert.deepEqual(errors,[]);
- console.log('RETURN_NUDGE_REAL_CHROMIUM_PASS',JSON.stringify({viewport:'390x844',dialog:true,voice:voice.voice,volume:voice.volume,waitSeconds:60}));
+ console.log('RETURN_NUDGE_REAL_CHROMIUM_PASS',JSON.stringify({viewport:'390x844',dialog:true,voice:voice.voice,volume:voice.volume,waitSeconds:60,progressBar:true,halfwayPercent:50}));
 }
 audit().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{try{socket?.close()}catch(_){}try{chrome?.kill()}catch(_){}try{await new Promise(r=>server.close(r))}catch(_){}try{if(dir)fs.rmSync(dir,{recursive:true,force:true})}catch(_){}});
