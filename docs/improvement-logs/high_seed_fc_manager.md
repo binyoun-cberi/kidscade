@@ -132,3 +132,5 @@
 - 남은 위험: 높은 전력 5/5라도 인게임 개인 조작/전술/난수로 패배할 수 있음(정상). 90분 표기 방식/극단적 다득점·골키퍼·정밀 충돌/상대 실시간 AI, 실제 삼성 갤럭시탭 FPS와 조작감은 별도 검증. 20시즌은 반복 가능한 게임 시드 실험이지 학생 대상 체감 난이도의 실증은 아님.
 - 브랜치/PR: `feat/futsal-distinct-club-strengths-20261115`, https://github.com/binyoun-cberi/kidscade/pull/766. **사용자가 이 요청에서 병합을 명시적으로 승인함**; 최종 CI 확인 후 PR 병합을 실행하고 GitHub에서 완료 여부 확인할 예정. 본 로그 기록 시점에는 PR #766 **미병합**, Cloudflare 실제 배포/원격 D1 마이그레이션/Secrets/유료 AI API 작업 **미실행**.
 - 다음: 이번 PR 최신 Chrome 구단 카드/터치 선택 검사 및 Node 전체 회귀 CI 결과 확인, 실패가 있으면 수정·재검수 후 병합. 병합 후 실제 Galaxy Tab 브라우저 플레이·FPS 및 후속 시즌 선수 계약/성장 밸런스 점검.
+
+- **추가 실 CI 실패→수정 기록 (2026-11-16):** PR #766 변경 후 GitHub Actions `Kidscade architecture checks` 실행 ID `43870905358`의 정적 빌드 성공, Node 전체 회귀 **2,919/2,919**, 추가 Node **37/37** 통과를 로그에서 확인. 반면 `tests/futsal-history-browser-audit.cjs`는 앱 구단 선택 진입 검사에서 **`Timed out club selection`로 실패**, 따라서 당시 종합 워크플로는 실패로 종료. 첫 화면 버튼의 DOM 가시성만 검사해 앱 JS의 `onclick` 바인딩보다 먼저 클릭할 가능성을 발견하여, 버튼 이벤트 핸들러가 설치될 때까지 기다리는 진입 조건을 강화하고 타임아웃 시 HTML 상태·카드 수·런타임 예외의 진단 메시지를 추가함 (커밋 `b685d443e45edbf84e2bae39559764a122cb900f`). **해당 수정의 최신 Chrome CI 결과는 다시 확인할 것**. 확인 전까지 Chrome 테스트 성공으로 분류하지 않음.
