@@ -26,10 +26,10 @@ const COACH_PROFILES=[
 const CLUB_BALANCE={
   goguryeo:{tier:4,level:7,focus:{"speed":5,"shot":3,"stamina":2},title:"속공 강호",strength:"빠른 역습과 전진",weakness:"올라온 수비 뒤 공간",tactic:{"tempo":"fast","line":"high","width":"wide"}},
   baekje:{tier:2,level:-5,focus:{"pass":8,"stamina":2,"shot":-2},title:"연결형 도전자",strength:"차분한 짧은 패스",weakness:"강한 압박과 빠른 역습",tactic:{"tempo":"slow","line":"standard","width":"narrow"}},
-  silla:{tier:3,level:1,focus:{"speed":6,"shot":3,"defense":-3},title:"측면 돌파형",strength:"측면 침투와 슈팅",weakness:"중앙 수비와 뒷공간",tactic:{"tempo":"fast","line":"high","width":"wide"}},
+  silla:{tier:3,level:1,focus:{"speed":6,"shot":3,"defense":-3},title:"측면 돌파형",strength:"측면 침투와 슈팅",weakness:"중앙 수비와 뒷공간",tactic:{"tempo":"fast","line":"standard","width":"wide"}},
   goryeo:{tier:4,level:6,focus:{"defense":3,"pass":4,"stamina":2},title:"균형의 강팀",strength:"안정된 수비와 볼 배급",weakness:"극단적으로 빠른 압박",tactic:{"tempo":"normal","line":"standard","width":"normal"}},
   hunmin:{tier:1,level:-11,focus:{"pass":9,"shot":-4,"defense":-2},title:"기술 연습팀",strength:"짧고 정교한 연결",weakness:"결정력과 몸싸움",tactic:{"tempo":"slow","line":"low","width":"narrow"}},
-  turtle:{tier:5,level:10,focus:{"defense":8,"stamina":5,"speed":-3,"shot":-4},title:"최강 수비형",strength:"철벽 수비와 골키퍼",weakness:"느린 공격 전환",tactic:{"tempo":"slow","line":"low","width":"narrow"}},
+  turtle:{tier:5,level:10,focus:{"defense":8,"stamina":5,"speed":-3,"shot":-4},title:"최강 수비형",strength:"철벽 수비와 골키퍼",weakness:"느린 공격 전환",tactic:{"tempo":"slow","line":"standard","width":"narrow","attack":"short","mindset":"balanced"}},
   silhak:{tier:1,level:-9,focus:{"shot":5,"pass":4,"defense":-9},title:"공격형 도전자",strength:"창의적 공격과 슈팅",weakness:"느슨한 수비 조직",tactic:{"tempo":"fast","line":"high","width":"wide"}},
   independence:{tier:3,level:2,focus:{"stamina":7,"defense":4,"pass":-3},title:"끈질긴 압박형",strength:"강한 압박과 체력",weakness:"압박 뒤 빠른 패스",tactic:{"tempo":"fast","line":"high","width":"normal"}}
 };
