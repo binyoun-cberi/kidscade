@@ -126,3 +126,15 @@ test('all 40 stages have at least one automatically drivable drawn route',()=>{
     assert.equal(a.S.mode,'end','car must reach goal on stage '+(idx+1));
   }
 });
+
+test('point mode accepts tightly spaced ascending points between obstacles',()=>{
+  const h=boot(),a=h.game;
+  h.event('modeBtn','click');
+  a.S.level=7;a.resetLevel();
+  const b=a.banks();
+  h.event('game','pointerdown',{clientX:b.leftX+150,clientY:320});
+  h.event('game','pointerdown',{clientX:b.leftX+154,clientY:380});
+  assert.equal(a.S.waypoints.length,2,'ascending points 4px apart must be preserved');
+  h.event('game','pointerdown',{clientX:b.leftX+153,clientY:360});
+  assert.equal(a.S.waypoints.length,2,'backward point must still be ignored');
+});

@@ -83,12 +83,12 @@ test('only redraw control lives inside the visible play area',()=>{
   assert.match(css,/position:absolute/);
 });
 
-test('tablet canvas fits without stretching and loads the updated v14 runtime',()=>{
+test('tablet canvas fits without stretching and loads the updated v15 runtime',()=>{
   assert.match(runtime,/var wide=r.width\/Math.max\(1,r.height\)>1.95/);
   assert.doesNotMatch(css,/width:100%!important/);
   assert.doesNotMatch(css,/max-height:100%/);
-  assert.match(html,/bridge-builder\.js\?v=14/);
-  assert.match(html,/bridge-builder\.css\?v=14/);
+  assert.match(html,/bridge-builder\.js\?v=15/);
+  assert.match(html,/bridge-builder\.css\?v=15/);
 });
 
 test('40 stages, point mode, and safe tablet cancellation exist',()=>{
