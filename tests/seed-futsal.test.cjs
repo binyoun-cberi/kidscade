@@ -519,3 +519,92 @@ test('stronger clubs win more often in real 5v5 and offscreen league engines',()
   assert.ok(physicalDiff>=6,'physical strength gap not visible: '+physicalDiff);
   assert.ok(managerDiff>=20,'manager strength gap not visible: '+managerDiff);
 });
+
+
+test('twelve full seeded league seasons preserve the advertised 1-5 club hierarchy',()=>{
+  const context={window:{}};
+  vm.createContext(context);
+  for(const file of ['data.js','sim.js'])
+    vm.runInContext(fs.readFileSync(path.join(gameDir,file),'utf8'),context,{filename:file});
+  const D=context.window.SeedFCData,Sim=context.window.SeedFCSim;
+  const lineups={};
+  for(const club of D.clubs){
+    const used=new Set();
+    lineups[club.id]=D.formations['1-2-1'].map(slot=>{
+      const chosen=club.players.filter(p=>!used.has(p.id))
+        .sort((a,b)=>Sim.playerScore(b,slot)-Sim.playerScore(a,slot))[0];
+      used.add(chosen.id);
+      return chosen.id;
+    });
+  }
+  const table=Object.fromEntries(D.clubs.map(c=>[c.id,{pts:0,played:0}]));
+  let matches=0;
+  for(let season=1;season<=12;season++)
+    for(let a=0;a<D.clubs.length;a++)
+      for(let b=a+1;b<D.clubs.length;b++)
+        for(let leg=0;leg<2;leg++){
+          const home=leg?D.clubs[b]:D.clubs[a],away=leg?D.clubs[a]:D.clubs[b];
+          // Independence matters: the offscreen manager clones each roster per fixture.
+          const match=Sim.create({
+            homeClub:home,awayClub:away,
+            homeRoster:JSON.parse(JSON.stringify(home.players)),
+            awayRoster:JSON.parse(JSON.stringify(away.players)),
+            homeLineup:lineups[home.id],awayLineup:lineups[away.id],
+            homeFormation:'1-2-1',awayFormation:'1-2-1',
+            homeTactics:home.tactics,awayTactics:away.tactics,
+            formations:D.formations,seed:'season'+season+'-'+home.id+'-'+away.id
+          });
+          match.runToEnd();
+          assert.equal(match.finished,true);
+          const [hg,ag]=match.score;
+          table[home.id].played++;table[away.id].played++;
+          if(hg>ag)table[home.id].pts+=3;
+          else if(ag>hg)table[away.id].pts+=3;
+          else{table[home.id].pts++;table[away.id].pts++;}
+          matches++;
+        }
+  assert.equal(matches,672,'12 seasons must have 56 fixtures each');
+  assert.equal(table.turtle.played,168);
+  assert.ok(table.turtle.pts>table.goryeo.pts,'5-star defensive champion should top 4-star rival');
+  assert.ok(table.silla.pts>table.baekje.pts,'3-star flank club should outperform 2-star passing club');
+  assert.ok(table.hunmin.pts<table.baekje.pts,'starter club should face a real challenge');
+});
+
+test('top defensive team is dangerous in physical matches, not just in manager results',()=>{
+  const context={window:{},Image:class{set src(v){}},performance:{now:()=>0}};
+  vm.createContext(context);
+  for(const file of ['data.js','sim.js','futsal-history-match.js'])
+    vm.runInContext(fs.readFileSync(path.join(gameDir,file),'utf8'),context,{filename:file});
+  const D=context.window.SeedFCData,Sim=context.window.SeedFCSim,Physical=context.window.SeedFutsalHistory;
+  const team=id=>D.clubs.find(c=>c.id===id);
+  function lineup(c){
+    const used=new Set();
+    return D.formations['1-2-1'].map(slot=>{
+      const p=c.players.filter(x=>!used.has(x.id))
+        .sort((a,b)=>Sim.playerScore(b,slot)-Sim.playerScore(a,slot))[0];
+      used.add(p.id);return p.id;
+    });
+  }
+  const strongest=team('turtle');
+  for(const rival of [team('goguryeo'),team('hunmin')]){
+    let wins=0,losses=0,goalDiff=0;
+    for(let k=0;k<12;k++){
+      const home=k%2?rival:strongest,away=k%2?strongest:rival;
+      const match=Physical.create({
+        homeClub:home,awayClub:away,
+        homeRoster:JSON.parse(JSON.stringify(home.players)),
+        awayRoster:JSON.parse(JSON.stringify(away.players)),
+        homeLineup:lineup(home),awayLineup:lineup(away),
+        homeFormation:'1-2-1',awayFormation:'1-2-1',
+        homeTactics:home.tactics,awayTactics:away.tactics,
+        formations:D.formations,seed:'physical-test-'+rival.id+'-'+k
+      });
+      match.runToEnd();
+      const us=match.score[k%2?1:0],them=match.score[k%2?0:1];
+      if(us>them)wins++;else if(us<them)losses++;
+      goalDiff+=us-them;
+    }
+    assert.ok(wins>losses&&goalDiff>0,
+      '5-star team did not outperform '+rival.id+': '+wins+'W '+losses+'L GD '+goalDiff);
+  }
+});
