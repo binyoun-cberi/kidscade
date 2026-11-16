@@ -361,8 +361,8 @@ test('tablet coach drawer is accessible and closed before play to protect touch 
   const css=fs.readFileSync(stylePath,'utf8');
   assert.match(html,/id="matchCoachToggle"[^>]+aria-controls="matchCoachPanel"/);
   assert.match(html,/id="matchCoachPanel" class="match-side"/);
-  assert.match(html,/style\.css\?v=17/);
-  assert.match(html,/game\.js\?v=17/);
+  assert.match(html,/style\.css\?v=19/);
+  assert.match(html,/game\.js\?v=19/);
   assert.match(game,/function setCoachPanelOpen\(open\)/);
   assert.match(game,/setCoachPanelOpen\(false\);if\(match\.setDirectControl\)/);
   assert.match(game,/step\.key==='tactic'\)setCoachPanelOpen\(true\)/);
@@ -404,4 +404,207 @@ test('offscreen manager scoring tracks the physical five-a-side league scale',()
   const ratio=managerGoals/Math.max(1,physicalGoals);
   assert.ok(ratio>.63&&ratio<1.5,
     'offscreen scoring diverged: '+managerGoals+' vs '+physicalGoals+' ('+ratio.toFixed(2)+')');
+});
+
+
+test('eight clubs have distinct fictional tiers, real skills, strengths and weak spots',()=>{
+  const context={window:{}};
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(dataPath,'utf8'),context);
+  const clubs=context.window.SeedFCData.clubs;
+  assert.equal(clubs.length,8);
+  const tier=Object.fromEntries(clubs.map(c=>[c.id,c.tier]));
+  assert.deepEqual(Object.keys(tier).sort(),['baekje','goguryeo','goryeo','hunmin','independence','silhak','silla','turtle'].sort());
+  assert.equal(tier.turtle,5);assert.equal(tier.goguryeo,4);
+  assert.equal(tier.baekje,2);assert.equal(tier.hunmin,1);assert.equal(tier.silhak,1);
+  for(const club of clubs){
+    assert.ok(club.tier>=1&&club.tier<=5);
+    assert.ok(club.identity&&club.strength&&club.weakness);
+    assert.equal(club.players.length,18);
+    assert.ok(club.players.every(p=>p.balanceDelta&&p.overall>=20&&p.overall<=99));
+  }
+  function avg(id,key){
+    const c=clubs.find(x=>x.id===id);
+    return c.players.reduce((v,p)=>v+(key==='overall'?p.overall:p.stats[key]),0)/c.players.length;
+  }
+  assert.ok(avg('turtle','overall')>avg('hunmin','overall')+15);
+  assert.ok(avg('turtle','defense')>avg('silhak','defense')+25);
+  assert.ok(avg('goguryeo','speed')>avg('baekje','speed')+10);
+  assert.ok(avg('baekje','pass')>avg('hunmin','pass'));
+});
+
+test('relative opponent difficulty uses current lineup and responds to training',()=>{
+  const context={window:{}};
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(dataPath,'utf8'),context);
+  vm.runInContext(fs.readFileSync(path.join(gameDir,'sim.js'),'utf8'),context);
+  const D=context.window.SeedFCData,S=context.window.SeedFCSim;
+  const source=fs.readFileSync(gamePath,'utf8');
+  const segment=source.slice(source.indexOf('function clubTierName('),source.indexOf('function showClubs('));
+  assert.ok(segment.startsWith('function clubTierName('));
+  const strong=D.clubs.find(c=>c.id==='turtle'),weak=D.clubs.find(c=>c.id==='hunmin');
+  let state={roster:weak.players,formation:'1-2-1',lineup:weak.players.slice(0,5).map(p=>p.id),tactics:weak.tactics};
+  const make=new Function('D','S','state',segment+';return {clubPower,opponentChallenge};');
+  const methods=make(D,S,state);
+  const preview={roster:strong.players,lineup:strong.players.slice(0,5).map(p=>p.id),formation:'1-2-1',tactics:strong.tactics};
+  const before=methods.opponentChallenge(preview);
+  assert.ok(before.gap>=9&&before.label==='매우 어려움','weaker club needs a hard matchup');
+  state.roster=state.roster.map(p=>{
+    const copy=JSON.parse(JSON.stringify(p));
+    for(const k of Object.keys(copy.stats))copy.stats[k]=Math.min(99,copy.stats[k]+24);
+    return copy;
+  });
+  const after=methods.opponentChallenge(preview);
+  assert.ok(after.gap<before.gap&&after.own>before.own,'lineup progression should change challenge');
+});
+
+test('old v4 careers receive club balance once without erasing prior training',()=>{
+  const context={window:{}};
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(dataPath,'utf8'),context);
+  const D=context.window.SeedFCData,club=D.clubs.find(c=>c.id==='baekje');
+  const priorRoster=JSON.parse(JSON.stringify(club.players));
+  priorRoster.forEach(p=>{
+    for(const k of Object.keys(p.balanceDelta))p.stats[k]-=p.balanceDelta[k];
+  });
+  priorRoster[0].stats.pass+=3; // a past, saved training upgrade
+  const state={version:4,clubId:club.id,roster:priorRoster,lineup:priorRoster.slice(0,5).map(x=>x.id),
+    formation:'1-2-1',tactics:club.tactics,scouting:{},historyProgress:{discovered:{},connected:{},attempts:0,correct:0},
+    schedule:[[]],table:{},matchHistory:[],worldSigned:[],rivalSignings:{},managerNews:[],managerNotes:[],
+    trainingAvailable:false,replays:[],career:{},pyramid:null,otherLeague:null,positionModelVersion:2,matchTutorialDone:true};
+  const script=fs.readFileSync(gamePath,'utf8');
+  const start=script.indexOf('function normalize(){'),end=script.indexOf('\nfunction rows(',start);
+  assert.ok(start>=0&&end>start);
+  let saves=0;
+  const normalize=new Function('state','D','clubById','clone','autoLineup','overall','clamp','save',
+    script.slice(start,end)+';return normalize;')(
+      state,D,id=>D.clubs.find(c=>c.id===id),x=>JSON.parse(JSON.stringify(x)),()=>[],
+      p=>Math.round(Object.values(p.stats).reduce((sum,n)=>sum+n,0)/5),
+      (n,a,b)=>Math.max(a,Math.min(b,n)),()=>{saves++;}
+    );
+  normalize();
+  assert.equal(state.clubBalanceVersion,1);
+  assert.equal(saves,1);
+  const adjusted=club.players[0];
+  assert.equal(state.roster[0].stats.pass,adjusted.stats.pass+3);
+  const before=state.roster[0].stats.pass;
+  normalize();
+  assert.equal(saves,1);
+  assert.equal(state.roster[0].stats.pass,before);
+});
+
+
+test('stronger clubs win more often in real 5v5 and offscreen league engines',()=>{
+  const context={window:{},Image:class{set src(value){}},performance:{now:()=>0}};
+  vm.createContext(context);
+  for(const file of ['data.js','sim.js','futsal-history-match.js'])
+    vm.runInContext(fs.readFileSync(path.join(gameDir,file),'utf8'),context,{filename:file});
+  const D=context.window.SeedFCData,H=context.window.SeedFutsalHistory,S=context.window.SeedFCSim;
+  const strong=D.clubs.find(c=>c.id==='turtle'),weak=D.clubs.find(c=>c.id==='hunmin');
+  let physicalDiff=0,managerDiff=0;
+  for(let i=0;i<16;i++){
+    const home=i%2?weak:strong,away=i%2?strong:weak;
+    const opts={homeClub:home,awayClub:away,
+      homeRoster:JSON.parse(JSON.stringify(home.players)),awayRoster:JSON.parse(JSON.stringify(away.players)),
+      homeLineup:home.players.slice(0,5).map(p=>p.id),awayLineup:away.players.slice(0,5).map(p=>p.id),
+      homeFormation:'1-2-1',awayFormation:'1-2-1',homeTactics:home.tactics,awayTactics:away.tactics,
+      formations:D.formations,seed:'turtle__hunmin-'+i};
+    const live=H.create(opts),offline=S.create(opts);
+    live.runToEnd();offline.runToEnd();
+    assert.ok(live.finished&&offline.finished);
+    const strongSide=i%2?1:0,weakSide=1-strongSide;
+    physicalDiff+=live.score[strongSide]-live.score[weakSide];
+    managerDiff+=offline.score[strongSide]-offline.score[weakSide];
+  }
+  assert.ok(physicalDiff>=6,'physical strength gap not visible: '+physicalDiff);
+  assert.ok(managerDiff>=20,'manager strength gap not visible: '+managerDiff);
+});
+
+
+test('twelve full seeded league seasons preserve the advertised 1-5 club hierarchy',()=>{
+  const context={window:{}};
+  vm.createContext(context);
+  for(const file of ['data.js','sim.js'])
+    vm.runInContext(fs.readFileSync(path.join(gameDir,file),'utf8'),context,{filename:file});
+  const D=context.window.SeedFCData,Sim=context.window.SeedFCSim;
+  const lineups={};
+  for(const club of D.clubs){
+    const used=new Set();
+    lineups[club.id]=D.formations['1-2-1'].map(slot=>{
+      const chosen=club.players.filter(p=>!used.has(p.id))
+        .sort((a,b)=>Sim.playerScore(b,slot)-Sim.playerScore(a,slot))[0];
+      used.add(chosen.id);
+      return chosen.id;
+    });
+  }
+  const table=Object.fromEntries(D.clubs.map(c=>[c.id,{pts:0,played:0}]));
+  let matches=0;
+  for(let season=1;season<=12;season++)
+    for(let a=0;a<D.clubs.length;a++)
+      for(let b=a+1;b<D.clubs.length;b++)
+        for(let leg=0;leg<2;leg++){
+          const home=leg?D.clubs[b]:D.clubs[a],away=leg?D.clubs[a]:D.clubs[b];
+          // Independence matters: the offscreen manager clones each roster per fixture.
+          const match=Sim.create({
+            homeClub:home,awayClub:away,
+            homeRoster:JSON.parse(JSON.stringify(home.players)),
+            awayRoster:JSON.parse(JSON.stringify(away.players)),
+            homeLineup:lineups[home.id],awayLineup:lineups[away.id],
+            homeFormation:'1-2-1',awayFormation:'1-2-1',
+            homeTactics:home.tactics,awayTactics:away.tactics,
+            formations:D.formations,seed:'season'+season+'-'+home.id+'-'+away.id
+          });
+          match.runToEnd();
+          assert.equal(match.finished,true);
+          const [hg,ag]=match.score;
+          table[home.id].played++;table[away.id].played++;
+          if(hg>ag)table[home.id].pts+=3;
+          else if(ag>hg)table[away.id].pts+=3;
+          else{table[home.id].pts++;table[away.id].pts++;}
+          matches++;
+        }
+  assert.equal(matches,672,'12 seasons must have 56 fixtures each');
+  assert.equal(table.turtle.played,168);
+  assert.ok(table.turtle.pts>table.goryeo.pts,'5-star defensive champion should top 4-star rival');
+  assert.ok(table.silla.pts>table.baekje.pts,'3-star flank club should outperform 2-star passing club');
+  assert.ok(table.hunmin.pts<table.baekje.pts,'starter club should face a real challenge');
+});
+
+test('top defensive team is dangerous in physical matches, not just in manager results',()=>{
+  const context={window:{},Image:class{set src(v){}},performance:{now:()=>0}};
+  vm.createContext(context);
+  for(const file of ['data.js','sim.js','futsal-history-match.js'])
+    vm.runInContext(fs.readFileSync(path.join(gameDir,file),'utf8'),context,{filename:file});
+  const D=context.window.SeedFCData,Sim=context.window.SeedFCSim,Physical=context.window.SeedFutsalHistory;
+  const team=id=>D.clubs.find(c=>c.id===id);
+  function lineup(c){
+    const used=new Set();
+    return D.formations['1-2-1'].map(slot=>{
+      const p=c.players.filter(x=>!used.has(x.id))
+        .sort((a,b)=>Sim.playerScore(b,slot)-Sim.playerScore(a,slot))[0];
+      used.add(p.id);return p.id;
+    });
+  }
+  const strongest=team('turtle');
+  for(const rival of [team('goguryeo'),team('hunmin')]){
+    let wins=0,losses=0,goalDiff=0;
+    for(let k=0;k<12;k++){
+      const home=k%2?rival:strongest,away=k%2?strongest:rival;
+      const match=Physical.create({
+        homeClub:home,awayClub:away,
+        homeRoster:JSON.parse(JSON.stringify(home.players)),
+        awayRoster:JSON.parse(JSON.stringify(away.players)),
+        homeLineup:lineup(home),awayLineup:lineup(away),
+        homeFormation:'1-2-1',awayFormation:'1-2-1',
+        homeTactics:home.tactics,awayTactics:away.tactics,
+        formations:D.formations,seed:'physical-test-'+rival.id+'-'+k
+      });
+      match.runToEnd();
+      const us=match.score[k%2?1:0],them=match.score[k%2?0:1];
+      if(us>them)wins++;else if(us<them)losses++;
+      goalDiff+=us-them;
+    }
+    assert.ok(wins>losses&&goalDiff>0,
+      '5-star team did not outperform '+rival.id+': '+wins+'W '+losses+'L GD '+goalDiff);
+  }
 });

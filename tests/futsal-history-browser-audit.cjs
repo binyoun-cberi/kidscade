@@ -50,7 +50,10 @@ let child,ws,profile;
   };
   const wait=async(code,stage)=>{
     for(let i=0;i<95;i++){if(await evalJS(code))return;await sleep(100);}
-    throw Error('Timed out '+stage);
+    const ready=await evalJS("document.readyState");
+    const bound=await evalJS("typeof document.querySelector('#newGameBtn')?.onclick");
+    const screen=await evalJS("({clubVisible:!document.querySelector('#clubSelect')?.classList.contains('hidden'),cards:document.querySelectorAll('.club-card').length})");
+    throw Error('Timed out '+stage+'; ready='+ready+'; newGameBound='+bound+'; screen='+JSON.stringify(screen)+'; exceptions='+JSON.stringify(exceptions.slice(-3)));
   };
   const resize=async(w,h,mobile)=>{await cmd('Emulation.setDeviceMetricsOverride',{width:w,height:h,deviceScaleFactor:1,mobile});await cmd('Emulation.setTouchEmulationEnabled',{enabled:mobile,maxTouchPoints:5});await sleep(150);};
   const screenshot=async name=>{
@@ -63,11 +66,35 @@ let child,ws,profile;
   await cmd('Page.enable');await cmd('Runtime.enable');
   await resize(1280,760,false);
   await cmd('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/games/high_seed_fc_manager/index.html'});
-  await wait("document.querySelector('#newGameBtn')?.offsetWidth>0",'entry');
+  // The HTML button becomes visible before game.js registers its event handler.
+  // Wait for application boot, not just for a painted DOM node.
+  await wait("document.querySelector('#newGameBtn')?.offsetWidth>0 && typeof document.querySelector('#newGameBtn').onclick==='function'",'entry initialized');
   await evalJS("document.querySelector('#newGameBtn').click()");
   await wait("document.querySelector('.club-card')?.offsetWidth>0",'club selection');
+  const clubs=await evalJS("(()=>({count:document.querySelectorAll('.club-card').length,tiers:[...document.querySelectorAll('.club-tier')].map(el=>el.textContent.trim()),identities:document.querySelectorAll('.club-identity').length,notice:document.querySelector('.club-balance-note')?.textContent||''}))()");
+  assert.equal(clubs.count,8,'all historic clubs must be selectable');
+  assert.equal(clubs.identities,8,'each club must explain strengths and weaknesses');
+  assert.ok(clubs.tiers.some(t=>t.includes('1/5'))&&clubs.tiers.some(t=>t.includes('5/5')),'strength range is missing');
+  assert.ok(clubs.notice.includes('게임용')||clubs.notice.includes('가상'),'fictional balance disclaimer is missing');
+  const clearFooter=await evalJS("(()=>{const c=document.querySelector('.club-card'),last=[...c.querySelectorAll('p')].at(-1),pick=c.querySelector('.pick');return {lastBottom:last.getBoundingClientRect().bottom,buttonTop:pick.getBoundingClientRect().top,notOverlapping:pick.getBoundingClientRect().top>=last.getBoundingClientRect().bottom+5}})()");
+  assert.ok(clearFooter.notOverlapping,'club scout text overlaps the team selection footer');
+  await screenshot('club-choice-desktop');
+  await resize(960,600,true);
+  await evalJS("document.querySelector('.club-card').scrollIntoView({block:'center',inline:'nearest'})");
+  await sleep(100);
+  const tabletChoice=await evalJS("(()=>{const card=document.querySelector('.club-card'),r=card.getBoundingClientRect(),hit=document.elementFromPoint(Math.max(0,Math.min(innerWidth-1,r.left+r.width/2)),Math.max(0,Math.min(innerHeight-1,r.top+r.height/2)));return {tier:card.querySelector('.club-tier')?.textContent,visible:r.width>120&&r.height>120,hit:card===hit||card.contains(hit),width:innerWidth,overflow:document.documentElement.scrollWidth-innerWidth}})()");
+  assert.ok(tabletChoice.visible&&tabletChoice.hit,'club choice not tappable at tablet width');
+  assert.ok(tabletChoice.overflow<=2,'club selection has horizontal overflow');
+  const tabletFooterClear=await evalJS("(()=>{const c=document.querySelector('.club-card'),last=[...c.querySelectorAll('p')].at(-1),pick=c.querySelector('.pick');return pick.getBoundingClientRect().top>=last.getBoundingClientRect().bottom+5})()");
+  assert.ok(tabletFooterClear,'tablet club scout text overlaps select button');
+  await screenshot('club-choice-tablet');
+  await resize(1280,760,false);
   await evalJS("document.querySelector('.club-card').click()");
   await wait("document.querySelector('#playMatch')?.offsetWidth>0",'dashboard');
+  const challenge=await evalJS("(()=>({preview:document.querySelector('.match-difficulty')?.textContent||'',tasks:document.querySelector('.task-list')?.textContent||''}))()");
+  assert.ok(challenge.preview.includes('상대 전력'),'fixture preview must show opponent rating');
+  assert.ok(challenge.tasks.includes('상대 난이도')&&challenge.tasks.includes('상대 공략'),'fixture needs difficulty and tactical weaknesses');
+  await screenshot('fixture-scouting-desktop');
   await evalJS("document.querySelector('#playMatch').click()");
   await wait("!document.querySelector('#matchLayer').classList.contains('hidden')",'match');
   await evalJS("document.querySelector('#matchTutorialSkipAll').click()");
