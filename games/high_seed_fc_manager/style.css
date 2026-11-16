@@ -298,3 +298,6 @@ button{border:0;cursor:pointer;color:inherit}
   background:rgba(15,45,65,.8);border:1px solid rgba(125,211,252,.28);
   color:#d6f4ff;border-radius:10px;padding:5px 8px}
 @media(max-width:700px){.club-identity small,.match-difficulty{font-size:10px}}
+
+/* Club identity adds two scouting lines; reserve room for the absolute pick footer. */
+.club-card{padding-bottom:68px}
