@@ -220,3 +220,38 @@
 }
 @media(max-width:370px){.smith-v2 .cut-station{grid-template-columns:1fr}.smith-v2 .cut-preview{justify-content:flex-start}.smith-v2 .cut-controls{grid-column:1}.smith-v2 .cut-controls button{font-size:10px;padding:4px 2px}}
 @media(prefers-reduced-motion:reduce){.smith-v2 .smith-item-svg,.smith-v2 .visitor-sprite{animation:none!important}}
+
+
+/* Tool head and target silhouette genuinely respond to the specified job. */
+.smith-v2 .craft-scene{--forgeShape:0}
+.smith-v2 .craft-scene[data-technique="draw"] .item-art{
+  transform-box:fill-box;transform-origin:center;
+  transform:scaleY(calc(.88 + var(--forgeShape)*.12)) scaleX(calc(1.06 - var(--forgeShape)*.06));
+}
+.smith-v2 .craft-scene[data-technique="flatten"] .item-art,
+.smith-v2 .craft-scene[data-technique="spread"] .item-art{
+  transform-box:fill-box;transform-origin:center;
+  transform:scaleX(calc(.86 + var(--forgeShape)*.14)) scaleY(calc(1.08 - var(--forgeShape)*.08));
+}
+.smith-v2 .craft-scene[data-technique="bend"] .item-art,
+.smith-v2 .craft-scene[data-technique="curve"] .item-art{
+  transform-box:fill-box;transform-origin:center;
+  transform:rotate(calc((1 - var(--forgeShape))*8deg));
+}
+.smith-v2 .craft-scene[data-technique="point"] .item-art{
+  transform-box:fill-box;transform-origin:center;
+  transform:scaleY(calc(.83 + var(--forgeShape)*.17));
+}
+.smith-v2 .craft-scene[data-technique="ornament"] .gem{
+  opacity:var(--forgeShape);filter:drop-shadow(0 0 4px #9de8ff);
+}
+.smith-v2 .craft-scene[data-stage="hammer"] .craft-product .smith-item-svg{
+  transition:transform .18s ease-out;
+}
+.smith-v2 .craft-scene[data-technique="flatten"] .craft-flames,
+.smith-v2 .craft-scene[data-technique="curve"] .craft-flames{
+  filter:drop-shadow(0 0 7px #ffb35a);
+}
+@media (prefers-reduced-motion:reduce){
+  .smith-v2 .craft-scene .item-art{transition:none!important}
+}
