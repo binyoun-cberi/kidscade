@@ -50,7 +50,10 @@ let child,ws,profile;
   };
   const wait=async(code,stage)=>{
     for(let i=0;i<95;i++){if(await evalJS(code))return;await sleep(100);}
-    throw Error('Timed out '+stage);
+    const ready=await evalJS("document.readyState");
+    const bound=await evalJS("typeof document.querySelector('#newGameBtn')?.onclick");
+    const screen=await evalJS("({clubVisible:!document.querySelector('#clubSelect')?.classList.contains('hidden'),cards:document.querySelectorAll('.club-card').length})");
+    throw Error('Timed out '+stage+'; ready='+ready+'; newGameBound='+bound+'; screen='+JSON.stringify(screen)+'; exceptions='+JSON.stringify(exceptions.slice(-3)));
   };
   const resize=async(w,h,mobile)=>{await cmd('Emulation.setDeviceMetricsOverride',{width:w,height:h,deviceScaleFactor:1,mobile});await cmd('Emulation.setTouchEmulationEnabled',{enabled:mobile,maxTouchPoints:5});await sleep(150);};
   const screenshot=async name=>{
@@ -63,7 +66,9 @@ let child,ws,profile;
   await cmd('Page.enable');await cmd('Runtime.enable');
   await resize(1280,760,false);
   await cmd('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/games/high_seed_fc_manager/index.html'});
-  await wait("document.querySelector('#newGameBtn')?.offsetWidth>0",'entry');
+  // The HTML button becomes visible before game.js registers its event handler.
+  // Wait for application boot, not just for a painted DOM node.
+  await wait("document.querySelector('#newGameBtn')?.offsetWidth>0 && typeof document.querySelector('#newGameBtn').onclick==='function'",'entry initialized');
   await evalJS("document.querySelector('#newGameBtn').click()");
   await wait("document.querySelector('.club-card')?.offsetWidth>0",'club selection');
   const clubs=await evalJS("(()=>({count:document.querySelectorAll('.club-card').length,tiers:[...document.querySelectorAll('.club-tier')].map(el=>el.textContent.trim()),identities:document.querySelectorAll('.club-identity').length,notice:document.querySelector('.club-balance-note')?.textContent||''}))()");
