@@ -564,7 +564,8 @@ function yearly(life){
  // Fictional gameplay hazard, not a historical life table.
  const risk=life.age<=5?.024:life.age<45?.002:life.age<60?.009:life.age<75?.035:life.age<90?.11:.27;
  if(life.age>=108||life.stats.health===0||life.rand()<risk+(life.stats.health<19?.03:0)){
-  life.finish('오랜 세월을 지나 한 사람의 삶이 끝났다.');s.active=null;
+  // Reuse the engine's authored fictional cause without another RNG draw.
+  life.finish(Sim.deathEvent(life,roll(life.seed,life.year)));s.active=null;
  }
  return true;
 }
