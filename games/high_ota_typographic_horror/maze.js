@@ -5,7 +5,7 @@
   if(root)root.OtaMaze=api;
 })(typeof window!=='undefined'?window:undefined,function(){
   'use strict';
-  const SIZE=13,CELL=4.2,COUNT=SIZE*SIZE,ORIGIN_Z=-88;
+  const SIZE=9,CELL=4.2,COUNT=SIZE*SIZE,ORIGIN_Z=-88;
   const DIRECTIONS=[[-1,0,1],[0,1,2],[1,0,4],[0,-1,8]];
   const OPPOSITE=[4,8,1,2];
   const WORDS=Object.freeze([
@@ -62,12 +62,12 @@
         const dir=options[Math.floor(rng()*options.length)],other=neighbor(at,dir);
         open(links,at,dir);seen[other]=1;stack.push(other);
       }
-      // A few loops introduce real choices without erasing all wrong turns.
+      // More connecting passages cut frustrating dead ends while keeping the route non-linear.
       const closed=[];
       for(let at=0;at<COUNT;at++)for(const dir of [1,2]){
         if(neighbor(at,dir)>=0 && !(links[at]&DIRECTIONS[dir][2]))closed.push([at,dir]);
       }
-      for(let i=0;i<Math.min(7,closed.length);i++){
+      for(let i=0;i<Math.min(15,closed.length);i++){
         const j=Math.floor(rng()*closed.length);
         const edge=closed.splice(j,1)[0];open(links,...edge);
       }
@@ -78,7 +78,7 @@
         .filter(i=>i!==0&&i!==exit).sort((a,b)=>fromStart[b]-fromStart[a]||a-b);
       const stations=[];
       for(const i of ranked){
-        if(stations.every(v=>distances(links,v)[i]>=19)&&fromStart[i]>=18)stations.push(i);
+        if(stations.every(v=>distances(links,v)[i]>=10)&&fromStart[i]>=8)stations.push(i);
         if(stations.length===3)break;
       }
       if(stations.length!==3)continue;
@@ -90,8 +90,9 @@
           dists[a+1][stations[b]]+dists[b+1][stations[c]]+after[c]);
       const candidate={v:1,seed:rootSeed,links:Array.from(links),stations,
         exit,minSteps,solved:[false,false,false],visited:Array(COUNT).fill(false),wrong:0};
-      if(!best||candidate.minSteps>best.minSteps)best=candidate;
-      if(minSteps>=105)break;
+      // Choose a readable route, not the longest possible multi-stop detour.
+      if(!best||Math.abs(minSteps-48)<Math.abs(best.minSteps-48))best=candidate;
+      if(minSteps>=43&&minSteps<=53)break;
     }
     if(!best)throw new Error('Unable to create Ota labyrinth');
     best.visited[0]=true;
@@ -223,15 +224,18 @@
     for(let dir=0;dir<4;dir++){
       const other=neighbor(here,dir);
       if(other>=0&&(maze.links[here]&DIRECTIONS[dir][2])&&next[other]===currentDist-1)
-        return '가까운 갈림길에서 '+['북쪽','동쪽','남쪽','서쪽'][dir]+' 통로를 살펴보세요.';
+        return '현재 방에서 '+['북쪽','동쪽','남쪽','서쪽'][dir]+'으로 이어진 통로로 가세요.';
     }
     return '지금 방을 충분히 살펴보세요.';
   }
-  function snapshot(maze){return {v:1,seed:maze.seed,solved:[...maze.solved],visited:[...maze.visited],wrong:maze.wrong};}
+  // Version 2 marks the smaller layout. Old checkpoints keep repaired words,
+  // but must not carry old explored cells into a different maze grid.
+  function snapshot(maze){return {v:2,seed:maze.seed,solved:[...maze.solved],visited:[...maze.visited],wrong:maze.wrong};}
   function restore(maze,data){
-    if(!data||data.v!==1||data.seed!==maze.seed)return false;
+    if(!data||(data.v!==1&&data.v!==2)||data.seed!==maze.seed)return false;
     maze.solved=maze.solved.map((_,i)=>data.solved?.[i]===true);
-    maze.visited=maze.visited.map((_,i)=>data.visited?.[i]===true);
+    const sameLayout=data.v===2&&data.visited?.length===COUNT;
+    maze.visited=maze.visited.map((_,i)=>sameLayout&&data.visited[i]===true);
     maze.visited[0]=true;maze.wrong=Math.max(0,Math.min(999,Number(data.wrong)||0));return true;
   }
   return Object.freeze({SIZE,CELL,COUNT,WORDS,center,cell,neighbor,distances,
