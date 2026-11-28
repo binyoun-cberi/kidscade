@@ -39,7 +39,7 @@ function render() {
   undo.disabled = history.length === 0;
   next.hidden = !complete || stage.selectedIndex === levels.length - 1;
   if (complete) {
-    message.textContent = next.hidden ? '모든 단계 완료!' : `${level.title} 완성!`;
+    message.textContent = `${level.title} 완성!`;
   }
 }
 
@@ -110,4 +110,5 @@ next.addEventListener('click', () => {
   start();
   tiles[focusedPosition].focus();
 });
+stage.replaceChildren(...levels.map(({ title }, index) => new Option(`${index + 1}. ${title}`)));
 start();
