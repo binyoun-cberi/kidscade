@@ -2,6 +2,26 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "picture_slide",
+      "addedAt": "2026-11-28T18:00:00+09:00",
+      "title": "그림 조각 탐험",
+      "href": "games/picture-slide/index.html",
+      "category": "math",
+      "age": "low",
+      "ages": ["low"],
+      "icon": "🧩",
+      "cover": "games/picture-slide/train.webp",
+      "description": "빈칸 옆의 그림 조각을 밀어 산골 열차, 바닷가 등대, 달나라의 모습을 완성해요. 윗줄이 고정된 3×3부터 4×4까지 도전할 수 있어요.",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": ["solo"],
+      "input": ["touch", "keyboard"],
+      "qualityStatus": "standard",
+      "classroom": false
+    },
+    {
       "id": "high_corn_maze",
       "addedAt": "2026-11-10T08:07:00+09:00",
       "title": "옥수수밭 탈출",

@@ -7,6 +7,7 @@
 새 게임별 로그를 작성할 때 아래 표에 추가합니다.
 | 게임 ID | 게임명 | 이력 파일 | 다음 시작점 |
 | --- | --- | --- | --- |
+| `picture_slide` | 그림 조각 탐험 | [개선 이력](./picture_slide.md) | PR CI와 교실 태블릿 터치 검증 |
 | `tod_mot_chatgetda_kkwaekkori` | 못 찾겠다 꾀꼬리 | [개선 이력](./tod_mot_chatgetda_kkwaekkori.md) | PR #757 병합 완료 · 소도시 버스 플랫폼 대기·실기기 FPS·시각 검수 |
 | `high_seed_fc_manager` | 풋살 히스토리그 | [개선 이력](./high_seed_fc_manager.md) | PR #766 팀별 전력·12시즌 검증 및 실기기 갤럭시탭 조작·FPS 점검 |
 | `high_ota_typographic_horror` | 오타 — 이름을 잃어버린 밤 | [개선 이력](./high_ota_typographic_horror.md) | PR CI와 실제 Chrome 플레이, 창문 렌더링 검증 |
