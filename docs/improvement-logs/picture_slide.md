@@ -21,7 +21,7 @@
 - 시작 상태: 카탈로그에 숫자 슬라이딩 퍼즐이 있었다.
 - 수용 기준: 카탈로그에서 그림 게임을 찾을 수 있고, 고정 윗줄 3×3, 일반 3×3, 4×4를 마우스·터치·키보드로 조작할 수 있다.
 - 작업 브랜치: `feature/picture-slide`
-- 관련 PR: [브랜치 PR 목록](https://github.com/binyoun-cberi/kidscade/pulls?q=is%3Apr+head%3Afeature%2Fpicture-slide)
+- 관련 PR: [PR #767](https://github.com/binyoun-cberi/kidscade/pull/767)
 
 | 회차 | 계획과 근거 | 실제 변경 파일 | 테스트 | 결과 |
 | --- | --- | --- | --- | --- |
