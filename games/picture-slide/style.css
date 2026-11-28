@@ -1,0 +1,75 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, "Malgun Gothic", sans-serif;
+  background: #eef5e9;
+  color: #1e382d;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { width: min(100% - 2rem, 850px); margin: 2rem auto; }
+h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.4rem); letter-spacing: -.055em; }
+header p { margin: .45rem 0 1.2rem; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 235px; gap: 1.25rem; }
+.board {
+  display: grid;
+  grid-template-columns: repeat(var(--size), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--size), minmax(0, 1fr));
+  gap: 3px;
+  aspect-ratio: 1;
+  padding: 5px;
+  border-radius: 14px;
+  background: #263e34;
+}
+.board.complete { gap: 0; }
+.tile {
+  position: relative;
+  border: 0;
+  border-radius: 3px;
+  min-width: 0;
+  padding: 0;
+  background-color: #152b22;
+  background-repeat: no-repeat;
+  cursor: default;
+}
+.tile.movable { cursor: pointer; }
+.tile.movable:hover { box-shadow: inset 0 0 0 4px #fff5b8; }
+.tile:focus-visible { z-index: 1; outline: 3px solid #fff5b8; outline-offset: -5px; }
+.tile.fixed::after {
+  content: '';
+  position: absolute;
+  inset: .4rem .4rem auto auto;
+  width: .55rem;
+  height: .55rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #263e34;
+}
+#message { font-weight: 750; min-height: 1.5em; margin: .65rem 0 0; }
+aside { align-self: start; background: #fffdf5; padding: 1rem; border-radius: 14px; }
+.stage { display: grid; gap: .35rem; }
+label, figcaption { font-weight: 720; }
+select, .tools button {
+  min-height: 44px;
+  font: inherit;
+  color: inherit;
+  background: #f4f7ee;
+  border: 1px solid #8a9d88;
+  border-radius: 8px;
+  padding: .4rem .65rem;
+}
+figure { margin: 0; text-align: center; }
+figure img { display: block; width: 100%; height: auto; border-radius: 8px; }
+figcaption { margin-top: .35rem; }
+.moves { margin: .75rem 0; }
+.tools { display: flex; flex-wrap: wrap; gap: .4rem; }
+.tools button:not(:disabled) { cursor: pointer; }
+.tools button:disabled { opacity: .48; }
+#next { background: #215e47; color: white; }
+.keyboard, #stage-rule { font-size: .9rem; }
+@media (max-width: 640px) {
+  main { margin: 1rem auto; }
+  .layout { grid-template-columns: 1fr; gap: .5rem; }
+  aside { display: grid; grid-template-columns: minmax(0, 1fr) 92px; column-gap: .7rem; }
+  figure { grid-column: 2; grid-row: 1 / span 3; }
+  .tools, .keyboard { grid-column: 1 / -1; }
+}

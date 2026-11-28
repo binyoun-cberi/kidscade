@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>그림 조각 탐험</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="game.js" type="module"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>그림 조각 탐험</h1>
+      <p id="instructions">빈칸 옆 조각을 눌러 그림을 완성해요.</p>
+    </header>
+    <div class="layout">
+      <section aria-label="퍼즐">
+        <div class="board" id="board" role="group" aria-label="그림 조각" aria-describedby="instructions stage-rule"></div>
+        <p id="message" role="status"></p>
+      </section>
+      <aside aria-label="게임 도구">
+        <div class="stage">
+          <label for="stage">단계</label>
+          <select id="stage"></select>
+        </div>
+        <p id="stage-rule"></p>
+        <figure>
+          <img id="reference" width="600" height="600" alt="">
+          <figcaption>완성 그림</figcaption>
+        </figure>
+        <p class="moves">이동 <strong id="moves">0</strong>회</p>
+        <div class="tools">
+          <button id="undo" type="button" disabled>한 수 취소</button>
+          <button id="restart" type="button">다시 시작</button>
+          <button id="next" type="button" hidden>다음 단계</button>
+        </div>
+        <p class="keyboard">키보드로는 방향키로 조각을 고르고 Enter를 눌러요.</p>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>
