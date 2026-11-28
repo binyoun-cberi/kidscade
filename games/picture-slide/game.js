@@ -8,6 +8,7 @@ const moves = document.querySelector('#moves');
 const message = document.querySelector('#message');
 const undo = document.querySelector('#undo');
 const next = document.querySelector('#next');
+const reportedStages = new Set();
 let level;
 let tiles;
 let pieces;
@@ -76,6 +77,10 @@ function move(position) {
   }
   [pieces[blank], pieces[position]] = [pieces[position], pieces[blank]];
   history.push({ blank, position });
+  if (isComplete(pieces) && !reportedStages.has(level.image)) {
+    reportedStages.add(level.image);
+    window.KidscadeGame?.result({ scope: 'stage', status: 'completed', outcome: 'clear', endsSession: false });
+  }
   message.textContent = '';
   render();
 }
