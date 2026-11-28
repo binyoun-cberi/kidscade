@@ -40,3 +40,9 @@
 - `node scripts/chat-quality-report.cjs --game picture_slide`에서 카탈로그 오류 0건을 확인했다.
 - `node --test tests/picture-slide.test.mjs`를 실행해 그림 경로와 20단계의 이동 규칙 및 풀이를 확인했다.
 - 관련 PR: [PR #767](https://github.com/binyoun-cberi/kidscade/pull/767). 병합·배포 결과는 PR과 Cloudflare 배포 워크플로에서 확인한다.
+
+### 2026-11-28 — 운영 배포 검사에서 드러난 카탈로그 등록 수정
+
+- 첫 Cloudflare 배포는 전체 검사에서 표지 경로, 업적 계획, 결과 프로필 누락이 확인되어 게시 전에 멈췄다.
+- 게이트 이미지 경로에 표지를 등록하고 스테이지 결과 프로필, 업적 계획, SDK 완료 이벤트를 연결했다.
+- 로컬에서 퍼즐·결과 프로필 테스트 5개와 카탈로그 업적 테스트 2개를 통과했다. Chrome에서 20단계 모두 완료하고 각 단계가 완료 이벤트를 한 번 보내는 것을 확인했다.
